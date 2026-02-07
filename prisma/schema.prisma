@@ -1,0 +1,394 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model roles {
+  roleId    Int      @id @default(autoincrement())
+  roleName  String   @unique(map: "roleName") @db.VarChar(50)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  users     users[]
+}
+
+model users {
+  userId          Int               @id @default(autoincrement())
+  userEmail       String            @unique(map: "userEmail") @db.VarChar(255)
+  userPassword    String            @db.VarChar(255)
+  userName        String?           @db.VarChar(100)
+  roleId          Int
+  createdAt       DateTime          @default(now()) @db.DateTime(0)
+  password_resets password_resets[]
+  caja_chica      caja_chica[]
+  roles           roles             @relation(fields: [roleId], references: [roleId], onDelete: NoAction, onUpdate: NoAction, map: "users_ibfk_1")
+
+  @@index([roleId], map: "roleId")
+}
+
+model password_resets {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  userId    Int
+  token     String   @unique(map: "idx_token") @db.VarChar(64)
+  expiresAt DateTime @db.DateTime(0)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  users     users    @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction, map: "password_resets_ibfk_1")
+
+  @@index([userId], map: "userId")
+}
+
+model compradores {
+  compradorId        Int         @id @default(autoincrement())
+  compradorNombre    String      @db.VarChar(255)
+  compradorRTN       String?     @unique(map: "compradorRTN") @db.VarChar(50)
+  compradorDireccion String?     @db.VarChar(300)
+  compradorTelefono  String      @db.VarChar(50)
+  compradorEmail     String      @db.VarChar(255)
+  createdAt          DateTime    @default(now()) @db.DateTime(0)
+  compra             compra[]
+  liqsalida          liqsalida[]
+  salida             salida[]
+  contratoSalida     contratoSalida[]
+}
+
+model cierrecontrato {
+  cierreID         Int       @id @default(autoincrement())
+  contratoID       Int
+  fechaCierre      DateTime? @default(now()) @db.DateTime(0)
+  totalEntregadoQQ Decimal   @db.Decimal(15, 2)
+  totalLps         Decimal   @db.Decimal(15, 2)
+  tipoMovimiento   String    @default("Entrada") @db.VarChar(50)
+  observaciones    String?   @db.VarChar(200)
+  contrato         contrato  @relation(fields: [contratoID], references: [contratoID], onDelete: NoAction, onUpdate: NoAction, map: "cierrecontrato_ibfk_1")
+
+  @@index([contratoID], map: "contratoID")
+}
+
+model cliente {
+  clienteID          Int                 @id @default(autoincrement())
+  clienteCedula      String?             @unique(map: "clienteCedula") @db.VarChar(15)
+  clienteNombre      String?             @db.VarChar(20)
+  clienteApellido    String?             @db.VarChar(20)
+  clienteDirecion    String?             @db.VarChar(200)
+  clienteMunicipio   String?             @db.VarChar(30)
+  clienteDepartament String?             @db.VarChar(30)
+  claveIHCAFE        String?             @db.VarChar(30)
+  clienteTelefono    String?             @db.VarChar(30)
+  clienteRTN         String?             @db.VarChar(17)
+  anticipo           anticipo[]
+  compra             compra[]
+  contrato           contrato[]
+  deposito           deposito[]
+  inventariocliente  inventariocliente[]
+  liqdeposito        liqdeposito[]
+  prestamos          prestamos[]
+}
+
+model compra {
+  compraId            Int          @id @default(autoincrement())
+  clienteID           Int?
+  compradorID         Int?
+  compraFecha         DateTime?    @db.DateTime(0)
+  compraTipoDocumento String?      @db.VarChar(20)
+  compraMovimiento    String?      @db.VarChar(20)
+  compraTipoCafe      Int?
+  compraPrecioQQ      Decimal?     @db.Decimal(15, 2)
+  compraCantidadQQ    Decimal?     @db.Decimal(15, 2)
+  compraTotal         Decimal?     @db.Decimal(15, 2)
+  compraTotalSacos    Decimal?     @db.Decimal(15, 2)
+  compraRetencio      Decimal?     @db.Decimal(15, 2)
+  compraEn            String?      @db.VarChar(20)
+  compraDescripcion   String?      @db.VarChar(200)
+  cliente             cliente?     @relation(fields: [clienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "compra_ibfk_1")
+  producto            producto?    @relation(fields: [compraTipoCafe], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "compra_ibfk_2")
+  compradores         compradores? @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "fk_compra_comprador")
+
+  @@index([clienteID], map: "clienteID")
+  @@index([compraTipoCafe], map: "compraTipoCafe")
+  @@index([compradorID], map: "fk_compra_comprador")
+}
+
+model contrato {
+  contratoID          Int               @id @default(autoincrement())
+  contratoclienteID   Int?
+  contratoFecha       DateTime?         @db.DateTime(0)
+  contratoMovimiento  String?           @db.VarChar(20)
+  contratoTipoCafe    Int?
+  contratoPrecio      Decimal?          @db.Decimal(15, 2)
+  contratoCantidadQQ  Decimal?          @db.Decimal(15, 2)
+  contratoRetencionQQ Decimal?          @db.Decimal(15, 2)
+  contratoTotalLps    Decimal?          @db.Decimal(15, 2)
+  contratoEn          String?           @db.VarChar(20)
+  contratoDescripcion String?           @db.VarChar(200)
+  estado              String?           @default("Pendiente") @db.VarChar(20)
+  cierrecontrato      cierrecontrato[]
+  cliente             cliente?          @relation(fields: [contratoclienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "contrato_ibfk_1")
+  producto            producto?         @relation(fields: [contratoTipoCafe], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "contrato_ibfk_2")
+  deposito            deposito[]
+  detallecontrato     detallecontrato[]
+
+  @@index([contratoTipoCafe], map: "contratoTipoCafe")
+  @@index([contratoclienteID], map: "contratoclienteID")
+}
+
+model deposito {
+  depositoID          Int                  @id @default(autoincrement())
+  depositoFecha       DateTime?            @db.DateTime(0)
+  clienteID           Int
+  depositoTipoCafe    Int
+  contratoID          Int?
+  depositoMovimiento  String?              @db.VarChar(20)
+  depositoCantidadQQ  Decimal?             @db.Decimal(15, 2)
+  depositoTotalSacos  Decimal?             @db.Decimal(15, 2)
+  depositoRetencionQQ Decimal?             @db.Decimal(15, 2)
+  depositoEn          String?              @db.VarChar(20)
+  depositoDescripcion String?              @db.VarChar(200)
+  estado              String?              @default("Pendiente") @db.VarChar(20)
+  cliente             cliente              @relation(fields: [clienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "deposito_ibfk_1")
+  producto            producto             @relation(fields: [depositoTipoCafe], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "deposito_ibfk_2")
+  contrato            contrato?            @relation(fields: [contratoID], references: [contratoID], onDelete: NoAction, onUpdate: NoAction, map: "fk_deposito_contrato")
+  detalleliqdeposito  detalleliqdeposito[]
+
+  @@index([clienteID], map: "clienteID")
+  @@index([depositoTipoCafe], map: "depositoTipoCafe")
+  @@index([contratoID], map: "fk_deposito_contrato")
+}
+
+model detallecontrato {
+  detalleID      Int       @id @default(autoincrement())
+  contratoID     Int
+  cantidadQQ     Decimal   @db.Decimal(15, 2)
+  precioQQ       Decimal   @db.Decimal(15, 2)
+  tipoMovimiento String    @default("Entrada") @db.VarChar(50)
+  fecha          DateTime? @default(now()) @db.DateTime(0)
+  observaciones  String?   @db.VarChar(200)
+  contrato       contrato  @relation(fields: [contratoID], references: [contratoID], onDelete: NoAction, onUpdate: NoAction, map: "detallecontrato_ibfk_1")
+
+  @@index([contratoID], map: "contratoID")
+}
+
+model detalleliqdeposito {
+  id          Int          @id @default(autoincrement())
+  liqID       Int?
+  depositoID  Int?
+  cantidadQQ  Decimal?     @db.Decimal(15, 2)
+  precio      Decimal?     @db.Decimal(15, 2)
+  totalLps    Decimal?     @db.Decimal(15, 2)
+  movimiento  String?      @db.VarChar(20)
+  liqdeposito liqdeposito? @relation(fields: [liqID], references: [liqID], onDelete: NoAction, onUpdate: NoAction, map: "detalleliqdeposito_ibfk_1")
+  deposito    deposito?    @relation(fields: [depositoID], references: [depositoID], onDelete: NoAction, onUpdate: NoAction, map: "detalleliqdeposito_ibfk_2")
+
+  @@index([depositoID], map: "depositoID")
+  @@index([liqID], map: "liqID")
+}
+
+model inventariocliente {
+  inventarioClienteID  Int                    @id @default(autoincrement())
+  clienteID            Int?
+  compradorID          Int?
+  productoID           Int
+  cantidadQQ           Decimal                @default(0.00) @db.Decimal(15, 2)
+  cantidadSacos        Decimal                @default(0.00) @db.Decimal(15, 2)
+  cliente              cliente?               @relation(fields: [clienteID], references: [clienteID], onUpdate: NoAction, map: "inventariocliente_ibfk_1")
+  producto             producto               @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "inventariocliente_ibfk_2")
+  movimientoinventario movimientoinventario[]
+
+  @@unique([clienteID, productoID], map: "uq_cliente_producto")
+  @@index([productoID], map: "productoID")
+}
+
+model liqdeposito {
+  liqID              Int                  @id @default(autoincrement())
+  liqFecha           DateTime?            @db.DateTime(0)
+  liqclienteID       Int?
+  liqTipoDocumento   String?              @db.VarChar(20)
+  liqMovimiento      String?              @db.VarChar(20)
+  liqTipoCafe        Int?
+  liqPrecio          Decimal?             @db.Decimal(15, 2)
+  liqCatidadQQ       Decimal?             @db.Decimal(15, 2)
+  liqTotalLps        Decimal?             @db.Decimal(15, 2)
+  liqEn              String?              @db.VarChar(20)
+  liqDescripcion     String?              @db.VarChar(200)
+  detalleliqdeposito detalleliqdeposito[]
+  cliente            cliente?             @relation(fields: [liqclienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "liqdeposito_ibfk_1")
+  producto           producto?            @relation(fields: [liqTipoCafe], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "liqdeposito_ibfk_2")
+
+  @@index([liqTipoCafe], map: "liqTipoCafe")
+  @@index([liqclienteID], map: "liqclienteID")
+}
+
+model movimientoinventario {
+  movimientoID        Int               @id @default(autoincrement())
+  inventarioClienteID Int
+  fecha               DateTime          @default(now()) @db.DateTime(0)
+  tipoMovimiento      String            @db.VarChar(50)
+  referenciaTipo      String?           @db.VarChar(50)
+  referenciaID        Int?
+  cantidadQQ          Decimal           @db.Decimal(15, 2)
+  cantidadSacos       Decimal           @default(0.00) @db.Decimal(15, 2)
+  nota                String?           @db.VarChar(200)
+  inventariocliente   inventariocliente @relation(fields: [inventarioClienteID], references: [inventarioClienteID], onDelete: NoAction, onUpdate: NoAction, map: "movimientoinventario_ibfk_1")
+
+  @@index([inventarioClienteID], map: "inventarioClienteID")
+}
+
+model producto {
+  productID         Int                 @id @default(autoincrement())
+  productName       String              @unique(map: "productName") @db.VarChar(50)
+  tara              Decimal?            @default(0.00) @db.Decimal(5, 2)
+  descuento         Decimal?            @default(0.00) @db.Decimal(5, 2)
+  factorOro         Decimal?            @default(1.00) @db.Decimal(10, 2)
+  compra            compra[]
+  contrato          contrato[]
+  deposito          deposito[]
+  inventariocliente inventariocliente[]
+  liqdeposito       liqdeposito[]
+  contratoSalida    contratoSalida[]
+}
+
+model movimientos_prestamo {
+  MovimientoId    Int        @id @default(autoincrement())
+  prestamo_id     Int?
+  fecha           DateTime?  @db.DateTime(0)
+  tipo_movimiento String?    @db.VarChar(25)
+  monto           Decimal?   @db.Decimal(12, 2)
+  descripcion     String?    @db.Text
+  interes         Decimal?   @db.Decimal(5, 2)
+  dias            Int?
+  prestamos       prestamos? @relation(fields: [prestamo_id], references: [prestamoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_prestamo_ibfk_1")
+
+  @@index([prestamo_id], map: "prestamo_id")
+}
+
+model prestamos {
+  prestamoId           Int                    @id @default(autoincrement())
+  clienteId            Int?
+  fecha                DateTime?              @db.DateTime(0)
+  monto                Decimal?               @db.Decimal(12, 2)
+  tasa_interes         Decimal?               @db.Decimal(5, 2)
+  tipo                 String?                @default("PRESTAMO") @db.VarChar(25)
+  estado               String?                @default("ACTIVO") @db.VarChar(25)
+  observacion          String?                @db.Text
+  movimientos_prestamo movimientos_prestamo[]
+  cliente              cliente?               @relation(fields: [clienteId], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_ibfk_1")
+
+  @@index([clienteId], map: "clienteId")
+}
+
+model anticipo {
+  anticipoId            Int                     @id @default(autoincrement())
+  clienteId             Int?
+  fecha                 DateTime?               @db.DateTime(0)
+  monto                 Decimal?                @db.Decimal(12, 2)
+  tasa_interes          Decimal?                @db.Decimal(5, 2)
+  tipo                  String?                 @default("ANTICIPO") @db.VarChar(25)
+  estado                String?                 @default("ACTIVO") @db.VarChar(25)
+  observacion           String?                 @db.Text
+  cliente               cliente?                @relation(fields: [clienteId], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "anticipo_ibfk_1")
+  movimientos_anticipos movimientos_anticipos[]
+
+  @@index([clienteId], map: "clienteId")
+}
+
+model movimientos_anticipos {
+  MovimientoId    Int       @id @default(autoincrement())
+  anticipoId      Int?
+  fecha           DateTime? @db.DateTime(0)
+  tipo_movimiento String?   @db.VarChar(25)
+  monto           Decimal?  @db.Decimal(12, 2)
+  descripcion     String?   @db.Text
+  interes         Decimal?  @db.Decimal(5, 2)
+  dias            Int?
+  anticipo        anticipo? @relation(fields: [anticipoId], references: [anticipoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_anticipos_ibfk_1")
+
+  @@index([anticipoId], map: "anticipoId")
+}
+
+model detalleliqsalida {
+  id          Int        @id @default(autoincrement())
+  liqSalidaID Int?
+  salidaID    Int?
+  cantidadQQ  Decimal?   @db.Decimal(15, 2)
+  movimiento  String?    @db.VarChar(20)
+  liqsalida   liqsalida? @relation(fields: [liqSalidaID], references: [liqSalidaID], onDelete: NoAction, onUpdate: NoAction, map: "detalleliqsalida_ibfk_1")
+  salida      salida?    @relation(fields: [salidaID], references: [salidaID], onDelete: NoAction, onUpdate: NoAction, map: "detalleliqsalida_ibfk_2")
+
+  @@index([liqSalidaID], map: "liqSalidaID")
+  @@index([salidaID], map: "salidaID")
+}
+
+model liqsalida {
+  liqSalidaID      Int                @id @default(autoincrement())
+  liqFecha         DateTime?          @db.DateTime(0)
+  compradorID      Int?
+  liqMovimiento    String?            @db.VarChar(20)
+  liqCantidadQQ    Decimal?           @db.Decimal(15, 2)
+  liqDescripcion   String?            @db.VarChar(200)
+  detalleliqsalida detalleliqsalida[]
+  compradores      compradores?       @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "liqsalida_ibfk_1")
+
+  @@index([compradorID], map: "compradorID")
+}
+
+model salida {
+  salidaID          Int                @id @default(autoincrement())
+  salidaFecha       DateTime?          @db.DateTime(0)
+  compradorID       Int
+  salidaMovimiento  String?            @db.VarChar(20)
+  salidaCantidadQQ  Decimal?           @db.Decimal(15, 2)
+  salidaPrecio      Decimal?           @db.Decimal(15, 2)
+  salidaDescripcion String?            @db.VarChar(200)
+  detalleliqsalida  detalleliqsalida[]
+  compradores       compradores        @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "salida_ibfk_1")
+
+  @@index([compradorID], map: "compradorID")
+}
+
+model caja_chica {
+  id          Int      @id @default(autoincrement())
+  fecha       DateTime @default(now()) @db.DateTime(0)
+  descripcion String   @db.VarChar(255)
+  monto       Decimal  @db.Decimal(10, 2)
+  tipo        String   @db.VarChar(20) // "Ingreso" or "Egreso"
+  usuarioId   Int?
+  estado      String?  @default("Activo") @db.VarChar(20)
+  users       users?   @relation(fields: [usuarioId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  
+  @@index([usuarioId], map: "usuarioId")
+}
+
+model contratoSalida {
+  contratoID          Int                     @id @default(autoincrement())
+  compradorID         Int?
+  contratoFecha       DateTime?               @db.DateTime(0)
+  contratoMovimiento  String?                 @db.VarChar(20)
+  contratoTipoCafe    Int?
+  contratoPrecio      Decimal?                @db.Decimal(15, 2)
+  contratoCantidadQQ  Decimal?                @db.Decimal(15, 2)
+  contratoRetencionQQ Decimal?                @db.Decimal(15, 2)
+  contratoTotalLps    Decimal?                @db.Decimal(15, 2)
+  contratoEn          String?                 @db.VarChar(20)
+  contratoDescripcion String?                 @db.VarChar(200)
+  estado              String?                 @default("Pendiente") @db.VarChar(20)
+  compradores         compradores?            @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "contratoSalida_ibfk_1")
+  producto            producto?               @relation(fields: [contratoTipoCafe], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "contratoSalida_ibfk_2")
+  detalleContratoSalida detalleContratoSalida[]
+
+  @@index([contratoTipoCafe], map: "contratoSalidaTipoCafe")
+  @@index([compradorID], map: "contratoSalidaCompradorID")
+}
+
+model detalleContratoSalida {
+  detalleID      Int            @id @default(autoincrement())
+  contratoID     Int
+  cantidadQQ     Decimal        @db.Decimal(15, 2)
+  precioQQ       Decimal        @db.Decimal(15, 2)
+  tipoMovimiento String         @default("Salida") @db.VarChar(50)
+  fecha          DateTime?      @default(now()) @db.DateTime(0)
+  observaciones  String?        @db.VarChar(200)
+  contratoSalida contratoSalida @relation(fields: [contratoID], references: [contratoID], onDelete: NoAction, onUpdate: NoAction, map: "detalleContratoSalida_ibfk_1")
+
+  @@index([contratoID], map: "detalleContratoSalidaContratoID")
+}
