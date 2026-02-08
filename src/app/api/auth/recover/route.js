@@ -38,7 +38,7 @@ export async function POST(req) {
   });
 
   await transporter.sendMail({
-    from: `"Cafe Henola" <${process.env.SMTP_USER}>`,
+    from: `"Belagos" <${process.env.SMTP_USER}>`,
     to: email,
     subject: "Recuperación de contraseña",
     html: `
@@ -56,7 +56,7 @@ export async function POST(req) {
 
       <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-      <p style="font-size: 12px; color: #888;">Soporte Frijoles - Si tienes dudas, responde a este correo.</p>
+      <p style="font-size: 12px; color: #888;">Soporte Belagos - Si tienes dudas, responde a este correo.</p>
     </div>
   `,
   });

@@ -19,12 +19,12 @@ const roboto = Roboto({
 });
 
 export const metadata = {
-  title: "Cafe Henola",
-  description: "Beneficio Cafe Henola",
+  title: "Belagos",
+  description: "Beneficio Belagos",
   icons: {
-    icon: "/frijoles.ico",
-    shortcutIcon: "/frijoles.ico",
-    apple: "/frijoles.ico",
+    icon: "/belagos.ico",
+    shortcutIcon: "/belagos.ico",
+    apple: "/belagos.ico",
   },
 };
 

@@ -10,7 +10,7 @@ export default function Header() {
   return (
     <>
       <header className="header">
-        <h1 className="title">Cafe Henola</h1>
+        <h1 className="title">Belagos</h1>
         <button
           aria-label="Toggle menu"
           onClick={() => setMenuOpen(!menuOpen)}

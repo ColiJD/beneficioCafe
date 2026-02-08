@@ -112,7 +112,7 @@ export default function DashboardLayout({ children }) {
                   transition: "all 0.2s",
                 }}
               >
-                Cafe Henola
+                Belagos
               </h1>
 
               <Button
@@ -163,7 +163,7 @@ export default function DashboardLayout({ children }) {
                   color: "#fff",
                 }}
               >
-                Cafe Henola
+                Belagos
               </h1>
               <Button
                 type="text"

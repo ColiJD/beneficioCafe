@@ -5,7 +5,7 @@ import { signIn, getSession } from "next-auth/react";
 import { Form, Input, Button, Card, message, Modal, Row, Col } from "antd";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import frijolesImg from "@/img/frijoles.png";
+import frijolesImg from "@/img/belagos.png";
 
 export default function LoginComponent() {
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ export default function LoginComponent() {
       messageApi.error(res.error);
     } else {
       await getSession();
-      messageApi.success("Bienvenido a Cafe Henola");
+      messageApi.success("Bienvenido a Belagos");
       router.push("/");
     }
   };
@@ -83,10 +83,10 @@ export default function LoginComponent() {
               <Image
                 src={frijolesImg}
                 alt="Logo Frijoles"
-                width={120}
+                width={200}
                 height={120}
                 style={{
-                  borderRadius: "50%",
+                
                   boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
                   objectFit: "cover",
                 }}
