@@ -81,7 +81,6 @@ model cliente {
   compra             compra[]
   contrato           contrato[]
   deposito           deposito[]
-  inventariocliente  inventariocliente[]
   liqdeposito        liqdeposito[]
   prestamos          prestamos[]
 }
@@ -186,16 +185,12 @@ model detalleliqdeposito {
 
 model inventariocliente {
   inventarioClienteID  Int                    @id @default(autoincrement())
-  clienteID            Int?
-  compradorID          Int?
-  productoID           Int
+  productoID           Int                    @unique(map: "uq_producto")
   cantidadQQ           Decimal                @default(0.00) @db.Decimal(15, 2)
   cantidadSacos        Decimal                @default(0.00) @db.Decimal(15, 2)
-  cliente              cliente?               @relation(fields: [clienteID], references: [clienteID], onUpdate: NoAction, map: "inventariocliente_ibfk_1")
   producto             producto               @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "inventariocliente_ibfk_2")
   movimientoinventario movimientoinventario[]
 
-  @@unique([clienteID, productoID], map: "uq_cliente_producto")
   @@index([productoID], map: "productoID")
 }
 

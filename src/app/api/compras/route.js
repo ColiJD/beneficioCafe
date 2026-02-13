@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 
-export async function POST(request,req) {
+export async function POST(request, req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
@@ -34,12 +34,12 @@ export async function POST(request,req) {
     ) {
       return new Response(
         JSON.stringify({ error: "Faltan datos obligatorios" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
     const hoy = new Date();
     const fechaSolo = new Date(
-      Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+      Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()),
     );
 
     // ✅ Crear la compra
@@ -60,25 +60,20 @@ export async function POST(request,req) {
       },
     });
 
-    // ✅ 2️⃣ Actualizar o crear inventario del cliente
+    // ✅ 2️⃣ Actualizar o crear inventario global
     const productoID = Number(compraTipoCafe);
     const cantidadQQ = parseFloat(compraCantidadQQ);
     const cantidadSacos = compraTotalSacos ? parseFloat(compraTotalSacos) : 0;
-    const clienteIDNum = Number(clienteID);
 
-    const inventarioCliente = await prisma.inventariocliente.upsert({
+    const inventarioGlobal = await prisma.inventariocliente.upsert({
       where: {
-        clienteID_productoID: {
-          clienteID: clienteIDNum,
-          productoID,
-        },
+        productoID,
       },
       update: {
         cantidadQQ: { increment: cantidadQQ },
         cantidadSacos: { increment: cantidadSacos },
       },
       create: {
-        clienteID: clienteIDNum,
         productoID,
         cantidadQQ,
         cantidadSacos,
@@ -88,7 +83,7 @@ export async function POST(request,req) {
     // ✅ Registrar movimiento usando inventarioClienteID
     await prisma.movimientoinventario.create({
       data: {
-        inventarioClienteID: inventarioCliente.inventarioClienteID,
+        inventarioClienteID: inventarioGlobal.inventarioClienteID,
         tipoMovimiento: "Entrada",
         referenciaTipo: `Compra directa #${nuevaCompra.compraId}`,
         referenciaID: nuevaCompra.compraId,
@@ -105,7 +100,7 @@ export async function POST(request,req) {
       JSON.stringify({ error: "Error al registrar compra" }),
       {
         status: 500,
-      }
+      },
     );
   }
 }
