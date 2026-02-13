@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -75,43 +75,43 @@ export const exportVentaDirecta = async (formState) => {
   };
 
   const drawComprobante = (offsetY = 0) => {
-    const imgWidth = pageWidth * 0.9 * scale;
+    const imgWidth = pageWidth * 0.6 * scale;
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
+    // doc.addImage(
+    //   logo.src,
+    //   "PNG",
+    //   leftMargin,
+    //   20 + offsetY,
+    //   logo.width,
+    //   logo.height
+    // );
 
-    const frijolY = 20 + offsetY;
-    doc.addImage(
-      frijolimg.src,
-      "PNG",
-      pageWidth - rightMargin - frijolimg.width,
-      frijolY,
-      frijolimg.width,
-      frijolimg.height
-    );
+    // const frijolY = 20 + offsetY;
+    // doc.addImage(
+    //   frijolimg.src,
+    //   "PNG",
+    //   pageWidth - rightMargin - frijolimg.width,
+    //   frijolY,
+    //   frijolimg.width,
+    //   frijolimg.height
+    // );
 
     doc.setFont("times", "normal");
     doc.setFontSize(11 * scale);
     doc.setTextColor(0, 0, 0);
     doc.text(
-      "Cosecha 2025 - 2026",
+      "Cosecha 2026 - 2027",
       leftMargin + logo.width / 30,
-      20 + logo.height + offsetY + 22
+      20 + logo.height + offsetY + 22,
     );
 
     doc.setFont("times", "bold");
     doc.setFontSize(16 * scale);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50 + offsetY, {
+    doc.text("BENEFICIO CAFÉ BELAGOS", pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -120,17 +120,12 @@ export const exportVentaDirecta = async (formState) => {
     doc.text("COMPROBANTE DE VENTA DIRECTA", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 85 + offsetY, {
+    doc.text("Propietario Belagos", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(
-      "Teléfono: (504) 3271-3188, (504) 9877-8789",
-      pageWidth / 2,
-      100 + offsetY,
-      {
-        align: "center",
-      }
-    );
+    doc.text("Teléfono: (504) 9987-8789", pageWidth / 2, 100 + offsetY, {
+      align: "center",
+    });
 
     let startY = topMargin + 80 + offsetY;
     doc.setFont("times", "bold");
@@ -156,7 +151,7 @@ export const exportVentaDirecta = async (formState) => {
     doc.text(
       `${comprobanteID}`,
       pageWidth - rightMargin - 120 + anchoTextoBase + 5,
-      startY
+      startY,
     );
 
     doc.setTextColor(0, 0, 0);
@@ -247,12 +242,12 @@ export const exportVentaDirecta = async (formState) => {
       pageWidth - rightMargin - firmaWidth + 25 - 20,
       firmaY,
       pageWidth - rightMargin + 25 - 20,
-      firmaY
+      firmaY,
     );
     doc.text(
       "LUGAR Y FECHA",
       pageWidth - rightMargin - firmaWidth / 2 - 50,
-      firmaY + 12
+      firmaY + 12,
     );
 
     doc.setFont("times", "normal");
@@ -260,7 +255,7 @@ export const exportVentaDirecta = async (formState) => {
     doc.text(
       `El Paraíso  ${fecha}`,
       pageWidth - rightMargin - firmaWidth / 2 - 60,
-      firmaY - 4
+      firmaY - 4,
     );
     doc.setTextColor(0, 0, 0);
 
@@ -270,15 +265,15 @@ export const exportVentaDirecta = async (formState) => {
       leftMargin + firmaWidth / 2 - selloimg.width / 2,
       firmaY - selloimg.height + 2,
       selloimg.width,
-      selloimg.height
+      selloimg.height,
     );
 
     doc.setFontSize(8 * scale);
     doc.text(
-      "Beneficio Café Henola - El Paraíso, Honduras",
+      "Beneficio Café Belagos - El Paraíso, Honduras",
       pageWidth / 2,
       offsetY + pageHeight * 0.45,
-      { align: "center" }
+      { align: "center" },
     );
   };
 
@@ -291,7 +286,7 @@ export const exportVentaDirecta = async (formState) => {
 
   const nombreArchivo = `VentaDirecta_${comprador.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_${comprobanteID}.pdf`;
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
@@ -304,7 +299,7 @@ export const exportVentaDirecta = async (formState) => {
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {

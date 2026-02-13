@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -21,7 +21,7 @@ export const exportEntregaContratoSalida = async (formState) => {
 
   const fechaInput = formState?.fecha ? new Date(formState.fecha) : new Date();
   const fechaCorta = `${String(fechaInput.getDate()).padStart(2, "0")}/${String(
-    fechaInput.getMonth() + 1
+    fechaInput.getMonth() + 1,
   ).padStart(2, "0")}/${fechaInput.getFullYear()}`;
 
   // ---------- Un solo tamaño----------
@@ -69,35 +69,35 @@ export const exportEntregaContratoSalida = async (formState) => {
 
   const drawComprobante = (offsetY = 0) => {
     // Fondo
-    const imgWidth = pageWidth * 0.9 * scale;
+    const imgWidth = pageWidth * 0.6 * scale;
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    // Logos
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
-    const frijolY = 20 + offsetY;
-    doc.addImage(
-      frijolimg.src,
-      "PNG",
-      pageWidth - rightMargin - frijolimg.width,
-      frijolY,
-      frijolimg.width,
-      frijolimg.height
-    );
+    // // Logos
+    // doc.addImage(
+    //   logo.src,
+    //   "PNG",
+    //   leftMargin,
+    //   20 + offsetY,
+    //   logo.width,
+    //   logo.height,
+    // );
+    // const frijolY = 20 + offsetY;
+    // doc.addImage(
+    //   frijolimg.src,
+    //   "PNG",
+    //   pageWidth - rightMargin - frijolimg.width,
+    //   frijolY,
+    //   frijolimg.width,
+    //   frijolimg.height,
+    // );
 
     // Encabezado
     doc.setFont("times", "bold");
     doc.setFontSize(FS_H1);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50 + offsetY, {
+    doc.text("BENEFICIO CAFÉ BELAGOS", pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -106,20 +106,17 @@ export const exportEntregaContratoSalida = async (formState) => {
     doc.text("ENTREGA DE VENTA DE CAFÉ", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 85 + offsetY, {
+    doc.text("Propietario Belagos", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(
-      "Teléfono: (504) 3271-3188, (504) 9877-8789",
-      pageWidth / 2,
-      100 + offsetY,
-      { align: "center" }
-    );
+    doc.text("Teléfono: 9964-9154", pageWidth / 2, 100 + offsetY, {
+      align: "center",
+    });
 
     // Cosecha
     doc.setFont("times", "bold");
     doc.setFontSize(FS_BODY);
-    doc.text("Cosecha 2025 - 2026", leftMargin, topMargin + 60 + offsetY);
+    doc.text("Cosecha 2026 - 2027", leftMargin, topMargin + 60 + offsetY);
 
     // Comprador
     doc.setFont("times", "normal");
@@ -134,12 +131,12 @@ export const exportEntregaContratoSalida = async (formState) => {
 
     // Comprobante No
     const compX = pageWidth - rightMargin - 140;
-    const compY = frijolY + frijolimg.height + 18;
+    // const compY = frijolY + frijolimg.height + 18;
     doc.setFont("times", "bold");
     doc.setFontSize(FS_BODY);
-    doc.text("Comprobante No:", compX, compY);
+    doc.text("Comprobante No:", compX, yProd);
     doc.setTextColor(255, 0, 0);
-    doc.text(`${comprobanteID}`, compX + 125, compY);
+    doc.text(`${comprobanteID}`, compX + 125, yProd);
     doc.setTextColor(0, 0, 0);
 
     // Tabla
@@ -229,17 +226,17 @@ export const exportEntregaContratoSalida = async (formState) => {
       pageWidth - rightMargin - firmaWidth,
       firmaY,
       pageWidth - rightMargin,
-      firmaY
+      firmaY,
     );
     doc.text("RECIBIDO POR", pageWidth - rightMargin - 120, firmaY + 14); // Buyer receives
 
     doc.setFont("times", "normal");
     doc.setFontSize(FS_SMALL);
     doc.text(
-      "Beneficio Café Henola - El Paraíso, Honduras",
+      "Beneficio Café Belagos - El Paraíso, Honduras",
       pageWidth / 2,
       firmaY + 12,
-      { align: "center" }
+      { align: "center" },
     );
 
     // Fecha roja
@@ -259,7 +256,7 @@ export const exportEntregaContratoSalida = async (formState) => {
       leftMargin + firmaWidth / 2 - selloW / 2,
       firmaY - selloH - 1,
       selloW,
-      selloH
+      selloH,
     );
   };
 
@@ -274,7 +271,7 @@ export const exportEntregaContratoSalida = async (formState) => {
 
   const nombreArchivo = `EntregaVenta_${cliente.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_${comprobanteID}.pdf`;
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
@@ -285,7 +282,7 @@ export const exportEntregaContratoSalida = async (formState) => {
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {

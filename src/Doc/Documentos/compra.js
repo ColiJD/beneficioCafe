@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import cafe from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -53,44 +53,44 @@ export const exportCompraDirecta = async (formState) => {
   // FUNCIÓN PRINCIPAL DE DIBUJO
   const drawComprobante = (offsetY = 0) => {
     // Fondo
-    const imgWidth = pageWidth * 0.9 * scale;
+    const imgWidth = pageWidth * 0.6 * scale;
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    // Logo izquierda
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
+    // // Logo izquierda
+    // doc.addImage(
+    //   logo.src,
+    //   "PNG",
+    //   leftMargin,
+    //   20 + offsetY,
+    //   logo.width,
+    //   logo.height,
+    // );
 
     // logo derecha
-    const cafeY = 20 + offsetY;
-    doc.addImage(
-      cafeimg.src,
-      "PNG",
-      pageWidth - rightMargin - cafeimg.width,
-      cafeY,
-      cafeimg.width,
-      cafeimg.height
-    );
+    // const cafeY = 20 + offsetY;
+    // doc.addImage(
+    //   cafeimg.src,
+    //   "PNG",
+    //   pageWidth - rightMargin - cafeimg.width,
+    //   cafeY,
+    //   cafeimg.width,
+    //   cafeimg.height,
+    // );
 
     //  Cosecha
     doc.setFont("times", "normal");
     doc.setFontSize(11 * scale);
     doc.setTextColor(0, 0, 0);
 
-    doc.text("Cosecha 2025 - 2026", leftMargin, topMargin + 80 + offsetY - 18);
+    doc.text("Cosecha 2026 - 2027", leftMargin, topMargin + 80 + offsetY - 18);
 
     //Encabezado central
     doc.setFont("times", "bold");
     doc.setFontSize(16 * scale);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50 + offsetY, {
+    doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -99,15 +99,12 @@ export const exportCompraDirecta = async (formState) => {
     doc.text("COMPROBANTE DE COMPRA DIRECTA", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 85 + offsetY, {
+    doc.text("Propietario BeLago", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(
-      "Teléfono: (504) 3271-3188, (504) 9877-8789",
-      pageWidth / 2,
-      100 + offsetY,
-      { align: "center" }
-    );
+    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 100 + offsetY, {
+      align: "center",
+    });
 
     // Productor y Comprobante en la misma línea
     let startY = topMargin + 80 + offsetY;
@@ -223,15 +220,15 @@ export const exportCompraDirecta = async (formState) => {
       leftMargin + firmaWidth / 2 - selloimg.width / 2,
       firmaY - selloimg.height - 5,
       selloimg.width,
-      selloimg.height
+      selloimg.height,
     );
 
     doc.setFontSize(8 * scale);
     doc.text(
-      "Beneficio Café Henola - El Paraíso, Honduras",
+      "Beneficio Café Belago - El Paraíso, Honduras",
       pageWidth / 2,
       offsetY + pageHeight * 0.45,
-      { align: "center" }
+      { align: "center" },
     );
   };
 
@@ -245,7 +242,7 @@ export const exportCompraDirecta = async (formState) => {
 
   const nombreArchivo = `CompraDirecta_${cliente.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_${comprobanteID}.pdf`;
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
@@ -258,7 +255,7 @@ export const exportCompraDirecta = async (formState) => {
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {

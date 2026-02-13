@@ -1,12 +1,13 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
 import {
   numeroALetras,
+  cleanText,
   processImageToGray,
   getLogoScaled,
 } from "@/Doc/Documentos/funcionesdeDocumentos";
@@ -19,18 +20,25 @@ export const exportEntregaContrato = async (formState) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const fechaInput = formState?.fecha ? new Date(formState.fecha) : new Date();
-  const fechaCorta = `${String(fechaInput.getDate()).padStart(2, "0")}/${String(
-    fechaInput.getMonth() + 1
-  ).padStart(2, "0")}/${fechaInput.getFullYear()}`;
-
-  // ---------- Un solo tamaño----------
-  const scale = 1.1;
-  const FS_H1 = 16 * scale;
-  const FS_BODY = 11 * scale;
-  const FS_SMALL = 9 * scale;
-
   const fondoGray = await processImageToGray(fondoImg.src, 0.15);
+
+  // Fecha actual (Adoptado de compra.js)
+  let fechaObj;
+  if (formState?.fecha) {
+    const partes = formState.fecha.split("-"); // "YYYY-MM-DD"
+    const year = parseInt(partes[0], 10);
+    const month = parseInt(partes[1], 10) - 1; // mes 0-11
+    const day = parseInt(partes[2], 10);
+    fechaObj = new Date(year, month, day); // evita desfase de zona horaria
+  } else {
+    fechaObj = new Date();
+  }
+  const dia = String(fechaObj.getDate()).padStart(2, "0");
+  const mes = String(fechaObj.getMonth() + 1).padStart(2, "0");
+  const anio = fechaObj.getFullYear();
+  const fecha = `${dia}/${mes}/${anio}`;
+
+  const scale = 1.1;
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const frijolimg = await getLogoScaled(frijol.src, 80 * scale, 80 * scale);
   const selloimg = await getLogoScaled(sello.src, 50 * scale, 50 * scale);
@@ -66,83 +74,60 @@ export const exportEntregaContrato = async (formState) => {
 
   const cantidadLetras = numeroALetrasExtendido(totalPagar);
 
+  // FUNCIÓN PRINCIPAL DE DIBUJO (Alineada con compra.js)
   const drawComprobante = (offsetY = 0) => {
     // Fondo
-    const imgWidth = pageWidth * 0.9 * scale;
+    const imgWidth = pageWidth * 0.6 * scale;
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    // Logos
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
-    const frijolY = 20 + offsetY;
-    doc.addImage(
-      frijolimg.src,
-      "PNG",
-      pageWidth - rightMargin - frijolimg.width,
-      frijolY,
-      frijolimg.width,
-      frijolimg.height
-    );
+    // Cosecha
+    doc.setFont("times", "normal");
+    doc.setFontSize(11 * scale);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Cosecha 2026 - 2027", leftMargin, topMargin + 80 + offsetY - 18);
 
-    // Encabezado
+    // Encabezado central
     doc.setFont("times", "bold");
-    doc.setFontSize(FS_H1);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50 + offsetY, {
+    doc.setFontSize(16 * scale);
+    doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
     doc.setFont("times", "normal");
-    doc.setFontSize(FS_BODY);
+    doc.setFontSize(12 * scale);
     doc.text("ENTREGA DE CONTRATO", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 85 + offsetY, {
+    doc.text("Propietario BeLago", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(
-      "Teléfono: (504) 3271-3188, (504) 9877-8789",
-      pageWidth / 2,
-      100 + offsetY,
-      { align: "center" }
-    );
+    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 100 + offsetY, {
+      align: "center",
+    });
 
-    // Cosecha
-    doc.setFont("times", "bold");
-    doc.setFontSize(FS_BODY);
-    doc.text("Cosecha 2025 - 2026", leftMargin, topMargin + 60 + offsetY);
-
-    // Productor
+    // Productor y Comprobante en la misma línea
+    let startY = topMargin + 80 + offsetY;
     doc.setFont("times", "normal");
-    doc.setFontSize(FS_BODY);
-    const yProd = topMargin + 80 + offsetY;
-    const labelProd = "Productor:";
-    doc.text(labelProd, leftMargin, yProd);
-    const wLabelProd = doc.getTextWidth(labelProd);
+
+    const textoProd = "Productor:";
+    doc.text(textoProd, leftMargin, startY);
+
+    const anchoProd = doc.getTextWidth(textoProd);
     doc.setTextColor(255, 0, 0);
-    doc.text(` ${cliente}`, leftMargin + wLabelProd, yProd);
+    doc.text(` ${cliente}`, leftMargin + anchoProd, startY);
+
+    doc.setFontSize(14 * scale);
+    const comprobanteTexto = `Comprobante No: ${comprobanteID}`;
+    const anchoComp = doc.getTextWidth(comprobanteTexto);
+    doc.text(comprobanteTexto, pageWidth - rightMargin - anchoComp, startY);
     doc.setTextColor(0, 0, 0);
 
-    // Comprobante No
-    const compX = pageWidth - rightMargin - 140;
-    const compY = frijolY + frijolimg.height + 18;
-    doc.setFont("times", "bold");
-    doc.setFontSize(FS_BODY);
-    doc.text("Comprobante No:", compX, compY);
-    doc.setTextColor(255, 0, 0);
-    doc.text(`${comprobanteID}`, compX + 125, compY);
-    doc.setTextColor(0, 0, 0);
+    startY += 20;
 
-    // Tabla
-    let startY = topMargin + 110 + offsetY;
+    // Tabla de productos (Alineada con los estilos de compra.js)
     autoTable(doc, {
       startY,
       margin: { left: leftMargin, right: rightMargin },
@@ -157,8 +142,11 @@ export const exportEntregaContrato = async (formState) => {
       ],
       body: [
         [
-          { content: contratoID, styles: { textColor: [255, 0, 0] } },
-          { content: tipoCafe, styles: { textColor: [255, 0, 0] } },
+          {
+            content: cleanText(contratoID),
+            styles: { textColor: [255, 0, 0] },
+          },
+          { content: cleanText(tipoCafe), styles: { textColor: [255, 0, 0] } },
           {
             content: formatNumber(quintalesIngresados),
             styles: { textColor: [255, 0, 0] },
@@ -175,7 +163,7 @@ export const exportEntregaContrato = async (formState) => {
       ],
       styles: {
         font: "times",
-        fontSize: 9 * scale,
+        fontSize: 10 * scale,
         lineColor: [0, 0, 0],
         lineWidth: 0.5,
       },
@@ -183,121 +171,95 @@ export const exportEntregaContrato = async (formState) => {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
+        lineWidth: 0.5,
       },
     });
 
-    startY = doc.lastAutoTable.finalY + 30;
+    startY = doc.lastAutoTable.finalY + 15;
 
-    // Total en letras
-    doc.setFont("times", "bold");
-    doc.setFontSize(FS_BODY);
-    doc.text("Total en Letras:", leftMargin, startY);
     doc.setFont("times", "normal");
-    doc.setFontSize(FS_BODY);
+    const texto = "Total en Letras:";
+    const valor = `${cantidadLetras}`;
+    doc.text(texto, leftMargin, startY);
+    const anchoTexto = doc.getTextWidth(texto);
     doc.setTextColor(255, 0, 0);
-    const maxWidth = pageWidth - leftMargin - rightMargin - 150;
-    const textoEnLetras = doc.splitTextToSize(cantidadLetras, maxWidth);
-    doc.text(textoEnLetras, leftMargin + 115, startY);
-    const lineCount = textoEnLetras.length;
-    startY += 20 + lineCount * 12;
+    doc.text(valor, leftMargin + anchoTexto + 5, startY);
     doc.setTextColor(0, 0, 0);
 
-    // Forma de pago
-    doc.setFont("times", "bold");
-    doc.setFontSize(FS_BODY);
+    startY += 20;
+
+    // Forma de pago (Alineada con compra.js)
     doc.text("Forma de Pago:", leftMargin, startY);
-    doc.setFont("times", "normal");
-    doc.setFontSize(FS_BODY);
-
     const formas = ["Efectivo", "Transferencia", "Cheque"];
-    const boxSize = 10;
-    let x = leftMargin + 130;
-    const boxY = startY - 8;
-    const gap = 130;
-
-    doc.setTextColor(255, 0, 0);
+    let x = leftMargin + 100;
     formas.forEach((f) => {
-      doc.rect(x, boxY, boxSize, boxSize);
-      if (formaPago === f) doc.text("X", x + 2.5, boxY + 8);
-      doc.text(f, x + 15, boxY + 9);
-      x += gap;
+      doc.rect(x, startY - 7, 10, 10);
+      if (formaPago === f) doc.text("X", x + 2, startY + 1);
+      doc.text(f, x + 15, startY + 1);
+      x += 100;
     });
-    doc.setTextColor(0, 0, 0);
 
-    startY += 35;
+    startY += 25;
 
-    // Observaciones
     doc.setFont("times", "bold");
-    doc.setFontSize(FS_BODY);
     doc.text("Observaciones:", leftMargin, startY);
-    startY += 15;
+    startY += 12;
     doc.setFont("times", "normal");
-    doc.setFontSize(FS_BODY);
     doc.text(String(observaciones || ""), leftMargin, startY, {
       maxWidth: pageWidth - leftMargin - rightMargin,
     });
 
-    // ======== BLOQUE DE FIRMAS ========
-    const mitadAltura = pageHeight / 2;
-    const firmaBase = offsetY + mitadAltura - 25;
+    startY += 80;
+
+    // Firmas y lugar/fecha (Alineada con compra.js)
     const firmaWidth = 150;
-    const firmaY = firmaBase - 8;
+    const firmaY = startY;
 
-    doc.setFont("times", "bold");
-    doc.setFontSize(FS_BODY);
+    // Línea de firma (izquierda)
     doc.line(leftMargin, firmaY, leftMargin + firmaWidth, firmaY);
-    doc.text("FIRMA", leftMargin + 55, firmaY + 14);
+    doc.text("FIRMA", leftMargin + firmaWidth / 2 - 20, firmaY + 12);
 
-    doc.line(
-      pageWidth - rightMargin - firmaWidth,
-      firmaY,
-      pageWidth - rightMargin,
-      firmaY
-    );
-    doc.text("LUGAR Y FECHA", pageWidth - rightMargin - 140, firmaY + 14);
+    // Línea de lugar y fecha
+    const lugarX = pageWidth - rightMargin - firmaWidth - 20;
+    doc.line(lugarX + 25, firmaY, lugarX + firmaWidth + 25, firmaY);
+
+    // Texto “LUGAR Y FECHA”
+    doc.text("LUGAR Y FECHA", lugarX + firmaWidth / 2 - 40, firmaY + 12);
 
     doc.setFont("times", "normal");
-    doc.setFontSize(FS_SMALL);
-    doc.text(
-      "Beneficio Café Henola - El Paraíso, Honduras",
-      pageWidth / 2,
-      firmaY + 12,
-      { align: "center" }
-    );
-
-    // Fecha roja
-    doc.setFont("times", "bold");
-    doc.setFontSize(14);
     doc.setTextColor(255, 0, 0);
-    doc.text(`El Paraíso ${fechaCorta}`, pageWidth / 2 + 120, firmaY - 6);
+    doc.text(`El Paraíso  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
     doc.setTextColor(0, 0, 0);
 
-    // Sello ajustado
-    const selloFactor = 0.85;
-    const selloW = selloimg.width * selloFactor;
-    const selloH = selloimg.height * selloFactor;
     doc.addImage(
       selloimg.src,
       "PNG",
-      leftMargin + firmaWidth / 2 - selloW / 2,
-      firmaY - selloH - 1,
-      selloW,
-      selloH
+      leftMargin + firmaWidth / 2 - selloimg.width / 2,
+      firmaY - selloimg.height - 5,
+      selloimg.width,
+      selloimg.height,
+    );
+
+    doc.setFontSize(8 * scale);
+    doc.text(
+      "Beneficio Café Belago - El Paraíso, Honduras",
+      pageWidth / 2,
+      offsetY + pageHeight * 0.45,
+      { align: "center" },
     );
   };
 
-  // Doble comprobante (arriba y abajo)
+  // === GENERACIÓN DE DOCUMENTO ===
   drawComprobante(0);
   drawComprobante(pageHeight / 2);
 
-  // Línea de corte
   doc.setLineDash([5, 3]);
   doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
   doc.setLineDash();
 
   const nombreArchivo = `EntregaContrato_${cliente.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_${comprobanteID}.pdf`;
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
@@ -306,15 +268,13 @@ export const exportEntregaContrato = async (formState) => {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // 📱 En móvil: abrir PDF visible (el usuario imprime desde el visor)
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {
-    // 💻 En escritorio: imprimir directamente
     const iframe = document.createElement("iframe");
     iframe.style.display = "none";
     iframe.src = pdfURL;

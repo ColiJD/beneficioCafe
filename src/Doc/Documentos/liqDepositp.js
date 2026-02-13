@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -22,7 +22,23 @@ export const exportLiquidacionDeposito = async (formState) => {
 
   const fondoGray = await processImageToGray(fondoImg.src, 0.15);
 
-  const scale = 0.9;
+  // Fecha actual (Adoptado de compra.js)
+  let fechaObj;
+  if (formState?.fecha) {
+    const partes = formState.fecha.split("-"); // "YYYY-MM-DD"
+    const year = parseInt(partes[0], 10);
+    const month = parseInt(partes[1], 10) - 1; // mes 0-11
+    const day = parseInt(partes[2], 10);
+    fechaObj = new Date(year, month, day); // evita desfase de zona horaria
+  } else {
+    fechaObj = new Date();
+  }
+  const dia = String(fechaObj.getDate()).padStart(2, "0");
+  const mes = String(fechaObj.getMonth() + 1).padStart(2, "0");
+  const anio = fechaObj.getFullYear();
+  const fecha = `${dia}/${mes}/${anio}`;
+
+  const scale = 1.1; // Aumentado a 1.1 para consistencia
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const frijolimg = await getLogoScaled(frijol.src, 80 * scale, 80 * scale);
   const selloimg = await getLogoScaled(sello.src, 50 * scale, 50 * scale);
@@ -32,50 +48,33 @@ export const exportLiquidacionDeposito = async (formState) => {
   const totalPagar = formState?.totalPagar || 0;
   const descripcion = formState?.descripcion || "N/A";
   const comprobanteID = formState?.comprobanteID || "0000";
-  const cantidadLetras = numeroALetras(cantidadLiquidar, "QQ de oro");
+  const cantidadLetras = numeroALetras(totalPagar); // Cambiado a totalPagar para ser consistente
   const precio = formState?.precio || formState?.depositoPrecioQQ || 0;
-
   const formaPago = formState?.formaPago || "";
 
-  // nombre del productor desde cliente
   const productor =
     (typeof formState?.cliente === "object"
       ? formState?.cliente?.label
-      : formState?.cliente) || "Nombre del Productor";
-
-  const fechaActual = new Date().toLocaleDateString("es-HN");
+      : formState?.cliente) || "Cliente";
 
   const drawComprobante = (offsetY = 0) => {
     // Fondo
-    const imgWidth = pageWidth * 0.9 * scale;
+    const imgWidth = pageWidth * 0.6 * scale;
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    // Logos
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
-    const frijolY = 20 + offsetY;
-    doc.addImage(
-      frijolimg.src,
-      "PNG",
-      pageWidth - rightMargin - frijolimg.width,
-      frijolY,
-      frijolimg.width,
-      frijolimg.height
-    );
+    // Cosecha
+    doc.setFont("times", "normal");
+    doc.setFontSize(11 * scale);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Cosecha 2026 - 2027", leftMargin, topMargin + 80 + offsetY - 18);
 
-    // Encabezado
+    // Encabezado central
     doc.setFont("times", "bold");
     doc.setFontSize(16 * scale);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50 + offsetY, {
+    doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -84,54 +83,31 @@ export const exportLiquidacionDeposito = async (formState) => {
     doc.text("LIQUIDACIÓN DE DEPÓSITO", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 85 + offsetY, {
+    doc.text("Propietario BeLago", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(
-      "Teléfono: (504) 3271-3188,(504) 9877-8789",
-      pageWidth / 2,
-      100 + offsetY,
-      {
-        align: "center",
-      }
-    );
+    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 100 + offsetY, {
+      align: "center",
+    });
 
-    // Comprobante No (arriba derecha)
-    doc.setFont("times", "bold");
-    doc.setFontSize(14 * scale);
-    doc.setTextColor(0, 0, 0);
-    doc.text(
-      "Comprobante No:",
-      pageWidth - rightMargin - 130,
-      frijolY + frijolimg.height + 15
-    );
-    doc.setFontSize(16 * scale);
-    doc.setTextColor(255, 0, 0);
-    doc.text(
-      `${comprobanteID}`,
-      pageWidth - rightMargin - 15,
-      frijolY + frijolimg.height + 15,
-      {
-        align: "right",
-      }
-    );
-
-    // Cosecha y Productor (nombre rojo)
-    doc.setFontSize(11 * scale);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Cosecha 2025 - 2026`, leftMargin, topMargin + 60 + offsetY);
-
-    const yProd = topMargin + 80 + offsetY;
-    const labelProd = "Productor:";
-    doc.setFont("times", "bold");
-    doc.text(labelProd, leftMargin, yProd);
-
-    const wLabelProd = doc.getTextWidth(labelProd);
+    // Productor y Comprobante en la misma línea
+    let startY = topMargin + 80 + offsetY;
     doc.setFont("times", "normal");
+
+    const textoProd = "Productor:";
+    doc.text(textoProd, leftMargin, startY);
+
+    const anchoProd = doc.getTextWidth(textoProd);
     doc.setTextColor(255, 0, 0);
-    doc.text(` ${productor}`, leftMargin + wLabelProd, yProd);
+    doc.text(` ${productor}`, leftMargin + anchoProd, startY);
+
+    doc.setFontSize(14 * scale);
+    const comprobanteTexto = `Comprobante No: ${comprobanteID}`;
+    const anchoComp = doc.getTextWidth(comprobanteTexto);
+    doc.text(comprobanteTexto, pageWidth - rightMargin - anchoComp, startY);
     doc.setTextColor(0, 0, 0);
-    let startY = topMargin + 110 + offsetY;
+
+    startY += 20;
 
     // Tabla
     autoTable(doc, {
@@ -140,7 +116,7 @@ export const exportLiquidacionDeposito = async (formState) => {
       head: [["Tipo de Café", "Cantidad (QQ)", "Precio (Lps)", "Total (Lps)"]],
       body: [
         [
-          { content: tipoCafe, styles: { textColor: [255, 0, 0] } },
+          { content: cleanText(tipoCafe), styles: { textColor: [255, 0, 0] } },
           {
             content: formatNumber(cantidadLiquidar),
             styles: { textColor: [255, 0, 0] },
@@ -171,11 +147,13 @@ export const exportLiquidacionDeposito = async (formState) => {
 
     startY = doc.lastAutoTable.finalY + 15;
 
-    // Cantidad en letras
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Cantidad en Letras:`, leftMargin, startY);
+    doc.setFont("times", "normal");
+    const textoEnLetras = "Total en Letras:";
+    const valorEnLetras = `${cantidadLetras}`;
+    doc.text(textoEnLetras, leftMargin, startY);
+    const anchoTextoLetras = doc.getTextWidth(textoEnLetras);
     doc.setTextColor(255, 0, 0);
-    doc.text(`${cantidadLetras}`, leftMargin + 90, startY);
+    doc.text(valorEnLetras, leftMargin + anchoTextoLetras + 5, startY);
     doc.setTextColor(0, 0, 0);
 
     startY += 20;
@@ -184,21 +162,19 @@ export const exportLiquidacionDeposito = async (formState) => {
     doc.text("Forma de Pago:", leftMargin, startY);
     const formas = ["Efectivo", "Transferencia", "Cheque"];
     let x = leftMargin + 100;
-    doc.setTextColor(255, 0, 0);
     formas.forEach((f) => {
       doc.rect(x, startY - 7, 10, 10);
       if (formaPago === f) doc.text("X", x + 2, startY + 1);
       doc.text(f, x + 15, startY + 1);
       x += 100;
     });
-    doc.setTextColor(0, 0, 0);
 
     startY += 25;
 
-    // Descripción
+    // Descripción (equivale a observaciones)
     doc.setFont("times", "bold");
     doc.text("Descripción:", leftMargin, startY);
-    startY += 18;
+    startY += 12;
     doc.setFont("times", "normal");
     doc.text(String(descripcion || ""), leftMargin, startY, {
       maxWidth: pageWidth - leftMargin - rightMargin,
@@ -206,86 +182,69 @@ export const exportLiquidacionDeposito = async (formState) => {
 
     startY += 80;
 
-    // Firmas
+    // Firmas y lugar/fecha
     const firmaWidth = 150;
     const firmaY = startY;
+
+    // Línea de firma (izquierda)
     doc.line(leftMargin, firmaY, leftMargin + firmaWidth, firmaY);
     doc.text("FIRMA", leftMargin + firmaWidth / 2 - 20, firmaY + 12);
 
-    // Lugar y fecha
-    doc.line(
-      pageWidth - rightMargin - firmaWidth,
-      firmaY,
-      pageWidth - rightMargin,
-      firmaY
-    );
-    doc.text(
-      "LUGAR Y FECHA",
-      pageWidth - rightMargin - firmaWidth / 2 - 45,
-      firmaY + 12
-    );
+    // Línea de lugar y fecha
+    const lugarX = pageWidth - rightMargin - firmaWidth - 20;
+    doc.line(lugarX + 25, firmaY, lugarX + firmaWidth + 25, firmaY);
+
+    // Texto “LUGAR Y FECHA”
+    doc.text("LUGAR Y FECHA", lugarX + firmaWidth / 2 - 40, firmaY + 12);
+
     doc.setFont("times", "normal");
     doc.setTextColor(255, 0, 0);
-    doc.text(
-      `El Paraíso  ${fechaActual}`,
-      pageWidth - rightMargin - firmaWidth / 2 - 50,
-      firmaY - 4
-    );
+    doc.text(`El Paraíso  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
     doc.setTextColor(0, 0, 0);
 
-    // Sello
     doc.addImage(
       selloimg.src,
       "PNG",
       leftMargin + firmaWidth / 2 - selloimg.width / 2,
-      firmaY - selloimg.height + 1,
+      firmaY - selloimg.height - 5,
       selloimg.width,
-      selloimg.height
+      selloimg.height,
     );
 
-    // Footer (por mitad)
     doc.setFontSize(8 * scale);
     doc.text(
-      "Beneficio Café Henola - El Paraíso, Honduras",
+      "Beneficio Café Belago - El Paraíso, Honduras",
       pageWidth / 2,
       offsetY + pageHeight * 0.45,
-      { align: "center" }
+      { align: "center" },
     );
   };
 
-  // Doble comprobante
+  // DOBLE COMPROBANTE
   drawComprobante(0);
   drawComprobante(pageHeight / 2);
 
-  // Línea de corte (guiones) al centro
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.6);
-  doc.setLineDash([5, 3], 0);
+  doc.setLineDash([5, 3]);
   doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
-  doc.setLineDash(); // reset
+  doc.setLineDash();
 
-  // Guardar con nombre del productor
-  const safeProd = String(productor)
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(/[^\w\-]/g, "");
-  const nombreArchivo = `Liquidacion_${safeProd}_${comprobanteID}.pdf`;
+  const nombreArchivo = `Liquidacion_${productor.replace(
+    /\s+/g,
+    "_",
+  )}_${comprobanteID}.pdf`;
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
 
-  // Detección básica de dispositivo móvil
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // 📱 En móvil: abrir PDF visible (el usuario imprime desde el visor)
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {
-    // 💻 En escritorio: imprimir directamente
     const iframe = document.createElement("iframe");
     iframe.style.display = "none";
     iframe.src = pdfURL;

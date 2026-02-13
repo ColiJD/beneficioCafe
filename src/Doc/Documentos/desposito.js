@@ -1,6 +1,6 @@
 import JsPDF from "jspdf";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -83,31 +83,31 @@ export const exportDeposito = async (formState) => {
     const imgY = offsetY + pageHeight / 4 - imgHeight / 2;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    // Logo izquierda
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
+    // // Logo izquierda
+    // doc.addImage(
+    //   logo.src,
+    //   "PNG",
+    //   leftMargin,
+    //   20 + offsetY,
+    //   logo.width,
+    //   logo.height
+    // );
 
-    // cafe derecha
-    const frijolY = 20 + offsetY;
-    doc.addImage(
-      frijolimg.src,
-      "PNG",
-      pageWidth - rightMargin - frijolimg.width,
-      frijolY,
-      frijolimg.width,
-      frijolimg.height
-    );
+    // // cafe derecha
+    // const frijolY = 20 + offsetY;
+    // doc.addImage(
+    //   frijolimg.src,
+    //   "PNG",
+    //   pageWidth - rightMargin - frijolimg.width,
+    //   frijolY,
+    //   frijolimg.width,
+    //   frijolimg.height
+    // );
 
     // Encabezado
     doc.setFont("times", "bold");
     doc.setFontSize(20);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 60 + offsetY, {
+    doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 60 + offsetY, {
       align: "center",
     });
 
@@ -116,22 +116,17 @@ export const exportDeposito = async (formState) => {
     doc.text("COMPROBANTE DE DEPÓSITO", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 100 + offsetY, {
+    doc.text("Propietario Belago", pageWidth / 2, 100 + offsetY, {
       align: "center",
     });
     doc.setFontSize(12);
-    doc.text(
-      "Teléfono: (504) 3271-3188, (504) 9877-8789",
-      pageWidth / 2,
-      115 + offsetY,
-      {
-        align: "center",
-      }
-    );
+    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 115 + offsetY, {
+      align: "center",
+    });
 
     // Cosecha
     doc.setFont("times", "normal");
-    doc.text("Cosecha 2025 - 2026", leftMargin, 110 + offsetY);
+    doc.text("Cosecha 2026 - 2027", leftMargin, 110 + offsetY);
 
     // Productor y comprobante alineados
     let startY = topMargin + 70 + offsetY;
@@ -148,7 +143,7 @@ export const exportDeposito = async (formState) => {
     doc.text(
       `${comprobanteID}`,
       pageWidth - rightMargin - 80 + anchoTextoBase + 5,
-      startY
+      startY,
     );
     doc.setTextColor(0, 0, 0);
 
@@ -213,7 +208,7 @@ export const exportDeposito = async (formState) => {
       leftMargin + firmaWidth / 2 - selloimg.width / 2,
       startY - selloimg.height + 3,
       selloimg.width,
-      selloimg.height
+      selloimg.height,
     );
 
     // Lugar y Fecha
@@ -221,7 +216,7 @@ export const exportDeposito = async (formState) => {
       pageWidth - rightMargin - (firmaWidth - 25),
       startY,
       pageWidth - rightMargin,
-      startY
+      startY,
     );
     doc.setTextColor(255, 0, 0);
     doc.text(`El Paraíso  ${fecha}`, pageWidth - rightMargin - 140, startY - 4);
@@ -231,10 +226,10 @@ export const exportDeposito = async (formState) => {
     // Footer
     doc.setFontSize(10);
     doc.text(
-      "Beneficio Café Henola - El Paraíso, Honduras",
+      "Beneficio Café Belago - El Paraíso, Honduras",
       pageWidth / 2,
       offsetY + pageHeight / 2 - 15,
-      { align: "center" }
+      { align: "center" },
     );
   };
 
@@ -248,7 +243,7 @@ export const exportDeposito = async (formState) => {
 
   const nombreArchivo = `Deposito_${cliente.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_${comprobanteID}.pdf`;
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
@@ -261,7 +256,7 @@ export const exportDeposito = async (formState) => {
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {

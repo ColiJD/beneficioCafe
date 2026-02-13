@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -33,7 +33,7 @@ export const exportContratoCafe = async (formState) => {
   });
 
   const fechaCorta = `${String(fechaInput.getDate()).padStart(2, "0")}/${String(
-    fechaInput.getMonth() + 1
+    fechaInput.getMonth() + 1,
   ).padStart(2, "0")}/${fechaInput.getFullYear()}`;
 
   const scale = 1.1;
@@ -51,38 +51,38 @@ export const exportContratoCafe = async (formState) => {
   const cantidadLetras = numeroALetras(formState?.contratoTotalLps || 0);
 
   // Fondo centrado
-  const imgWidth = pageWidth * 0.9 * scale;
+  const imgWidth = pageWidth * 0.6 * scale;
   const imgHeight = pageHeight * 0.45 * scale;
   const imgX = (pageWidth - imgWidth) / 2;
   const imgY = pageHeight * 0.05;
   doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-  // Logo izquierda
-  doc.addImage(logo.src, "PNG", leftMargin, 20, logo.width, logo.height);
+  // // Logo izquierda
+  // doc.addImage(logo.src, "PNG", leftMargin, 20, logo.width, logo.height);
 
-  // Frijol derecha
-  const frijolY = 20;
-  doc.addImage(
-    frijolimg.src,
-    "PNG",
-    pageWidth - rightMargin - frijolimg.width,
-    frijolY,
-    frijolimg.width,
-    frijolimg.height
-  );
+  // // Frijol derecha
+  // const frijolY = 20;
+  // doc.addImage(
+  //   frijolimg.src,
+  //   "PNG",
+  //   pageWidth - rightMargin - frijolimg.width,
+  //   frijolY,
+  //   frijolimg.width,
+  //   frijolimg.height,
+  // );
 
   // === Encabezado central ===
   doc.setFont("times", "bold");
   doc.setFontSize(16 * scale);
-  doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50, { align: "center" });
+  doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 50, { align: "center" });
 
   doc.setFont("times", "normal");
   doc.setFontSize(10 * scale);
   doc.text("CONTRATO DE COMPRA-VENTA DE CAFÉ", pageWidth / 2, 70, {
     align: "center",
   });
-  doc.text("Propietario Enri Lagos", pageWidth / 2, 85, { align: "center" });
-  doc.text("Teléfono: (504) 3271-3188, (504) 9877-8789", pageWidth / 2, 100, {
+  doc.text("Propietario: Belagos", pageWidth / 2, 85, { align: "center" });
+  doc.text("Teléfono: 9964-9154", pageWidth / 2, 100, {
     align: "center",
   });
 
@@ -90,18 +90,18 @@ export const exportContratoCafe = async (formState) => {
   let startY = topMargin + 80;
   doc.setFont("times", "bold");
   doc.setFontSize(10 * scale);
-  doc.text("Cosecha 2025 - 2026", leftMargin, startY);
+  doc.text("Cosecha 2026 - 2027", leftMargin, startY);
 
   //Contrato No. pasa donde estaba Cosecha
-  const cosechaX = pageWidth - rightMargin - frijolimg.width;
-  const cosechaY = frijolY + frijolimg.height + 20;
+  // const cosechaX = pageWidth - rightMargin - frijolimg.width;
+  // const cosechaY = frijolY + frijolimg.height + 20;
   doc.setFont("times", "bold");
   doc.setFontSize(10 * scale);
   const labelContrato = "Contrato No:";
-  doc.text(labelContrato, cosechaX, cosechaY);
+  // doc.text(labelContrato, cosechaX, cosechaY);
   const wLabelContrato = doc.getTextWidth(labelContrato);
   doc.setTextColor(255, 0, 0);
-  doc.text(` ${contratoID}`, cosechaX + wLabelContrato, cosechaY);
+  // doc.text(` ${contratoID}`, cosechaX + wLabelContrato, cosechaY);
   doc.setTextColor(0, 0, 0);
   startY += 25;
   doc.setFont("times", "normal");
@@ -109,7 +109,7 @@ export const exportContratoCafe = async (formState) => {
     `En el departamento del El Paraíso, Honduras, se celebra el presente contrato de compra-venta de café entre:`,
     leftMargin,
     startY,
-    { maxWidth: pageWidth - leftMargin - rightMargin }
+    { maxWidth: pageWidth - leftMargin - rightMargin },
   );
 
   // Productor
@@ -125,10 +125,10 @@ export const exportContratoCafe = async (formState) => {
 
   startY += 18;
   doc.text(
-    `quien en lo sucesivo se denominará "EL PRODUCTOR", y el BENEFICIO CAFÉ HENOLA, en lo sucesivo denominado "EL COMPRADOR".`,
+    `quien en lo sucesivo se denominará "EL PRODUCTOR", y el BENEFICIO CAFÉ BELAGOS, en lo sucesivo denominado "EL COMPRADOR".`,
     leftMargin,
     startY,
-    { maxWidth: pageWidth - leftMargin - rightMargin }
+    { maxWidth: pageWidth - leftMargin - rightMargin },
   );
 
   //Tabla con contenido
@@ -227,21 +227,21 @@ export const exportContratoCafe = async (formState) => {
     leftX + firmaWidth / 2 - selloimg.width / 2,
     firmaY - selloimg.height - 5,
     selloimg.width,
-    selloimg.height
+    selloimg.height,
   );
 
   // Footer
   doc.setFontSize(8 * scale);
   doc.text(
-    "Beneficio Café Henola - El Paraíso, Honduras",
+    "Beneficio Café Belagos - El Paraíso, Honduras",
     pageWidth / 2,
     pageHeight - 30,
-    { align: "center" }
+    { align: "center" },
   );
 
   const nombreArchivo = `Contrato_${cliente.replace(
     /\s+/g,
-    "_"
+    "_",
   )}_${contratoID}.pdf`;
   // doc.save(nombreArchivo)
   const pdfBlob = doc.output("blob");
@@ -255,7 +255,7 @@ export const exportContratoCafe = async (formState) => {
     const newWindow = window.open(pdfURL, "_blank");
     if (!newWindow) {
       alert(
-        "Por favor permite las ventanas emergentes para poder ver el documento."
+        "Por favor permite las ventanas emergentes para poder ver el documento.",
       );
     }
   } else {

@@ -3,7 +3,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/frijoles.png";
+import fondoImg from "@/img/belagos.png";
 import cafe from "@/img/imagenfrijoles.png";
 import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
@@ -56,33 +56,33 @@ export const PDFComprobante = async ({
   const cantidadLetras = numeroALetras(total);
 
   const drawComprobante = (offsetY = 0) => {
-    const imgWidth = pageWidth * 0.9 * scale;
+    const imgWidth = pageWidth * 0.6 * scale;
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
     doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
-    doc.addImage(
-      logo.src,
-      "PNG",
-      leftMargin,
-      20 + offsetY,
-      logo.width,
-      logo.height
-    );
-    doc.addImage(
-      cafeimg.src,
-      "PNG",
-      pageWidth - rightMargin - cafeimg.width,
-      20 + offsetY,
-      cafeimg.width,
-      cafeimg.height
-    );
+    // doc.addImage(
+    //   logo.src,
+    //   "PNG",
+    //   leftMargin,
+    //   20 + offsetY,
+    //   logo.width,
+    //   logo.height,
+    // );
+    // doc.addImage(
+    //   cafeimg.src,
+    //   "PNG",
+    //   pageWidth - rightMargin - cafeimg.width,
+    //   20 + offsetY,
+    //   cafeimg.width,
+    //   cafeimg.height,
+    // );
 
     // === Encabezado central y datos de contacto ===
     doc.setFont("times", "bold");
     doc.setFontSize(16 * scale);
-    doc.text("BENEFICIO CAFÉ HENOLA", pageWidth / 2, 50 + offsetY, {
+    doc.text("BENEFICIO CAFÉ BELAGOS", pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -93,15 +93,12 @@ export const PDFComprobante = async ({
 
     // Propietario y contacto
     doc.setFontSize(12 * scale);
-    doc.text("Propietario Enri Lagos", pageWidth / 2, 85 + offsetY, {
+    doc.text("Propietario BeLago", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(
-      "Teléfono: (504) 3271-3188, (504) 9877-8789",
-      pageWidth / 2,
-      100 + offsetY,
-      { align: "center" }
-    );
+    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 100 + offsetY, {
+      align: "center",
+    });
 
     // Productor y comprobante en la misma línea
     let startY = topMargin + 80 + offsetY;
@@ -145,7 +142,7 @@ export const PDFComprobante = async ({
           content: safeText,
           styles: { textColor: [255, 0, 0] },
         };
-      })
+      }),
     );
 
     autoTable(doc, {
@@ -226,7 +223,7 @@ export const PDFComprobante = async ({
       leftMargin + firmaWidth / 2 - selloimg.width / 2,
       firmaY - selloimg.height - 5,
       selloimg.width,
-      selloimg.height
+      selloimg.height,
     );
   };
 

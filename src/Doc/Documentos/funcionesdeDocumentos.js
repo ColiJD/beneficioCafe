@@ -105,8 +105,11 @@ export function numeroALetras(num, unidad = "Lempiras") {
 
 /** Limpia texto de emojis y caracteres extraños */
 export function cleanText(text) {
-  if (!text) return "";
-  return text.replace(/[\p{Emoji_Presentation}\p{Emoji}\u200d]+/gu, "").trim();
+  if (text === null || text === undefined) return "";
+  const stringText = String(text);
+  return stringText
+    .replace(/[\p{Emoji_Presentation}\p{Emoji}\u200d]+/gu, "")
+    .trim();
 }
 
 /** Convierte una imagen a blanco y negro con opacidad */
