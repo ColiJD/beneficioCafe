@@ -281,6 +281,40 @@ export default function PrestamosGeneral() {
     }
   }, []);
 
+  const handleAnular = useCallback(
+    async (id, tipo, endpoint) => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "DELETE",
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || `No se pudo anular el ${tipo}`);
+        }
+
+        messageApiRef.current.success(
+          `${
+            tipo.includes("MOVIMIENTO")
+              ? "Movimiento"
+              : tipo === "PRESTAMO"
+                ? "Préstamo"
+                : "Anticipo"
+          } anulado correctamente`,
+        );
+
+        // 🔹 Recargar la tabla del cliente
+        if (clienteSeleccionado?.clienteID) {
+          await cargarPrestamos(clienteSeleccionado.clienteID);
+        }
+      } catch (err) {
+        console.error(err);
+        messageApiRef.current.error(err.message || `Error al anular ${tipo}`);
+      }
+    },
+    [clienteSeleccionado, cargarPrestamos],
+  );
+
   const columnas = useMemo(
     () => [
       {
@@ -601,40 +635,6 @@ export default function PrestamosGeneral() {
     // ✅ Tabla de anticipos no debe mostrar la columna de "prestamo"
     return columnas.filter((col) => col.dataIndex !== "prestamo");
   }, [columnas]);
-
-  const handleAnular = useCallback(
-    async (id, tipo, endpoint) => {
-      try {
-        const res = await fetch(endpoint, {
-          method: "DELETE",
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data?.error || `No se pudo anular el ${tipo}`);
-        }
-
-        messageApiRef.current.success(
-          `${
-            tipo.includes("MOVIMIENTO")
-              ? "Movimiento"
-              : tipo === "PRESTAMO"
-                ? "Préstamo"
-                : "Anticipo"
-          } anulado correctamente`,
-        );
-
-        // 🔹 Recargar la tabla del cliente
-        if (clienteSeleccionado?.clienteID) {
-          await cargarPrestamos(clienteSeleccionado.clienteID);
-        }
-      } catch (err) {
-        console.error(err);
-        messageApiRef.current.error(err.message || `Error al anular ${tipo}`);
-      }
-    },
-    [clienteSeleccionado, cargarPrestamos],
-  );
 
   const handleAgregarPrestamo = async (nuevoRegistro) => {
     try {
