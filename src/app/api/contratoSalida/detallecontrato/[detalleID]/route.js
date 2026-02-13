@@ -33,38 +33,34 @@ export async function DELETE(req, { params }) {
         data: { tipoMovimiento: "Anulado" },
       });
 
-      // 🔹 REVERSIÓN DE INVENTARIO (ANULACIÓN)
-      // Devolver la cantidad al inventario. Intentamos devolverlo al producto del contrato si existe, sino al primero.
-      // Como la deducción fue global, la devolución también es "flexible", pero preferimos mantener coherencia si posible.
-      const productoID = registro.contratoSalida.productoID || 0; // Necesitamos incluir esto en el findUnique inicial si no está
+      // 🔹 REVERSIÓN DE INVENTARIO (ANULACIÓN GLOBAL)
+      // Devolver la cantidad al inventario global del producto del contrato.
+      const productoID = registro.contratoSalida.contratoTipoCafe;
 
-      // Buscamos inventario preferente (mismo producto) o cualquiera
-      // Nota: Para hacerlo robusto, buscamos el primer inventario disponible.
-      const inventarioDestino = await tx.inventariocliente.findFirst({
-        orderBy: { inventarioClienteID: "asc" }, // Devolvemos al primero que encontremos (LIFO/FIFO no aplica tanto en devolución global simplificada)
+      // Buscamos o creamos el inventario global para este producto
+      const inventarioDestino = await tx.inventariocliente.upsert({
+        where: { productoID },
+        update: {
+          cantidadQQ: { increment: Number(registro.cantidadQQ) },
+        },
+        create: {
+          productoID,
+          cantidadQQ: Number(registro.cantidadQQ),
+          cantidadSacos: 0,
+        },
       });
 
-      if (inventarioDestino) {
-        // Devolvemos Cantidad
-        await tx.inventariocliente.update({
-          where: { inventarioClienteID: inventarioDestino.inventarioClienteID },
-          data: {
-            cantidadQQ: { increment: Number(registro.cantidadQQ) },
-          },
-        });
-
-        // Registrar Movimiento de Reversión
-        await tx.movimientoinventario.create({
-          data: {
-            inventarioClienteID: inventarioDestino.inventarioClienteID,
-            tipoMovimiento: "Entrada", // Reingreso
-            referenciaTipo: "Anulación Entrega Contrato",
-            referenciaID: registro.contratoID,
-            cantidadQQ: Number(registro.cantidadQQ),
-            nota: `Anulación de entrega #${detalleID}`,
-          },
-        });
-      }
+      // Registrar Movimiento de Reversión
+      await tx.movimientoinventario.create({
+        data: {
+          inventarioClienteID: inventarioDestino.inventarioClienteID,
+          tipoMovimiento: "Entrada", // Reingreso
+          referenciaTipo: "Anulación Entrega Contrato",
+          referenciaID: registro.contratoID,
+          cantidadQQ: Number(registro.cantidadQQ),
+          nota: `Anulación de entrega #${detalleID} (Producto: ${productoID})`,
+        },
+      });
 
       // 2️⃣ Verificar si el contrato debe volver a "Pendiente"
       const contratoID = registro.contratoID;
@@ -97,13 +93,13 @@ export async function DELETE(req, { params }) {
       JSON.stringify({
         message: "Entrega anulada correctamente y stock revertido.",
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error al anular registro:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el registro" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -147,7 +143,7 @@ export async function GET(req, context) {
     if (!detalle) {
       return NextResponse.json(
         { error: "Detalle no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -167,11 +163,11 @@ export async function GET(req, context) {
   } catch (error) {
     console.error(
       "Error en GET /api/contratoSalida/detallecontrato/[detalleID]:",
-      error
+      error,
     );
     return NextResponse.json(
       { error: "Error interno del servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -191,7 +187,7 @@ export async function PUT(request, { params }) {
     if (!detalleID) {
       return Response.json(
         { error: "ID de entrega inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -200,7 +196,7 @@ export async function PUT(request, { params }) {
     if (!contratoID || !cantidadQQ || observaciones === undefined) {
       return Response.json(
         { error: "Faltan datos obligatorios" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -211,7 +207,7 @@ export async function PUT(request, { params }) {
     if (!entregaOriginal) {
       return Response.json(
         { error: "No se encontró la entrega a modificar" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -222,7 +218,7 @@ export async function PUT(request, { params }) {
     if (!contrato) {
       return Response.json(
         { error: "No se encontró el contrato asociado" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -234,7 +230,7 @@ export async function PUT(request, { params }) {
         {
           error: "El contrato está ANULADO y no se pueden modificar entregas.",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -269,23 +265,25 @@ export async function PUT(request, { params }) {
     // 🔹 Nueva Validación: Verificar Si hay Inventario Físico suficiente para el INCREMENTO
     const cantidadAnterior = Number(entregaOriginal.cantidadQQ);
     const diferencia = truncarDosDecimalesSinRedondear(
-      cantidadNueva - cantidadAnterior
+      cantidadNueva - cantidadAnterior,
     );
 
     if (diferencia > 0) {
-      const stockActualResult = await prisma.inventariocliente.aggregate({
-        _sum: { cantidadQQ: true },
+      const stockActualResult = await prisma.inventariocliente.findUnique({
+        where: { productoID: contrato.contratoTipoCafe },
       });
-      const stockActual = Number(stockActualResult._sum.cantidadQQ || 0);
+      const stockActual = Number(stockActualResult?.cantidadQQ || 0);
 
       if (diferencia > stockActual) {
         return Response.json(
           {
-            error: `Inventario insuficiente para cubrir el incremento. Incremento: ${diferencia}, Stock Global: ${truncarDosDecimalesSinRedondear(
-              stockActual
+            error: `Inventario insuficiente para el producto #${
+              contrato.contratoTipoCafe
+            }. Incremento: ${diferencia}, Stock Actual: ${truncarDosDecimalesSinRedondear(
+              stockActual,
             )}`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -296,70 +294,31 @@ export async function PUT(request, { params }) {
       const diferencia = cantidadNueva - cantidadAnterior;
 
       if (diferencia !== 0) {
-        if (diferencia > 0) {
-          // 🔹 Aumentó la entrega -> Debemos descontar más inventario
-          const inventarios = await tx.inventariocliente.findMany({
-            orderBy: { inventarioClienteID: "asc" },
-          });
+        // Obtenemos o creamos el registro de inventario para este producto
+        const inventario = await tx.inventariocliente.upsert({
+          where: { productoID: contrato.contratoTipoCafe },
+          update: {
+            cantidadQQ: { decrement: diferencia }, // prisma maneja incremento negativo como decremento, pero usamos decrement por claridad
+          },
+          create: {
+            productoID: contrato.contratoTipoCafe,
+            cantidadQQ: -diferencia,
+            cantidadSacos: 0,
+          },
+        });
 
-          let restantePorDescontar = diferencia;
-
-          for (const inv of inventarios) {
-            if (restantePorDescontar <= 0) break;
-            const disp = Number(inv.cantidadQQ);
-            if (disp <= 0) continue;
-
-            const desc = Math.min(restantePorDescontar, disp);
-            await tx.inventariocliente.update({
-              where: { inventarioClienteID: inv.inventarioClienteID },
-              data: { cantidadQQ: { decrement: desc } },
-            });
-            await tx.movimientoinventario.create({
-              data: {
-                inventarioClienteID: inv.inventarioClienteID,
-                tipoMovimiento: "Salida",
-                referenciaTipo: "Edición Entrega Contrato (Inc)",
-                referenciaID: Number(contratoID),
-                cantidadQQ: desc,
-                nota: `Ajuste positivo por edición de entrega #${detalleID}`,
-              },
-            });
-            restantePorDescontar -= desc;
-          }
-
-          if (restantePorDescontar > 0.009) {
-            throw new Error(
-              `Inventario global insuficiente para cubrir el incremento.`
-            );
-          }
-        } else {
-          // 🔹 Disminuyó la entrega (diferencia negativa) -> Devolver inventario
-          const devolverQQ = Math.abs(diferencia);
-
-          // Devolvemos al primer inventario (simplificación global)
-          const inventarioDestino = await tx.inventariocliente.findFirst({
-            orderBy: { inventarioClienteID: "asc" },
-          });
-
-          if (inventarioDestino) {
-            await tx.inventariocliente.update({
-              where: {
-                inventarioClienteID: inventarioDestino.inventarioClienteID,
-              },
-              data: { cantidadQQ: { increment: devolverQQ } },
-            });
-            await tx.movimientoinventario.create({
-              data: {
-                inventarioClienteID: inventarioDestino.inventarioClienteID,
-                tipoMovimiento: "Entrada",
-                referenciaTipo: "Edición Entrega Contrato (Dec)",
-                referenciaID: Number(contratoID),
-                cantidadQQ: devolverQQ,
-                nota: `Ajuste negativo por edición de entrega #${detalleID}`,
-              },
-            });
-          }
-        }
+        await tx.movimientoinventario.create({
+          data: {
+            inventarioClienteID: inventario.inventarioClienteID,
+            tipoMovimiento: diferencia > 0 ? "Salida" : "Entrada",
+            referenciaTipo: `Edición Entrega Contrato (${
+              diferencia > 0 ? "Inc" : "Dec"
+            })`,
+            referenciaID: Number(contratoID),
+            cantidadQQ: Math.abs(diferencia),
+            nota: `Ajuste por edición de entrega #${detalleID} (Producto: ${contrato.contratoTipoCafe})`,
+          },
+        });
       }
 
       // a) Actualizar detalle
@@ -402,7 +361,7 @@ export async function PUT(request, { params }) {
     console.error("Error en PUT /api/contratos/entregar:", error);
     return Response.json(
       { error: error?.message || "Error al actualizar entrega" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

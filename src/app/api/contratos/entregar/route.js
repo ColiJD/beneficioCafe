@@ -31,7 +31,7 @@ export async function POST(request) {
     if (!contrato) {
       return Response.json(
         { error: "No se encontró el contrato" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request) {
         {
           error: "Este contrato está ANULADO y no permite registrar entregas.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,7 +69,7 @@ export async function POST(request) {
         {
           error: `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -111,20 +111,16 @@ export async function POST(request) {
         });
       }
 
-      // d) Actualizar inventario del cliente
+      // d) Actualizar inventario del cliente (Global)
       const inventarioCliente = await tx.inventariocliente.upsert({
         where: {
-          clienteID_productoID: {
-            clienteID: Number(clienteID),
-            productoID: Number(tipoCafe),
-          },
+          productoID: Number(tipoCafe),
         },
         update: {
           cantidadQQ: { increment: Number(cantidadQQ) },
           cantidadSacos: { increment: Number(totalSacos) },
         },
         create: {
-          clienteID: Number(clienteID),
           productoID: Number(tipoCafe),
           cantidadQQ: Number(cantidadQQ),
           cantidadSacos: Number(totalSacos),
@@ -147,15 +143,15 @@ export async function POST(request) {
       return {
         saldoAntesQQ: truncarDosDecimalesSinRedondear(saldoDisponible),
         cantidadEntregadaQQ: truncarDosDecimalesSinRedondear(
-          Number(cantidadQQ)
+          Number(cantidadQQ),
         ),
         saldoDespuesQQ: truncarDosDecimalesSinRedondear(
-          contratoCantidadQQ - nuevoTotalEntregado
+          contratoCantidadQQ - nuevoTotalEntregado,
         ),
         estadoContrato,
         detalleEntregaID: detalleEntrega.detalleID,
         saldoDespuesLps: truncarDosDecimalesSinRedondear(
-          (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ)
+          (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ),
         ),
       };
     });
@@ -165,13 +161,13 @@ export async function POST(request) {
         message: "Entrega de contrato registrada correctamente",
         ...resultado,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error en POST /api/contratos/entregar:", error);
     return Response.json(
       { error: error?.message || "Error interno" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

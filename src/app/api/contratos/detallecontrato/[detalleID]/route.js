@@ -34,7 +34,7 @@ export async function DELETE(req, { params }) {
     if (!movimiento) {
       return new Response(
         JSON.stringify({ error: "Movimiento de inventario no encontrado" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -47,7 +47,7 @@ export async function DELETE(req, { params }) {
         JSON.stringify({
           error: "El movimiento ya fue anulado)",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -89,13 +89,13 @@ export async function DELETE(req, { params }) {
       JSON.stringify({
         message: `${esEntrada ? "Entrega" : "Contrato"} anulada correctamente`,
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error al anular registro:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el registro" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -140,7 +140,7 @@ export async function GET(req, context) {
     if (!detalle) {
       return NextResponse.json(
         { error: "Detalle no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -163,11 +163,11 @@ export async function GET(req, context) {
   } catch (error) {
     console.error(
       "Error en GET /api/contratos/detallecontrato/[detalleID]:",
-      error
+      error,
     );
     return NextResponse.json(
       { error: "Error interno del servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -186,7 +186,7 @@ export async function PUT(request, { params }) {
     if (!detalleID) {
       return Response.json(
         { error: "ID de entrega inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -201,7 +201,7 @@ export async function PUT(request, { params }) {
     if (!contratoID || !cantidadQQ || observaciones === undefined) {
       return Response.json(
         { error: "Faltan datos obligatorios" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -212,7 +212,7 @@ export async function PUT(request, { params }) {
     if (!entregaOriginal) {
       return Response.json(
         { error: "No se encontró la entrega a modificar" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -223,7 +223,7 @@ export async function PUT(request, { params }) {
     if (!contrato) {
       return Response.json(
         { error: "No se encontró el contrato asociado" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const clienteID = contrato.contratoclienteID;
@@ -237,7 +237,7 @@ export async function PUT(request, { params }) {
         {
           error: "El contrato está ANULADO y no se pueden modificar entregas.",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -260,7 +260,7 @@ export async function PUT(request, { params }) {
         {
           error: `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoDisponible}).`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -276,20 +276,17 @@ export async function PUT(request, { params }) {
         },
       });
 
-      // b) Ajustar inventario
+      // b) Ajustar inventario (Global)
       const diferenciaQQ = cantidadNueva - Number(entregaOriginal.cantidadQQ);
       const inventarioCliente = await tx.inventariocliente.upsert({
         where: {
-          clienteID_productoID: {
-            clienteID: Number(clienteID),
-            productoID: Number(tipoCafe),
-          },
+          productoID: Number(tipoCafe),
         },
         update: { cantidadQQ: { increment: diferenciaQQ } },
         create: {
-          clienteID: Number(clienteID),
           productoID: Number(tipoCafe),
           cantidadQQ: cantidadNueva,
+          cantidadSacos: 0,
         },
       });
 
@@ -329,7 +326,7 @@ export async function PUT(request, { params }) {
     console.error("Error en PUT /api/contratos/entregar:", error);
     return Response.json(
       { error: error?.message || "Error al actualizar entrega" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

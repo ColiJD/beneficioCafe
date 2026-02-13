@@ -31,7 +31,7 @@ export async function POST(request) {
     if (!contrato) {
       return Response.json(
         { error: "No se encontró el contrato" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request) {
         {
           error: "Este contrato está ANULADO y no permite registrar entregas.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,61 +69,47 @@ export async function POST(request) {
         {
           error: `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // 3️⃣ Ejecutar transacción completa
     const resultado = await prisma.$transaction(async (tx) => {
-      // 🔹 Deducción de Inventario (Global)
-      // Se descuenta de cualquier inventario disponible hasta cubrir la cantidad
-      const inventarios = await tx.inventariocliente.findMany({
-        orderBy: { inventarioClienteID: "asc" },
+      // 🔹 Deducción de Inventario (Global por Producto)
+      // Buscamos el registro de inventario específico para el tipo de café del contrato
+      const inventario = await tx.inventariocliente.findUnique({
+        where: { productoID: Number(contrato.contratoTipoCafe || tipoCafe) },
       });
 
-      let restanteQQ = Number(cantidadQQ);
-      let totalDescontado = 0;
-
-      for (const inv of inventarios) {
-        if (restanteQQ <= 0) break;
-
-        const cantidadDisponible = Number(inv.cantidadQQ);
-        if (cantidadDisponible <= 0) continue;
-
-        const descontarQQ = Math.min(restanteQQ, cantidadDisponible);
-
-        // Actualizar inventario
-        await tx.inventariocliente.update({
-          where: { inventarioClienteID: inv.inventarioClienteID },
-          data: {
-            cantidadQQ: { decrement: descontarQQ },
-          },
-        });
-
-        // Registrar movimiento
-        await tx.movimientoinventario.create({
-          data: {
-            inventarioClienteID: inv.inventarioClienteID,
-            tipoMovimiento: "Salida", // Salida física
-            referenciaTipo: "Entrega Contrato Salida",
-            referenciaID: Number(contratoID), // Enlazamos al Contrato
-            cantidadQQ: descontarQQ,
-            nota: `Entrega de contrato #${contratoID} (Producto del contrato: ${tipoCafe})`,
-          },
-        });
-
-        restanteQQ -= descontarQQ;
-        totalDescontado += descontarQQ;
-      }
-
-      if (restanteQQ > 0.009) {
-        // Margen por decimales
+      if (!inventario || Number(inventario.cantidadQQ) < Number(cantidadQQ)) {
         throw new Error(
-          `Inventario global insuficiente. Faltan ${restanteQQ.toFixed(
-            2
-          )} QQ para cubrir la entrega.`
+          `Inventario insuficiente para el producto #${
+            contrato.contratoTipoCafe || tipoCafe
+          }. Disponible: ${Number(inventario?.cantidadQQ || 0)} QQ.`,
         );
       }
+
+      // Actualizar inventario directamente
+      await tx.inventariocliente.update({
+        where: { inventarioClienteID: inventario.inventarioClienteID },
+        data: {
+          cantidadQQ: { decrement: Number(cantidadQQ) },
+        },
+      });
+
+      // Registrar movimiento de inventario
+      await tx.movimientoinventario.create({
+        data: {
+          inventarioClienteID: inventario.inventarioClienteID,
+          tipoMovimiento: "Salida", // Salida física
+          referenciaTipo: "Entrega Contrato Salida",
+          referenciaID: Number(contratoID), // Enlazamos al Contrato
+          cantidadQQ: Number(cantidadQQ),
+          nota: `Entrega de contrato #${contratoID} (Producto: ${
+            contrato.contratoTipoCafe || tipoCafe
+          })`,
+        },
+      });
 
       // a) Crear detalle de entrega
       const detalleEntrega = await tx.detalleContratoSalida.create({
@@ -153,15 +139,15 @@ export async function POST(request) {
       return {
         saldoAntesQQ: truncarDosDecimalesSinRedondear(saldoDisponible),
         cantidadEntregadaQQ: truncarDosDecimalesSinRedondear(
-          Number(cantidadQQ)
+          Number(cantidadQQ),
         ),
         saldoDespuesQQ: truncarDosDecimalesSinRedondear(
-          contratoCantidadQQ - nuevoTotalEntregado
+          contratoCantidadQQ - nuevoTotalEntregado,
         ),
         estadoContrato,
         detalleEntregaID: detalleEntrega.detalleID,
         saldoDespuesLps: truncarDosDecimalesSinRedondear(
-          (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ)
+          (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ),
         ),
       };
     });
@@ -171,13 +157,13 @@ export async function POST(request) {
         message: "Entrega de contrato registrada correctamente",
         ...resultado,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error en POST /api/contratos/entregar:", error);
     return Response.json(
       { error: error?.message || "Error interno" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
