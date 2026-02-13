@@ -7,21 +7,10 @@ import { useEffect, useState } from "react";
 
 export default function ProtectedPage({ allowedRoles = [], children }) {
   const { data: session, status } = useSession();
-  const [currentSession, setCurrentSession] = useState(session);
   const router = useRouter();
 
-  // 🔹 Mantener sesión actualizada
-  useEffect(() => {
-    const checkSession = async () => {
-      const updated = await getSession();
-      setCurrentSession(updated);
-    };
-
-    checkSession(); // se ejecuta al montar y cuando cambia status
-  }, [status]);
-
   // 🔹 Mientras carga la sesión
-  if (status === "loading" || !currentSession) {
+  if (status === "loading") {
     return (
       <Spin tip="Cargando..." size="large">
         <div
@@ -37,7 +26,7 @@ export default function ProtectedPage({ allowedRoles = [], children }) {
   }
 
   // 🔹 Si no hay sesión
-  if (!currentSession) {
+  if (!session) {
     return (
       <Result
         status="403"
@@ -52,15 +41,12 @@ export default function ProtectedPage({ allowedRoles = [], children }) {
   }
 
   // 🔹 Si el rol no está permitido
-  if (
-    allowedRoles.length > 0 &&
-    !allowedRoles.includes(currentSession.user.role)
-  ) {
+  if (allowedRoles.length > 0 && !allowedRoles.includes(session.user?.role)) {
     return (
       <Result
         status="403"
         title="No autorizado"
-        subTitle="No tienes permiso para ver esta página"
+        subTitle={`Tu rol actual es: ${session.user?.role || "Sin rol"}. No tienes permiso para ver esta página.`}
       />
     );
   }
