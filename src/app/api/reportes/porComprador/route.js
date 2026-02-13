@@ -30,41 +30,85 @@ export async function GET(req) {
       ? new Date(new Date(fechaFin).setHours(23, 59, 59, 999))
       : new Date();
 
-    /** -------- COMPRAS (marcadas como Salida) -------- */
-    // Segun reporteSalidas, existen compras con movimiento "Salida" vinculadas a compradorID
-
-    // Initialize result containers
-    let detallesSalidas = [];
-    let totalsSalidas = { totalQQ: 0, totalLps: 0, promedioPrecio: 0 };
-    let detallesComprasSalida = [];
-    let totalsCompras = { totalQQ: 0, totalLps: 0, promedioPrecio: 0 };
-    let detallesContratos = [];
-    let totalsContratos = { totalQQ: 0, totalLps: 0, promedioPrecio: 0 };
-
-    /** -------- CONFIRMACION DE VENTA (salida) -------- */
-    try {
-      const salidas = await prisma.salida.findMany({
+    // 🔹 Ejecución en paralelo de todas las consultas
+    const [salidas, comprasSalida, contratos] = await Promise.all([
+      // 1. ConfirmacionVenta (Salidas)
+      prisma.salida.findMany({
         where: {
           compradorID: Number(compradorID),
           salidaFecha: { gte: startDate, lte: endDate },
-          NOT: { salidaMovimiento: "Anulado" },
+          salidaMovimiento: { not: "Anulado" },
         },
         include: {
-          detalleliqsalida: true, // Traemos las liquidaciones
+          detalleliqsalida: {
+            where: { movimiento: { not: "Anulado" } },
+          },
           producto: { select: { productName: true } },
         },
         orderBy: { salidaFecha: "asc" },
-      });
+      }),
 
+      // 2. Compras (Tipo movimiento "Salida")
+      prisma.compra.findMany({
+        where: {
+          compradorID: Number(compradorID),
+          compraMovimiento: "Salida",
+          compraFecha: { gte: startDate, lte: endDate },
+          // NOT: { tipoMovimiento: "Anulado" }, // ELIMINADO - NO EXISTE EL CAMPO
+        },
+        select: {
+          compraId: true,
+          compraFecha: true,
+          compraCantidadQQ: true,
+          compraPrecioQQ: true,
+          producto: { select: { productName: true } },
+        },
+        orderBy: { compraFecha: "asc" },
+      }),
+
+      // 3. Contratos de Salida
+      prisma.contratoSalida.findMany({
+        where: {
+          compradorID: Number(compradorID),
+          contratoMovimiento: "Salida",
+          contratoFecha: { gte: startDate, lte: endDate },
+          estado: { not: "Anulado" },
+        },
+        select: {
+          contratoID: true,
+          contratoFecha: true,
+          contratoCantidadQQ: true,
+          contratoPrecio: true,
+          contratoDescripcion: true,
+          detalleContratoSalida: {
+            where: { tipoMovimiento: { not: "Anulado" } },
+            select: {
+              detalleID: true,
+              fecha: true,
+              cantidadQQ: true,
+              precioQQ: true,
+              tipoMovimiento: true,
+            },
+          },
+        },
+        orderBy: { contratoFecha: "asc" },
+      }),
+    ]);
+
+    /** -------- PROCESAMIENTO CONFIRMACION DE VENTA (SALIDAS) -------- */
+    let detallesSalidas = [];
+    let totalsSalidas = { totalQQ: 0, totalLps: 0, promedioPrecio: 0 };
+
+    try {
       detallesSalidas = salidas.map((s) => {
         const cantidadQQ = Number(s.salidaCantidadQQ) || 0;
         const precioQQ = Number(s.salidaPrecio) || 0;
         const producto = s.producto?.productName || "Desconocido";
 
-        // Filtrar liquidaciones anuladas
-        const totalQQEntregado = s.detalleliqsalida
-          .filter((d) => d.movimiento !== "Anulado")
-          .reduce((sum, d) => sum + Number(d.cantidadQQ || 0), 0);
+        const totalQQEntregado = s.detalleliqsalida.reduce(
+          (sum, d) => sum + Number(d.cantidadQQ || 0),
+          0,
+        );
 
         const totalQQPorLiquidar = cantidadQQ - totalQQEntregado;
 
@@ -82,9 +126,8 @@ export async function GET(req) {
         };
       });
 
-      // Totales generales
       const totalQQSalidas = detallesSalidas.reduce(
-        (sum, s) => sum + s.cantidadQQ, // SUMA DE INICIALES
+        (sum, s) => sum + s.cantidadQQ,
         0,
       );
       const totalLpsSalidas = detallesSalidas.reduce(
@@ -100,41 +143,26 @@ export async function GET(req) {
         promedioPrecio: promedioPrecioSalidas,
       };
     } catch (error) {
-      console.error("Error fetching ConfirmacionVenta:", error);
+      console.error("Error processing Salidas:", error);
     }
 
-    /** -------- COMPRAS (Venta) -------- */
-    try {
-      const comprasSalida = await prisma.compra.findMany({
-        where: {
-          compradorID: Number(compradorID),
-          compraMovimiento: "Salida",
-          compraFecha: { gte: startDate, lte: endDate },
-        },
-        select: {
-          compraId: true,
-          compraFecha: true,
-          compraCantidadQQ: true,
-          compraPrecioQQ: true,
-          producto: { select: { productName: true } },
-        },
-        orderBy: { compraFecha: "asc" },
-      });
+    /** -------- PROCESAMIENTO COMPRAS (VENTA) -------- */
+    let detallesComprasSalida = [];
+    let totalsCompras = { totalQQ: 0, totalLps: 0, promedioPrecio: 0 };
 
-      detallesComprasSalida = comprasSalida
-        .filter((c) => c.tipoMovimiento !== "Anulado")
-        .map((c) => {
-          const cantidadQQ = Number(c.compraCantidadQQ) || 0;
-          const precioQQ = Number(c.compraPrecioQQ) || 0;
-          return {
-            fecha: c.compraFecha,
-            producto: c.producto?.productName,
-            cantidadQQ,
-            precioQQ,
-            totalLps: cantidadQQ * precioQQ,
-            compraId: c.compraId,
-          };
-        });
+    try {
+      detallesComprasSalida = comprasSalida.map((c) => {
+        const cantidadQQ = Number(c.compraCantidadQQ) || 0;
+        const precioQQ = Number(c.compraPrecioQQ) || 0;
+        return {
+          fecha: c.compraFecha,
+          producto: c.producto?.productName,
+          cantidadQQ,
+          precioQQ,
+          totalLps: cantidadQQ * precioQQ,
+          compraId: c.compraId,
+        };
+      });
 
       const totalQQCompras = detallesComprasSalida.reduce(
         (sum, c) => sum + c.cantidadQQ,
@@ -145,66 +173,35 @@ export async function GET(req) {
         0,
       );
       const promedioPrecioCompras =
-        totalQQCompras > 0
-          ? detallesComprasSalida.reduce(
-              (sum, c) => sum + c.precioQQ * c.cantidadQQ,
-              0,
-            ) / totalQQCompras
-          : 0;
+        totalQQCompras > 0 ? totalLpsCompras / totalQQCompras : 0;
       totalsCompras = {
         totalQQ: totalQQCompras,
         totalLps: totalLpsCompras,
         promedioPrecio: promedioPrecioCompras,
       };
     } catch (error) {
-      console.error("Error fetching Ventas:", error);
+      console.error("Error processing Compras:", error);
     }
 
-    /** -------- CONTRATOS DE SALIDA -------- */
+    /** -------- PROCESAMIENTO CONTRATOS -------- */
+    let detallesContratos = [];
+    let totalsContratos = { totalQQ: 0, totalLps: 0, promedioPrecio: 0 };
+
     try {
-      const contratos = await prisma.contratoSalida.findMany({
-        where: {
-          compradorID: Number(compradorID),
-          contratoMovimiento: "Salida",
-          contratoFecha: { gte: startDate, lte: endDate },
-          NOT: { estado: "Anulado" }, // si usas estado para eliminar
-        },
-        select: {
-          contratoID: true,
-          contratoFecha: true,
-          contratoCantidadQQ: true,
-          contratoPrecio: true,
-          contratoDescripcion: true,
-          detalleContratoSalida: {
-            select: {
-              detalleID: true,
-              fecha: true,
-              cantidadQQ: true,
-              precioQQ: true,
-              tipoMovimiento: true,
-            },
-          },
-        },
-        orderBy: { contratoFecha: "asc" },
-      });
-
       detallesContratos = contratos.map((c) => {
-        // Filtrar detalles anulados si aplica
-        const detalles = c.detalleContratoSalida
-          .filter((d) => d.tipoMovimiento !== "Anulado")
-          .map((d) => {
-            const cantidadQQ = Number(d.cantidadQQ) || 0;
-            const precioQQ = Number(d.precioQQ) || 0;
+        const detalles = c.detalleContratoSalida.map((d) => {
+          const cantidadQQ = Number(d.cantidadQQ) || 0;
+          const precioQQ = Number(d.precioQQ) || 0;
 
-            return {
-              id: d.detalleID,
-              fecha: d.fecha,
-              producto: c.contratoDescripcion,
-              cantidadQQ,
-              precioQQ,
-              totalLps: cantidadQQ * precioQQ,
-            };
-          });
+          return {
+            id: d.detalleID,
+            fecha: d.fecha,
+            producto: c.contratoDescripcion,
+            cantidadQQ,
+            precioQQ,
+            totalLps: cantidadQQ * precioQQ,
+          };
+        });
 
         const totalQQEntregado = detalles.reduce(
           (sum, d) => sum + d.cantidadQQ,
@@ -248,7 +245,7 @@ export async function GET(req) {
           totalQQContratos > 0 ? totalLpsContratos / totalQQContratos : 0,
       };
     } catch (error) {
-      console.error("Error fetching Contratos:", error);
+      console.error("Error processing Contratos:", error);
     }
 
     const filaConfirmacionVenta = {

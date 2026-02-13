@@ -107,6 +107,7 @@ model compra {
   @@index([clienteID], map: "clienteID")
   @@index([compraTipoCafe], map: "compraTipoCafe")
   @@index([compradorID], map: "compradorID")
+  @@index([clienteID, compraMovimiento, compraFecha])
 }
 
 model contrato {
@@ -129,6 +130,7 @@ model contrato {
   detallecontrato     detallecontrato[]
 
   @@index([contratoTipoCafe], map: "contratoTipoCafe")
+  @@index([contratoclienteID, contratoMovimiento])
   @@index([contratoclienteID], map: "contratoclienteID")
 }
 
@@ -153,6 +155,7 @@ model deposito {
   @@index([clienteID], map: "clienteID")
   @@index([depositoTipoCafe], map: "depositoTipoCafe")
   @@index([contratoID], map: "contratoID")
+  @@index([clienteID, depositoMovimiento, depositoFecha])
 }
 
 model detallecontrato {
@@ -212,6 +215,7 @@ model liqdeposito {
 
   @@index([liqTipoCafe], map: "liqTipoCafe")
   @@index([liqclienteID], map: "liqclienteID")
+  @@index([liqclienteID, liqMovimiento, liqFecha])
 }
 
 model movimientoinventario {
@@ -257,6 +261,7 @@ model movimientos_prestamo {
   prestamos       prestamos? @relation(fields: [prestamo_id], references: [prestamoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_prestamo_ibfk_1")
 
   @@index([prestamo_id], map: "prestamo_id")
+  @@index([prestamo_id, fecha, tipo_movimiento])
 }
 
 model prestamos {
@@ -272,6 +277,7 @@ model prestamos {
   cliente              cliente?               @relation(fields: [clienteId], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_ibfk_1")
 
   @@index([clienteId], map: "clienteId")
+  @@index([clienteId, estado])
 }
 
 model anticipo {
@@ -287,6 +293,7 @@ model anticipo {
   movimientos_anticipos movimientos_anticipos[]
 
   @@index([clienteId], map: "clienteId")
+  @@index([clienteId, estado])
 }
 
 model movimientos_anticipos {
@@ -301,6 +308,7 @@ model movimientos_anticipos {
   anticipo        anticipo? @relation(fields: [anticipoId], references: [anticipoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_anticipos_ibfk_1")
 
   @@index([anticipoId], map: "anticipoId")
+  @@index([anticipoId, fecha, tipo_movimiento])
 }
 
 model detalleliqsalida {
@@ -330,6 +338,7 @@ model liqsalida {
 
   @@index([compradorID], map: "compradorID")
   @@index([productoID], map: "liqsalida_productoID")
+  @@index([compradorID, liqMovimiento, liqFecha])
 }
 
 model salida {
@@ -347,6 +356,7 @@ model salida {
 
   @@index([compradorID], map: "compradorID")
   @@index([productoID], map: "salida_productoID")
+  @@index([compradorID, salidaMovimiento, salidaFecha])
 }
 
 model caja_chica {
@@ -394,4 +404,5 @@ model detalleContratoSalida {
   contratoSalida contratoSalida @relation(fields: [contratoID], references: [contratoID], onDelete: NoAction, onUpdate: NoAction, map: "detalleContratoSalida_ibfk_1")
 
   @@index([contratoID], map: "detalleContratoSalidaContratoID")
+  @@index([tipoMovimiento, fecha])
 }
