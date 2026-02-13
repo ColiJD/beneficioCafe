@@ -1,7 +1,9 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
-export async function POST(request,req) {
-  const sessionOrResponse = await checkRole(req, [
+import { NextResponse } from "next/server";
+
+export async function POST(request) {
+  const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
     "OPERARIOS",
@@ -27,9 +29,9 @@ export async function POST(request,req) {
       !depositoCantidadQQ ||
       !depositoTotalSacos
     ) {
-      return new Response(
-        JSON.stringify({ error: "Faltan datos obligatorios" }),
-        { status: 400 }
+      return NextResponse.json(
+        { error: "Faltan datos obligatorios" },
+        { status: 400 },
       );
     }
 
@@ -40,26 +42,26 @@ export async function POST(request,req) {
       : 0;
 
     if (isNaN(cantidadQQ) || cantidadQQ <= 0) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "La cantidad en QQ debe ser un número mayor que cero",
-        }),
-        { status: 400 }
+        },
+        { status: 400 },
       );
     }
 
     if (cantidadSacos < 0 || isNaN(cantidadSacos)) {
-      return new Response(
-        JSON.stringify({ error: "La cantidad de sacos no puede ser negativa" }),
-        { status: 400 }
+      return NextResponse.json(
+        { error: "La cantidad de sacos no puede ser negativa" },
+        { status: 400 },
       );
     }
 
     // 🔹 Validar strings
     if (typeof depositoEn !== "string" || depositoEn.trim() === "") {
-      return new Response(
-        JSON.stringify({ error: "El campo 'depositoEn' es obligatorio" }),
-        { status: 400 }
+      return NextResponse.json(
+        { error: "El campo 'depositoEn' es obligatorio" },
+        { status: 400 },
       );
     }
 
@@ -81,20 +83,16 @@ export async function POST(request,req) {
       },
     });
 
-    // 🔹 Actualizar inventario del cliente
-    const inventarioCliente = await prisma.inventariocliente.upsert({
+    // 🔹 Actualizar inventario global por producto
+    const inventarioGlobal = await prisma.inventariocliente.upsert({
       where: {
-        clienteID_productoID: {
-          clienteID: Number(clienteID),
-          productoID: Number(depositoTipoCafe),
-        },
+        productoID: Number(depositoTipoCafe),
       },
       update: {
         cantidadQQ: { increment: cantidadQQ },
         cantidadSacos: { increment: cantidadSacos },
       },
       create: {
-        clienteID: Number(clienteID),
         productoID: Number(depositoTipoCafe),
         cantidadQQ: cantidadQQ,
         cantidadSacos: cantidadSacos,
@@ -104,7 +102,7 @@ export async function POST(request,req) {
     // ✅ Registrar movimiento usando inventarioClienteID
     await prisma.movimientoinventario.create({
       data: {
-        inventarioClienteID: inventarioCliente.inventarioClienteID,
+        inventarioClienteID: inventarioGlobal.inventarioClienteID,
         tipoMovimiento: "Entrada",
         referenciaTipo: `Deposito #${nuevoDeposito.depositoID}`,
         referenciaID: nuevoDeposito.depositoID,
@@ -114,18 +112,20 @@ export async function POST(request,req) {
       },
     });
 
-    return new Response(JSON.stringify(nuevoDeposito), { status: 201 });
+    return NextResponse.json(nuevoDeposito, { status: 201 });
   } catch (error) {
     console.error("Error al registrar depósito:", error);
-    return new Response(
-      JSON.stringify({ error: "Error al registrar depósito" }),
-      { status: 500 }
+    return NextResponse.json(
+      { error: "Error al registrar depósito" },
+      {
+        status: 500,
+      },
     );
   }
 }
 
-export async function GET(req) {
-  const sessionOrResponse = await checkRole(req, [
+export async function GET(request) {
+  const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
     "OPERARIOS",
@@ -138,11 +138,14 @@ export async function GET(req) {
       SELECT * FROM vw_SaldoDepositos
     `);
 
-    return new Response(JSON.stringify(depositos), { status: 200 });
+    return NextResponse.json(depositos, { status: 200 });
   } catch (error) {
     console.error("Error al obtener vista vw_SaldoDepositos:", error);
-    return new Response(JSON.stringify({ error: "Error interno" }), {
-      status: 500,
-    });
+    return NextResponse.json(
+      { error: "Error interno" },
+      {
+        status: 500,
+      },
+    );
   }
 }

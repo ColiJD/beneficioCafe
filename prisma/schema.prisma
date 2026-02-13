@@ -67,16 +67,16 @@ model cierrecontrato {
 }
 
 model cliente {
-  clienteID          Int                 @id @default(autoincrement())
-  clienteCedula      String?             @unique(map: "clienteCedula") @db.VarChar(15)
-  clienteNombre      String?             @db.VarChar(20)
-  clienteApellido    String?             @db.VarChar(20)
-  clienteDirecion    String?             @db.VarChar(200)
-  clienteMunicipio   String?             @db.VarChar(30)
-  clienteDepartament String?             @db.VarChar(30)
-  claveIHCAFE        String?             @db.VarChar(30)
-  clienteTelefono    String?             @db.VarChar(30)
-  clienteRTN         String?             @db.VarChar(17)
+  clienteID          Int           @id @default(autoincrement())
+  clienteCedula      String?       @unique(map: "clienteCedula") @db.VarChar(15)
+  clienteNombre      String?       @db.VarChar(20)
+  clienteApellido    String?       @db.VarChar(20)
+  clienteDirecion    String?       @db.VarChar(200)
+  clienteMunicipio   String?       @db.VarChar(30)
+  clienteDepartament String?       @db.VarChar(30)
+  claveIHCAFE        String?       @db.VarChar(30)
+  clienteTelefono    String?       @db.VarChar(30)
+  clienteRTN         String?       @db.VarChar(17)
   anticipo           anticipo[]
   compra             compra[]
   contrato           contrato[]
@@ -230,16 +230,16 @@ model movimientoinventario {
 }
 
 model producto {
-  productID         Int                 @id @default(autoincrement())
-  productName       String              @unique(map: "productName") @db.VarChar(50)
-  tara              Decimal?            @default(0.00) @db.Decimal(5, 2)
-  descuento         Decimal?            @default(0.00) @db.Decimal(5, 2)
-  factorOro         Decimal?            @default(1.00) @db.Decimal(10, 2)
+  productID         Int                @id @default(autoincrement())
+  productName       String             @unique(map: "productName") @db.VarChar(50)
+  tara              Decimal?           @default(0.00) @db.Decimal(5, 2)
+  descuento         Decimal?           @default(0.00) @db.Decimal(5, 2)
+  factorOro         Decimal?           @default(1.00) @db.Decimal(10, 2)
   compra            compra[]
   contrato          contrato[]
   contratoSalida    contratoSalida[]
   deposito          deposito[]
-  inventariocliente inventariocliente[]
+  inventariocliente inventariocliente?
   liqdeposito       liqdeposito[]
 }
 
