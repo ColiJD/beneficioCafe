@@ -17,7 +17,7 @@ export async function POST(req) {
     if (!clienteID || !tipo_movimiento || monto == null || isNaN(monto)) {
       return NextResponse.json(
         { error: "Datos incompletos o monto inválido." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -65,15 +65,15 @@ export async function POST(req) {
       if (tipo_movimiento === "ABONO_ANTICIPO") {
         const totalDeudaCapital = anticiposPendientes.reduce(
           (sum, a) => roundToTwo(sum + a.deudaCapital),
-          0
+          0,
         );
         if (montoIngresado > totalDeudaCapital) {
           throw new Error(
             `El abono (L. ${montoIngresado.toFixed(
-              2
+              2,
             )}) excede la deuda de capital pendiente (L. ${totalDeudaCapital.toFixed(
-              2
-            )}).`
+              2,
+            )}).`,
           );
         }
 
@@ -95,6 +95,42 @@ export async function POST(req) {
             },
           });
 
+          // Recalcular estado del anticipo
+          const movimientosActualizados =
+            await tx.movimientos_anticipos.findMany({
+              where: { anticipoId: a.anticipo.anticipoId },
+            });
+
+          const totalAbonado = movimientosActualizados
+            .filter((m) => ["ABONO_ANTICIPO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          const totalPagadoInteres = movimientosActualizados
+            .filter((m) => ["INTERES_ANTICIPO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          const totalCargoInteres = movimientosActualizados
+            .filter((m) => ["CARGO_ANTICIPO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          const saldoTotal = roundToTwo(
+            Number(a.anticipo.monto) +
+              totalCargoInteres -
+              (totalAbonado + totalPagadoInteres),
+          );
+
+          if (saldoTotal <= 0) {
+            await tx.anticipo.update({
+              where: { anticipoId: a.anticipo.anticipoId },
+              data: { estado: "COMPLETADO" }, // O "PAGADO", pero usaré "COMPLETADO" por consistencia
+            });
+          } else if (a.anticipo.estado === "COMPLETADO") {
+            await tx.anticipo.update({
+              where: { anticipoId: a.anticipo.anticipoId },
+              data: { estado: "ACTIVO" },
+            });
+          }
+
           restante = roundToTwo(restante - aplicar);
         }
       }
@@ -103,7 +139,7 @@ export async function POST(req) {
       if (tipo_movimiento === "INTERES_ANTICIPO") {
         const totalIntereses = anticiposPendientes.reduce(
           (sum, a) => roundToTwo(sum + a.interesPendiente),
-          0
+          0,
         );
 
         if (totalIntereses <= 0) {
@@ -113,10 +149,10 @@ export async function POST(req) {
         if (montoIngresado > totalIntereses) {
           throw new Error(
             `El pago de intereses (L. ${montoIngresado.toFixed(
-              2
+              2,
             )}) excede los intereses pendientes (L. ${totalIntereses.toFixed(
-              2
-            )}).`
+              2,
+            )}).`,
           );
         }
 
@@ -137,6 +173,42 @@ export async function POST(req) {
               descripcion: observacion || tipo_movimiento,
             },
           });
+
+          // Recalcular estado del anticipo tras pago de interés
+          const movimientosActualizados =
+            await tx.movimientos_anticipos.findMany({
+              where: { anticipoId: a.anticipo.anticipoId },
+            });
+
+          const totalAbonado = movimientosActualizados
+            .filter((m) => ["ABONO_ANTICIPO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          const totalPagadoInteres = movimientosActualizados
+            .filter((m) => ["INTERES_ANTICIPO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          const totalCargoInteres = movimientosActualizados
+            .filter((m) => ["CARGO_ANTICIPO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+          const saldoTotal = roundToTwo(
+            Number(a.anticipo.monto) +
+              totalCargoInteres -
+              (totalAbonado + totalPagadoInteres),
+          );
+
+          if (saldoTotal <= 0) {
+            await tx.anticipo.update({
+              where: { anticipoId: a.anticipo.anticipoId },
+              data: { estado: "COMPLETADO" },
+            });
+          } else if (a.anticipo.estado === "COMPLETADO") {
+            await tx.anticipo.update({
+              where: { anticipoId: a.anticipo.anticipoId },
+              data: { estado: "ACTIVO" },
+            });
+          }
 
           restante = roundToTwo(restante - aplicar);
         }
@@ -173,10 +245,10 @@ export async function POST(req) {
             const totalPagosInteresRounded = roundToTwo(totalPagosInteres);
 
             const deudaCapital = roundToTwo(
-              Number(a.monto || 0) - totalAbonosRounded
+              Number(a.monto || 0) - totalAbonosRounded,
             );
             const interesPendiente = roundToTwo(
-              totalCargosRounded - totalPagosInteresRounded
+              totalCargosRounded - totalPagosInteresRounded,
             );
 
             return {
@@ -190,7 +262,7 @@ export async function POST(req) {
 
         if (!anticiposConDeuda.length) {
           throw new Error(
-            "Todos los anticipos de este cliente están completamente pagados. No se pueden agregar más cargos."
+            "Todos los anticipos de este cliente están completamente pagados. No se pueden agregar más cargos.",
           );
         }
 
@@ -208,6 +280,14 @@ export async function POST(req) {
             descripcion: observacion || "Cargo de anticipo",
           },
         });
+
+        // Al agregar un cargo, si el anticipo estaba completado, vuelve a estar activo
+        if (a.estado === "COMPLETADO") {
+          await tx.anticipo.update({
+            where: { anticipoId: a.anticipoId },
+            data: { estado: "ACTIVO" },
+          });
+        }
       }
     });
 
@@ -219,7 +299,7 @@ export async function POST(req) {
     console.error("Error al registrar movimiento:", error);
     return NextResponse.json(
       { error: error.message || "Error interno al registrar movimiento." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

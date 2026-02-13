@@ -26,185 +26,141 @@ export async function GET(req) {
       orderBy: { clienteNombre: "asc" },
     });
 
-    // 2️⃣ Consultas masivas
-    // 2️⃣ Consultas masivas
-    // Préstamos Activos (Esto funciona bien porque clienteId está en la tabla)
-    const prestamosActivosRaw = await prisma.prestamos.groupBy({
-      by: ["clienteId"],
-      _sum: { monto: true },
-      where: { estado: "ACTIVO" },
-    });
-
-    // Movimientos de Préstamos: Agrupar por prestamo_id (scalar), no por relación
-    const movPrestamosPorPrestamo = await prisma.movimientos_prestamo.groupBy({
-      by: ["prestamo_id", "tipo_movimiento"],
-      _sum: { monto: true },
+    // 2️⃣ Obtener datos de Préstamos
+    const prestamos = await prisma.prestamos.findMany({
       where: {
-        fecha: { gte: desde, lte: hasta },
-        tipo_movimiento: { in: ["Int-Cargo", "ABONO", "PAGO_INTERES"] },
+        OR: [
+          { estado: "ACTIVO" },
+          {
+            movimientos_prestamo: {
+              some: { fecha: { gte: desde, lte: hasta } },
+            },
+          },
+        ],
+      },
+      include: {
+        movimientos_prestamo: true,
       },
     });
 
-    // Anticipos Activos
-    const anticiposActivosRaw = await prisma.anticipo.groupBy({
-      by: ["clienteId"],
-      _sum: { monto: true },
-      where: { estado: "ACTIVO" },
-    });
-
-    // Movimientos de Anticipos: Agrupar por anticipoId (o foreing key de anticipos)
-    // Revisando schema: movimientos_anticipos tiene 'prestamo_id'?? No, debe tener anticipo_id o algo así.
-    // El schema dice: movimientos_anticipos no tiene relation mostrada en el snippet anterior completo.
-    // Asumiré que tiene un campo FK hacia anticipo. Voy a verificar el schema de nuevo si falla,
-    // pero por ahora viendo el código anterior usaba `anticipo.clienteId`.
-    // Necesito ver el nombre del campo FK en movimientos_anticipos.
-    // Viendo el schema provided anteriormente:
-    // model movimientos_anticipos { MovimientoId Int @id ... } pero no vi los campos.
-    // Voy a asumir que sigue el patrón y buscaré los IDs.
-
-    // CORRECCIÓN: Primero necesito obtener los IDs de préstamos/anticipos involucrados para buscar sus clientes.
-    const prestamoIds = [
-      ...new Set(
-        movPrestamosPorPrestamo
-          .map((m) => m.prestamo_id)
-          .filter((id) => id !== null),
-      ),
-    ];
-
-    const prestamosInfo = await prisma.prestamos.findMany({
-      where: { prestamoId: { in: prestamoIds } },
-      select: { prestamoId: true, clienteId: true },
-    });
-
-    const prestamoClienteMap = new Map(
-      prestamosInfo.map((p) => [p.prestamoId, p.clienteId]),
-    );
-
-    // Repetir para anticipos
-    // Requiero ver el campo de FK en movimientos_anticipos.
-    // Voy a hacer un paso de 'inspection' rapido de movimientos_anticipos en schema antes de escribir este bloque final.
-    // Pero para no romper el flujo, haré la query de groupBy asumiendo un campo standard y si falla corregiré.
-    // En el código original decía: `by: ["anticipo.clienteId", ...]`
-    // El schema snippet de movimientos_anticipos estaba cortado.
-    // Asumiré `anticipo_id` basado en `movimientos_prestamo`.
-
-    const movAnticiposPorAnticipo = await prisma.movimientos_anticipos.groupBy({
-      by: ["anticipoId", "tipo_movimiento"],
-      _sum: { monto: true },
+    // 3️⃣ Obtener datos de Anticipos
+    const anticipos = await prisma.anticipo.findMany({
       where: {
-        fecha: { gte: desde, lte: hasta },
-        tipo_movimiento: {
-          in: ["CARGO_ANTICIPO", "INTERES_ANTICIPO", "ABONO_ANTICIPO"],
-        },
+        OR: [
+          { estado: "ACTIVO" },
+          {
+            movimientos_anticipos: {
+              some: { fecha: { gte: desde, lte: hasta } },
+            },
+          },
+        ],
+      },
+      include: {
+        movimientos_anticipos: true,
       },
     });
 
-    const anticipoIds = [
-      ...new Set(
-        movAnticiposPorAnticipo
-          .map((m) => m.anticipoId)
-          .filter((id) => id !== null),
-      ),
-    ];
+    // 4️⃣ Procesar datos en memoria
+    const clientesMap = new Map();
 
-    const anticiposInfo = await prisma.anticipo.findMany({
-      where: { anticipoId: { in: anticipoIds } },
-      select: { anticipoId: true, clienteId: true },
+    // Inicializar mapa de clientes
+    clientes.forEach((c) => {
+      clientesMap.set(c.clienteID, {
+        clienteID: c.clienteID,
+        nombre: `${c.clienteNombre || ""} ${c.clienteApellido || ""}`.trim(),
+        activoPrestamo: 0,
+        abonoPrestamo: 0,
+        saldoPrestamo: 0,
+        activoAnticipo: 0,
+        abonoAnticipo: 0,
+        saldoAnticipo: 0,
+      });
     });
 
-    const anticipoClienteMap = new Map(
-      anticiposInfo.map((a) => [a.anticipoId, a.clienteId]),
-    );
+    const roundToTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
-    // 3️⃣ Mapeo y Agrupación en memoria
-    const pActivosMap = new Map(
-      prestamosActivosRaw.map((r) => [r.clienteId, Number(r._sum.monto || 0)]),
-    );
-    const aActivosMap = new Map(
-      anticiposActivosRaw.map((r) => [r.clienteId, Number(r._sum.monto || 0)]),
-    );
+    // --- Procesar Préstamos ---
+    prestamos.forEach((p) => {
+      if (!p.clienteId || !clientesMap.has(p.clienteId)) return;
+      const data = clientesMap.get(p.clienteId);
 
-    const pMovsMap = new Map();
-    // Iteramos sobre los grupos por prestamo_id y los asignamos al cliente correspondiente
-    movPrestamosPorPrestamo.forEach((r) => {
-      const cid = prestamoClienteMap.get(r.prestamo_id);
-      if (!cid) return;
+      const capital = Number(p.monto || 0);
 
-      if (!pMovsMap.has(cid))
-        pMovsMap.set(cid, { "Int-Cargo": 0, ABONO: 0, PAGO_INTERES: 0 });
+      // Filtrar movimientos DENTRO del rango para el reporte de "Abonos del periodo"
+      // PERO para el "Saldo", necesitamos el historial completo.
+      // El reporte parece mostrar columnas: "Activo" (Monto + Interes), "Abono", "Saldo".
+      // "Activo" suele ser la deuda total generada.
+      // "Abono" lo pagado.
+      // "Saldo" lo pendiente real.
 
-      const clienteMovs = pMovsMap.get(cid);
-      if (clienteMovs[r.tipo_movimiento] !== undefined) {
-        clienteMovs[r.tipo_movimiento] += Number(r._sum.monto || 0);
-      }
+      // Calcular totales históricos para el saldo real
+      const totalCargoInt = p.movimientos_prestamo
+        .filter((m) =>
+          ["Int-Cargo", "CARGO_INTERES"].includes(m.tipo_movimiento),
+        )
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+      const totalAbonos = p.movimientos_prestamo
+        .filter((m) => ["ABONO", "PAGO_INTERES"].includes(m.tipo_movimiento))
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+      // Calcular montos específicos del periodo para mostrar en columnas de actividad (si se requiere)
+      // O si el reporte es un "Estado de Cuenta Actual", mostrar acumulados.
+      // Asumiremos Estado de Cuenta Actual (Saldos Reales).
+
+      data.activoPrestamo += roundToTwo(capital + totalCargoInt);
+      data.abonoPrestamo += roundToTwo(totalAbonos);
+      // Saldo se calcula al final o incrementalmente
     });
 
-    const aMovsMap = new Map();
-    movAnticiposPorAnticipo.forEach((r) => {
-      const cid = anticipoClienteMap.get(r.anticipoId);
-      if (!cid) return;
+    // --- Procesar Anticipos ---
+    anticipos.forEach((a) => {
+      if (!a.clienteId || !clientesMap.has(a.clienteId)) return;
+      const data = clientesMap.get(a.clienteId);
 
-      if (!aMovsMap.has(cid))
-        aMovsMap.set(cid, {
-          CARGO_ANTICIPO: 0,
-          INTERES_ANTICIPO: 0,
-          ABONO_ANTICIPO: 0,
-        });
+      const capital = Number(a.monto || 0);
 
-      const clienteMovs = aMovsMap.get(cid);
-      if (clienteMovs[r.tipo_movimiento] !== undefined) {
-        clienteMovs[r.tipo_movimiento] += Number(r._sum.monto || 0);
-      }
+      const totalCargoInt = a.movimientos_anticipos.filter(
+        (m) =>
+          ["CARGO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo_movimiento) &&
+          m.tipo_movimiento !== "INTERES_ANTICIPO",
+      ); // Ojo: INTERES_ANTICIPO es un PAGO en la lógica de anticipos?
+      // Revisando `anticipos/movimiento/route.js`:
+      // CARGO_ANTICIPO -> Suma a la deuda (Interes Pendiente)
+      // INTERES_ANTICIPO -> PAGO de intereses (Resta a Interes Pendiente)
+      // ABONO_ANTICIPO -> PAGO de capital
+      // ENTONCES: "Activo" debe sumar Capital + CARGOS. "Abono" debe sumar ABONOS + PAGOS DE INTERES.
+
+      const cargosReales = a.movimientos_anticipos
+        .filter((m) => m.tipo_movimiento === "CARGO_ANTICIPO")
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+      const pagosReales = a.movimientos_anticipos
+        .filter((m) =>
+          ["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo_movimiento),
+        )
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+      data.activoAnticipo += roundToTwo(capital + cargosReales);
+      data.abonoAnticipo += roundToTwo(pagosReales);
     });
 
-    // 4️⃣ Construir resultados
-    const resultados = clientes
-      .map((cli) => {
-        const cid = cli.clienteID;
-
-        const Mpre = pMovsMap.get(cid) || {
-          "Int-Cargo": 0,
-          ABONO: 0,
-          PAGO_INTERES: 0,
-        };
-        const activoPrestamo = (pActivosMap.get(cid) || 0) + Mpre["Int-Cargo"];
-        const abonoPrestamo = Mpre["ABONO"] + Mpre["PAGO_INTERES"];
-        const saldoPrestamo = activoPrestamo - abonoPrestamo;
-
-        const Manti = aMovsMap.get(cid) || {
-          CARGO_ANTICIPO: 0,
-          INTERES_ANTICIPO: 0,
-          ABONO_ANTICIPO: 0,
-        };
-        const activoAnticipo =
-          (aActivosMap.get(cid) || 0) + Manti["CARGO_ANTICIPO"];
-        const abonoAnticipo =
-          Manti["ABONO_ANTICIPO"] + Manti["INTERES_ANTICIPO"];
-        const saldoAnticipo = activoAnticipo - abonoAnticipo;
-
-        const totalCliente =
-          activoPrestamo +
-          abonoPrestamo +
-          saldoPrestamo +
-          activoAnticipo +
-          abonoAnticipo +
-          saldoAnticipo;
-
-        if (totalCliente === 0) return null;
-
-        return {
-          clienteID: cid,
-          nombre:
-            `${cli.clienteNombre ?? ""} ${cli.clienteApellido ?? ""}`.trim(),
-          activoPrestamo,
-          abonoPrestamo,
-          saldoPrestamo,
-          activoAnticipo,
-          abonoAnticipo,
-          saldoAnticipo,
-        };
+    // Calcular saldos finales y filtrar
+    const resultados = Array.from(clientesMap.values())
+      .map((c) => {
+        c.saldoPrestamo = roundToTwo(c.activoPrestamo - c.abonoPrestamo);
+        c.saldoAnticipo = roundToTwo(c.activoAnticipo - c.abonoAnticipo);
+        return c;
       })
-      .filter((r) => r !== null);
+      .filter(
+        (c) =>
+          c.activoPrestamo > 0 ||
+          c.abonoPrestamo > 0 ||
+          c.saldoPrestamo !== 0 ||
+          c.activoAnticipo > 0 ||
+          c.abonoAnticipo > 0 ||
+          c.saldoAnticipo !== 0,
+      );
 
     return Response.json({ ok: true, clientes: resultados });
   } catch (error) {
