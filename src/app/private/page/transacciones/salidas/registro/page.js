@@ -231,7 +231,9 @@ export default function ReporteRegistroSalida() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+          <ProtectedButton
+            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
+          >
             <Button
               size="small"
               type="default"
@@ -446,7 +448,7 @@ export default function ReporteRegistroSalida() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -591,7 +593,7 @@ export default function ReporteRegistroSalida() {
                   <div style={{ display: "flex", gap: 6 }}>
                     {/* Botón Editar */}
                     <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}
+                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
                     >
                       <Button
                         size="small"

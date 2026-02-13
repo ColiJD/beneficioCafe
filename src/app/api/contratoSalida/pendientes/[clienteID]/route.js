@@ -5,7 +5,7 @@ export async function GET(request, context, req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -16,7 +16,7 @@ export async function GET(request, context, req) {
     if (!clienteID) {
       return new Response(
         JSON.stringify({ error: "Falta el ID del cliente" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,7 +53,7 @@ export async function GET(request, context, req) {
           tipoCafeID: c.producto?.productID,
           // Add other fields if needed by frontend
         };
-      })
+      }),
     );
 
     // Filter out nulls (completed contracts)
@@ -64,7 +64,7 @@ export async function GET(request, context, req) {
     console.error("Error al obtener contratos pendientes:", error);
     return new Response(
       JSON.stringify({ error: "Error al obtener contratos pendientes" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -88,7 +88,7 @@ export default function ReporteCompradoresSalidas() {
       .filter((item) =>
         !nombreFiltro
           ? true
-          : item.nombre?.toLowerCase().includes(nombreFiltro.toLowerCase())
+          : item.nombre?.toLowerCase().includes(nombreFiltro.toLowerCase()),
       )
       .map((item) => {
         const totales = calcularTotalesComprador(item);
@@ -110,7 +110,7 @@ export default function ReporteCompradoresSalidas() {
         acc.pendienteQQ += r.pendienteQQ;
         return acc;
       },
-      { totalCompradores: 0, totalQQ: 0, totalLps: 0, pendienteQQ: 0 }
+      { totalCompradores: 0, totalQQ: 0, totalLps: 0, pendienteQQ: 0 },
     );
 
     resultado.promedioGeneral =
@@ -330,7 +330,7 @@ export default function ReporteCompradoresSalidas() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -351,7 +351,7 @@ export default function ReporteCompradoresSalidas() {
             onRefresh={() => {
               fetchData(
                 rangoFechas?.[0]?.startOf("day").toISOString(),
-                rangoFechas?.[1]?.endOf("day").toISOString()
+                rangoFechas?.[1]?.endOf("day").toISOString(),
               );
             }}
             onExportPDF={() => {
@@ -369,7 +369,7 @@ export default function ReporteCompradoresSalidas() {
                 {
                   title: "Reporte de Salidas",
                   customPromedio: estadisticas?.promedioGeneral,
-                }
+                },
               );
             }}
             disableExport={!datosFiltrados.length}

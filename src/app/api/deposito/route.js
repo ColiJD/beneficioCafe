@@ -6,7 +6,7 @@ export async function POST(request) {
   const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -128,7 +128,7 @@ export async function GET(request) {
   const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;

@@ -5,7 +5,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -23,7 +23,7 @@ export async function POST(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -65,7 +65,7 @@ export async function POST(req) {
         JSON.stringify({
           error: "Ya existe un registro con esa cédula o RTN",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 

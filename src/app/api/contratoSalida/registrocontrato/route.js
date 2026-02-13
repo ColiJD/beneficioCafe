@@ -6,7 +6,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -49,11 +49,11 @@ export async function GET(req) {
 
     const totalQQ = contratos.reduce(
       (acc, c) => acc + Number(c.contratoCantidadQQ || 0),
-      0
+      0,
     );
     const totalLps = contratos.reduce(
       (acc, c) => acc + Number(c.contratoTotalLps || 0),
-      0
+      0,
     );
 
     return new Response(
@@ -80,13 +80,13 @@ export async function GET(req) {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error(" Error en reporte de contratos:", error);
     return new Response(
       JSON.stringify({ error: "Error al generar reporte de contratos" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

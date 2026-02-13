@@ -249,7 +249,7 @@ export default function ReporteLiqSalida() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{

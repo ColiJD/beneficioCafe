@@ -8,7 +8,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -54,7 +54,7 @@ export async function GET(req) {
     JOIN liqdeposito lq ON lq.liqID = dl.liqID
     WHERE dl.depositoID IN (${Prisma.join(depositoIds)})
     GROUP BY dl.depositoID
-  `
+  `,
       );
 
       const totalesMap = new Map(
@@ -64,7 +64,7 @@ export async function GET(req) {
             cantidadEntregada: Number(t.cantidadEntregada),
             totalLiquidado: Number(t.totalLiquidado),
           },
-        ])
+        ]),
       );
 
       const resultado = depositos
@@ -155,7 +155,7 @@ export async function GET(req) {
     console.error("Error al obtener depósitos pendientes:", error);
     return new Response(
       JSON.stringify({ error: "No se pudieron cargar los depósitos." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }

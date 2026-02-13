@@ -67,13 +67,13 @@ export default function LiquidacionContratoForm() {
       if (!formState.cliente || !formState.cliente.value) return;
 
       const mensajesDepositos = await verificarDepositosPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
       const mensajesPrestamos = await verificarPrestamosPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
       const mensajesAnticipos = await verificarAnticiposPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
 
       setNotifications([
@@ -135,7 +135,7 @@ export default function LiquidacionContratoForm() {
         }));
         if (!contratosData || contratosData.length === 0) {
           messageRef.current.warning(
-            "El cliente no tiene contratos pendientes disponibles."
+            "El cliente no tiene contratos pendientes disponibles.",
           );
         }
       } else {
@@ -180,20 +180,20 @@ export default function LiquidacionContratoForm() {
 
       if (!saldoData) {
         messageRef.current.error(
-          "No se encontró saldo disponible para este contrato"
+          "No se encontró saldo disponible para este contrato",
         );
         return;
       }
       saldoData.saldoDisponibleQQ = truncarDosDecimalesSinRedondear(
-        saldoData.saldoDisponibleQQ
+        saldoData.saldoDisponibleQQ,
       );
       saldoData.saldoDisponibleLps = truncarDosDecimalesSinRedondear(
-        saldoData.saldoDisponibleLps
+        saldoData.saldoDisponibleLps,
       );
 
       // buscar el producto asociado al tipo de café
       const productoSeleccionado = productos.find(
-        (p) => p.value === saldoData.tipoCafeID
+        (p) => p.value === saldoData.tipoCafeID,
       );
       // 🔹 Determinar si el producto requiere sacos
       const usaSacos = productoSeleccionado?.data?.tara > 0;
@@ -202,7 +202,7 @@ export default function LiquidacionContratoForm() {
       const { pesoBruto } = calcularPesoBrutoDesdeOro(
         saldoData.saldoDisponibleQQ,
         usaSacos ? saldoData.totalSacos || 0 : 0,
-        productoSeleccionado
+        productoSeleccionado,
       );
 
       setFormState((prev) => ({
@@ -227,7 +227,7 @@ export default function LiquidacionContratoForm() {
     const { oro } = calcularCafeDesdeProducto(
       formState.cantidadLiquidar, // peso bruto → oro
       formState.totalSacos,
-      formState.producto
+      formState.producto,
     );
 
     const oroFix = truncarDosDecimalesSinRedondear(oro);
@@ -265,7 +265,7 @@ export default function LiquidacionContratoForm() {
 
     if (oro > saldo) {
       messageApi.error(
-        `La cantidad (${oro}) supera el saldo disponible (${saldo})`
+        `La cantidad (${oro}) supera el saldo disponible (${saldo})`,
       );
       setSubmitting(false);
       return;
@@ -296,10 +296,10 @@ export default function LiquidacionContratoForm() {
       if (res.ok) {
         messageApi.success(
           `Liquidación registrada. Saldo disponible: ${truncarDosDecimalesSinRedondear(
-            result.saldoDespuesQQ
+            result.saldoDespuesQQ,
           )} QQ / ${truncarDosDecimalesSinRedondear(
-            result.saldoDespuesLps
-          )} Lps`
+            result.saldoDespuesLps,
+          )} Lps`,
         );
         setPreviewVisible(false);
         messageApi.open({
@@ -339,7 +339,7 @@ export default function LiquidacionContratoForm() {
             Object.keys(formState).map((k) => [
               `set${k[0].toUpperCase() + k.slice(1)}`,
               (v) => handleChange(k, v),
-            ])
+            ]),
           ),
         });
         await cargarClientes();
@@ -367,7 +367,7 @@ export default function LiquidacionContratoForm() {
         const { pesoBruto } = calcularPesoBrutoDesdeOro(
           formState.saldoDisponibleQQ, // quintales oro del contrato
           sacos, // cantidad de sacos que ingresó el usuario
-          formState.producto
+          formState.producto,
         );
 
         setFormState((prev) => ({
@@ -385,7 +385,7 @@ export default function LiquidacionContratoForm() {
       const { pesoBruto } = calcularPesoBrutoDesdeOro(
         formState.saldoDisponibleQQ,
         0,
-        formState.producto
+        formState.producto,
       );
       setFormState((prev) => ({ ...prev, pesoBrutoContrato: pesoBruto }));
     }
@@ -521,7 +521,7 @@ export default function LiquidacionContratoForm() {
   }));
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
         <FloatingNotificationButton
@@ -540,7 +540,7 @@ export default function LiquidacionContratoForm() {
               icon: <SolutionOutlined />,
               onClick: () =>
                 router.push(
-                  "/private/page/transacciones/contrato/detallecontrato"
+                  "/private/page/transacciones/contrato/detallecontrato",
                 ),
             },
           ]}
@@ -578,7 +578,7 @@ export default function LiquidacionContratoForm() {
                 "Total a pagar (Lps)",
                 "Retención (QOro)",
                 "Descripción",
-              ].includes(f.label)
+              ].includes(f.label),
             )
             .map((f) => ({
               label: f.label,
@@ -587,8 +587,8 @@ export default function LiquidacionContratoForm() {
                 formState.tipoCafeNombre === "Cafe Lata"
                   ? 0
                   : f.type === "select"
-                  ? f.options?.find((o) => o.value === f.value?.value)?.label
-                  : f.value || "-",
+                    ? f.options?.find((o) => o.value === f.value?.value)?.label
+                    : f.value || "-",
             }))}
         />
       </>

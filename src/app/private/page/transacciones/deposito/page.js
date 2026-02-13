@@ -27,8 +27,6 @@ import FloatingNotificationButton from "@/components/FloatingNotificationButton"
 export default function FormDeposito() {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
-  
-  
 
   const [cliente, setCliente] = useState(null);
   const [producto, setProducto] = useState(null);
@@ -56,16 +54,16 @@ export default function FormDeposito() {
       if (!cliente || !cliente.value) return;
 
       const mensajesContratos = await verificarClientesPendientesContratos(
-        cliente.value
+        cliente.value,
       );
       const mensajesDepositos = await verificarDepositosPendientes(
-        cliente.value
+        cliente.value,
       );
       const mensajesPrestamos = await verificarPrestamosPendientes(
-        cliente.value
+        cliente.value,
       );
       const mensajesAnticipos = await verificarAnticiposPendientes(
-        cliente.value
+        cliente.value,
       );
 
       setNotifications([
@@ -85,7 +83,7 @@ export default function FormDeposito() {
       try {
         const clientesData = await obtenerClientesSelect(messageApiRef.current);
         const productosData = await obtenerProductosSelect(
-          messageApiRef.current
+          messageApiRef.current,
         );
         setClientes(clientesData);
         setProductos(productosData);
@@ -103,7 +101,7 @@ export default function FormDeposito() {
     const resultado = calcularCafeDesdeProducto(
       pesoBruto,
       depositoTotalSacos,
-      producto
+      producto,
     );
     setDepositoCantidadQQ(resultado.oro);
     setDepositoRetencion(resultado.retencion);
@@ -143,8 +141,8 @@ export default function FormDeposito() {
         producto?.label === "Cafe Lata"
           ? 1
           : depositoTotalSacos
-          ? parseInt(depositoTotalSacos, 10)
-          : 0,
+            ? parseInt(depositoTotalSacos, 10)
+            : 0,
       depositoEn: depositoEn || "Depósito",
       depositoDescripcion,
       depositoRetencion: parseFloat(depositoRetencion) || 0,
@@ -294,7 +292,7 @@ export default function FormDeposito() {
   ];
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
         <FloatingNotificationButton
@@ -343,8 +341,8 @@ export default function FormDeposito() {
                   (f.label === "Total Sacos"
                     ? 0
                     : f.label === "Depósito en"
-                    ? "Depósito"
-                    : "-"),
+                      ? "Depósito"
+                      : "-"),
           }))}
         />
       </>

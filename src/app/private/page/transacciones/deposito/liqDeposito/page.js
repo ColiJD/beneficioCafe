@@ -374,7 +374,7 @@ export default function DepositoForm() {
   // Renderizado del formulario y modal de previsualización
   // ------------------------------
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
         <FloatingNotificationButton

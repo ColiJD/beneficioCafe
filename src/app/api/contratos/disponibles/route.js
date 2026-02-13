@@ -7,7 +7,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -51,7 +51,7 @@ export async function GET(req) {
           WHERE dc.contratoID IN (${Prisma.join(contratoIds)})
             AND dc.tipoMovimiento NOT IN ('ANULADO', 'Anulado', 'anulado')
           GROUP BY dc.contratoID
-        `
+        `,
       );
 
       const totalesMap = new Map(
@@ -61,7 +61,7 @@ export async function GET(req) {
             totalDetalle: Number(t.totalDetalle),
             cantidadEntregada: Number(t.cantidadEntregada),
           },
-        ])
+        ]),
       );
 
       const resultado = contratos
@@ -146,7 +146,7 @@ export async function GET(req) {
     console.error("❌ Error al obtener contratos pendientes:", error);
     return new Response(
       JSON.stringify({ error: "No se pudieron cargar los contratos." }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

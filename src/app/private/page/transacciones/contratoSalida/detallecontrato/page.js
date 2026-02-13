@@ -48,7 +48,7 @@ export default function Reportedetallecontrato() {
     try {
       setLoadingDetalle(true);
       const res = await fetch(
-        `/api/contratoSalida/detallecontrato/${detalleID}`
+        `/api/contratoSalida/detallecontrato/${detalleID}`,
       );
       const data = await res.json();
 
@@ -93,7 +93,7 @@ export default function Reportedetallecontrato() {
             precioQQ: Number(detalleSeleccionado.precioQQ),
             observaciones: values.observaciones,
           }),
-        }
+        },
       );
 
       const data = await res.json();
@@ -101,7 +101,7 @@ export default function Reportedetallecontrato() {
 
       if (!res.ok) {
         return messageApi.error(
-          data.error || "No se pudo actualizar la entrega"
+          data.error || "No se pudo actualizar la entrega",
         );
       }
 
@@ -111,7 +111,7 @@ export default function Reportedetallecontrato() {
       if (rangoFechas?.[0] && rangoFechas?.[1]) {
         await fetchData(
           rangoFechas[0].startOf("day").toISOString(),
-          rangoFechas[1].endOf("day").toISOString()
+          rangoFechas[1].endOf("day").toISOString(),
         );
       } else {
         await fetchData();
@@ -131,7 +131,9 @@ export default function Reportedetallecontrato() {
     return lista.filter((item) =>
       !nombreFiltro
         ? true
-        : item.nombreCliente?.toLowerCase().includes(nombreFiltro.toLowerCase())
+        : item.nombreCliente
+            ?.toLowerCase()
+            .includes(nombreFiltro.toLowerCase()),
     );
   }, [data, nombreFiltro]);
 
@@ -143,7 +145,7 @@ export default function Reportedetallecontrato() {
         totalQQ: (acc.totalQQ || 0) + (parseFloat(item.cantidadQQ) || 0),
         totalLps: (acc.totalLps || 0) + (parseFloat(item.totalLps) || 0),
       }),
-      {}
+      {},
     );
   }, [datosFiltrados]);
 
@@ -243,7 +245,9 @@ export default function Reportedetallecontrato() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+          <ProtectedButton
+            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
+          >
             <Button
               size="small"
               type="default"
@@ -264,7 +268,7 @@ export default function Reportedetallecontrato() {
                     if (rangoFechas?.[0] && rangoFechas?.[1]) {
                       await fetchData(
                         rangoFechas[0].startOf("day").toISOString(),
-                        rangoFechas[1].endOf("day").toISOString()
+                        rangoFechas[1].endOf("day").toISOString(),
                       );
                     } else {
                       await fetchData();
@@ -295,14 +299,14 @@ export default function Reportedetallecontrato() {
 
       if (res.ok) {
         messageApiRef.current.success(
-          `${capitalizar(entidadNombre)} anulado correctamente`
+          `${capitalizar(entidadNombre)} anulado correctamente`,
         );
 
         // Ejecutar acción personalizada después del borrado
         if (onSuccess) await onSuccess();
       } else {
         messageApiRef.current.error(
-          data.error || `Error al anular el ${entidadNombre}`
+          data.error || `Error al anular el ${entidadNombre}`,
         );
       }
     } catch (error) {
@@ -355,7 +359,7 @@ export default function Reportedetallecontrato() {
       editable: false,
       render: (detalle, editValues) =>
         `L. ${formatNumber(
-          (editValues?.cantidadQQ ?? detalle.cantidadQQ) * detalle.precioQQ
+          (editValues?.cantidadQQ ?? detalle.cantidadQQ) * detalle.precioQQ,
         )}`,
     },
     { label: "Observaciones", key: "observaciones", editable: true },
@@ -371,7 +375,7 @@ export default function Reportedetallecontrato() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -402,7 +406,7 @@ export default function Reportedetallecontrato() {
               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                 fetchData(
                   rangoFechas[0].startOf("day").toISOString(),
-                  rangoFechas[1].endOf("day").toISOString()
+                  rangoFechas[1].endOf("day").toISOString(),
                 );
               } else {
                 fetchData();
@@ -420,7 +424,7 @@ export default function Reportedetallecontrato() {
                   totalRegistros: estadisticas?.totalRegistros || 0,
                   totalQQ: estadisticas?.totalQQ || 0,
                   totalLps: estadisticas?.totalLps || 0,
-                }
+                },
               )
             }
             disableExport={!datosFiltrados.length}
@@ -484,7 +488,7 @@ export default function Reportedetallecontrato() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>
@@ -535,7 +539,7 @@ export default function Reportedetallecontrato() {
                             // Éxito
                             messageApi.destroy("generandoComprobante");
                             messageApi.success(
-                              "Comprobante generado correctamente"
+                              "Comprobante generado correctamente",
                             );
                           } catch (err) {
                             console.error("Error generando comprobante:", err);
@@ -563,7 +567,7 @@ export default function Reportedetallecontrato() {
                               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                                 await fetchData(
                                   rangoFechas[0].startOf("day").toISOString(),
-                                  rangoFechas[1].endOf("day").toISOString()
+                                  rangoFechas[1].endOf("day").toISOString(),
                                 );
                               } else {
                                 await fetchData();

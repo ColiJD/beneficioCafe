@@ -99,7 +99,7 @@ export default function ReporteRegistroDeposito() {
             retencionQQ: Number(values.retencionQQ),
             observaciones: values.observaciones,
           }),
-        }
+        },
       );
 
       const data = await res.json();
@@ -119,7 +119,7 @@ export default function ReporteRegistroDeposito() {
                 style={{ marginTop: 6 }}
                 onClick={() =>
                   router.push(
-                    "/private/page/transacciones/deposito/lipdedeposito"
+                    "/private/page/transacciones/deposito/lipdedeposito",
                   )
                 }
               >
@@ -136,7 +136,7 @@ export default function ReporteRegistroDeposito() {
       if (rangoFechas?.[0] && rangoFechas?.[1]) {
         await fetchData(
           rangoFechas[0].startOf("day").toISOString(),
-          rangoFechas[1].endOf("day").toISOString()
+          rangoFechas[1].endOf("day").toISOString(),
         );
       } else {
         await fetchData();
@@ -192,7 +192,9 @@ export default function ReporteRegistroDeposito() {
     return lista.filter((item) =>
       !nombreFiltro
         ? true
-        : item.nombreCliente?.toLowerCase().includes(nombreFiltro.toLowerCase())
+        : item.nombreCliente
+            ?.toLowerCase()
+            .includes(nombreFiltro.toLowerCase()),
     );
   }, [data, nombreFiltro]);
 
@@ -203,7 +205,7 @@ export default function ReporteRegistroDeposito() {
         totalRegistros: datosFiltrados.length,
         totalQQ: (acc.totalQQ || 0) + (parseFloat(item.cantidadQQ) || 0),
       }),
-      {}
+      {},
     );
   }, [datosFiltrados]);
 
@@ -262,8 +264,8 @@ export default function ReporteRegistroDeposito() {
               text === "Completado"
                 ? "#52c41a"
                 : text === "Pendiente"
-                ? "#faad14"
-                : "#ff4d4f",
+                  ? "#faad14"
+                  : "#ff4d4f",
           }}
         >
           {text || "—"}
@@ -334,7 +336,9 @@ export default function ReporteRegistroDeposito() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+          <ProtectedButton
+            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
+          >
             <Button
               size="small"
               type="default"
@@ -372,7 +376,7 @@ export default function ReporteRegistroDeposito() {
         if (rangoFechas?.[0] && rangoFechas?.[1]) {
           await fetchData(
             rangoFechas[0].startOf("day").toISOString(),
-            rangoFechas[1].endOf("day").toISOString()
+            rangoFechas[1].endOf("day").toISOString(),
           );
         } else {
           await fetchData();
@@ -391,7 +395,7 @@ export default function ReporteRegistroDeposito() {
                 size="small"
                 onClick={() =>
                   router.push(
-                    "/private/page/transacciones/deposito/lipdedeposito"
+                    "/private/page/transacciones/deposito/lipdedeposito",
                   )
                 }
               >
@@ -425,7 +429,7 @@ export default function ReporteRegistroDeposito() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -456,7 +460,7 @@ export default function ReporteRegistroDeposito() {
               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                 fetchData(
                   rangoFechas[0].startOf("day").toISOString(),
-                  rangoFechas[1].endOf("day").toISOString()
+                  rangoFechas[1].endOf("day").toISOString(),
                 );
               } else {
                 fetchData();
@@ -470,7 +474,7 @@ export default function ReporteRegistroDeposito() {
                   fechaFin: rangoFechas?.[1]?.toISOString(),
                   nombreFiltro,
                 },
-                { title: "Reporte de Depósitos" }
+                { title: "Reporte de Depósitos" },
               )
             }
             disableExport={!datosFiltrados.length}
@@ -531,7 +535,7 @@ export default function ReporteRegistroDeposito() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>
@@ -554,7 +558,7 @@ export default function ReporteRegistroDeposito() {
                 acciones: (
                   <div style={{ display: "flex", gap: 6 }}>
                     <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}
+                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
                     >
                       <Button
                         size="small"
@@ -595,7 +599,7 @@ export default function ReporteRegistroDeposito() {
                           // Éxito
                           messageApi.destroy("generandoComprobante");
                           messageApi.success(
-                            "Comprobante generado correctamente"
+                            "Comprobante generado correctamente",
                           );
                         } catch (err) {
                           console.error("Error generando comprobante:", err);

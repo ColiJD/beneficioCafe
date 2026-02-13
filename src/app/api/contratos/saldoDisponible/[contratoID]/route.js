@@ -5,7 +5,7 @@ export async function GET(req, context) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -16,7 +16,7 @@ export async function GET(req, context) {
     if (!contratoID) {
       return new Response(
         JSON.stringify({ error: "Falta el ID del contrato" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,7 +36,7 @@ export async function GET(req, context) {
           saldoDisponibleQQ: 0,
           saldoDisponibleLps: 0,
         }),
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -50,13 +50,13 @@ export async function GET(req, context) {
         saldoDisponibleQQ: parseFloat(row.saldoDisponibleQQ) || 0,
         saldoDisponibleLps: parseFloat(row.saldoDisponibleLps) || 0,
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error al obtener saldo del contrato:", error);
     return new Response(
       JSON.stringify({ error: "Error al obtener saldo del contrato" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

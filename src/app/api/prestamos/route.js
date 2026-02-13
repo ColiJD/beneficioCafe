@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function POST(req) {
+  const sessionOrResponse = await checkRole(req, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
+
   try {
     const body = await req.json();
     const { clienteID, monto, tasa_interes, fecha, observacion } = body;

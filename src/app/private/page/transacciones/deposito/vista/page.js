@@ -136,7 +136,7 @@ export default function TablaSaldoDepositos() {
       data,
       filtros,
       rangoFecha,
-      "depositoFecha"
+      "depositoFecha",
     );
     setFilteredData(filtrados);
   };
@@ -151,14 +151,14 @@ export default function TablaSaldoDepositos() {
       ? filteredData.reduce((acc, item) => acc + (item.cantidadTotal || 0), 0)
       : filteredData.reduce(
           (acc, item) => acc + (item.cantidadLiquidada || 0),
-          0
+          0,
         );
 
   const totalSaldo =
     estadoFiltro === "Pendiente"
       ? filteredData.reduce(
           (acc, item) => acc + (item.saldoPendienteQQ || 0),
-          0
+          0,
         )
       : filteredData.reduce((acc, item) => acc + (item.liquidadoValor || 0), 0);
 
@@ -251,7 +251,7 @@ export default function TablaSaldoDepositos() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div>
         {/* Tarjetas */}

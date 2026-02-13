@@ -76,7 +76,7 @@ export default function ClienteForm() {
             value: m,
             label: m,
           }))
-        : []
+        : [],
     );
   };
 
@@ -106,7 +106,7 @@ export default function ClienteForm() {
           (municipiosPorDepartamento[c.clienteDepartament] || []).map((m) => ({
             value: m,
             label: m,
-          }))
+          })),
         );
       }
     }
@@ -247,7 +247,7 @@ export default function ClienteForm() {
         messageApi.success(
           selectedCliente?.data?.clienteID
             ? "Cliente actualizado con éxito"
-            : "Cliente creado con éxito"
+            : "Cliente creado con éxito",
         );
 
         // 🔹 Limpiar formulario
@@ -273,7 +273,7 @@ export default function ClienteForm() {
       } else {
         const err = await res.json();
         messageApi.error(
-          "Error: " + (err.error || "No se pudo guardar el cliente")
+          "Error: " + (err.error || "No se pudo guardar el cliente"),
         );
       }
     } catch (error) {
@@ -316,7 +316,7 @@ export default function ClienteForm() {
       } else {
         const err = await res.json();
         messageApi.error(
-          "Error eliminando: " + (err.error || "Error desconocido")
+          "Error eliminando: " + (err.error || "Error desconocido"),
         );
       }
     } catch (error) {
@@ -326,7 +326,7 @@ export default function ClienteForm() {
   };
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
 

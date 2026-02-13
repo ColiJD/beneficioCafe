@@ -6,7 +6,7 @@ export async function PUT(request, { params }) {
   const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
@@ -41,7 +41,7 @@ export async function PUT(request, { params }) {
     ) {
       return new Response(
         JSON.stringify({ error: "Faltan datos obligatorios o son inválidos" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,7 +69,7 @@ export async function PUT(request, { params }) {
           JSON.stringify({
             error: "Inventario insuficiente para actualizar la venta",
           }),
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -123,7 +123,7 @@ export async function PUT(request, { params }) {
 
           if (restante > 0) {
             throw new Error(
-              "Inventario insuficiente para realizar la actualización."
+              "Inventario insuficiente para realizar la actualización.",
             );
           }
         } else {
@@ -163,7 +163,7 @@ export async function PUT(request, { params }) {
               // Para simplificar, repartimos en orden hasta cubrir el aumento
               const incremento = restante;
               const nuevaCantidad = mov.cantidadQQ.add(
-                new Prisma.Decimal(incremento)
+                new Prisma.Decimal(incremento),
               );
 
               await tx.movimientoinventario.update({
@@ -215,7 +215,7 @@ export async function PUT(request, { params }) {
 
             if (restante > 0) {
               console.warn(
-                `⚠️ No se pudo distribuir ${restante} QQ, revisar inventario.`
+                `⚠️ No se pudo distribuir ${restante} QQ, revisar inventario.`,
               );
             }
           }
@@ -230,7 +230,7 @@ export async function PUT(request, { params }) {
     console.error("❌ Error al actualizar venta:", error);
     return new Response(
       JSON.stringify({ error: "Error al actualizar venta" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

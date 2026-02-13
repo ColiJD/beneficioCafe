@@ -363,7 +363,7 @@ export default function CajaChicaPage() {
   ];
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       {contextHolder}
 
       {/* Formulario */}

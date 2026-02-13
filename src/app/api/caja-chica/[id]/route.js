@@ -5,7 +5,11 @@ import { checkRole } from "@/lib/checkRole";
 // 🟡 Actualizar movimiento
 export async function PUT(request, { params }) {
   // 🔹 Validar roles
-  const sessionOrResponse = await checkRole(request, ["ADMIN", "GERENCIA"]);
+  const sessionOrResponse = await checkRole(request, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   const session = sessionOrResponse;
 
@@ -42,7 +46,11 @@ export async function PUT(request, { params }) {
 // 🔴 Eliminar movimiento
 export async function DELETE(request, { params }) {
   // 🔹 Validar roles
-  const sessionOrResponse = await checkRole(request, ["ADMIN", "GERENCIA"]);
+  const sessionOrResponse = await checkRole(request, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {

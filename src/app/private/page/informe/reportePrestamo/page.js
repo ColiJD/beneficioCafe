@@ -43,7 +43,7 @@ export default function ReporteClientes() {
     return clientesArray.filter((item) =>
       !nombreFiltro
         ? true
-        : item.nombre?.toLowerCase().includes(nombreFiltro.toLowerCase())
+        : item.nombre?.toLowerCase().includes(nombreFiltro.toLowerCase()),
     );
   }, [data, nombreFiltro]);
 
@@ -68,7 +68,7 @@ export default function ReporteClientes() {
         totalActivoAnticipo: 0,
         totalAbonoAnticipo: 0,
         totalSaldoAnticipo: 0,
-      }
+      },
     );
   }, [datosFiltrados]);
 
@@ -179,7 +179,7 @@ export default function ReporteClientes() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -199,7 +199,7 @@ export default function ReporteClientes() {
             onRefresh={() =>
               fetchData(
                 rangoFechas?.[0]?.toISOString(),
-                rangoFechas?.[1]?.toISOString()
+                rangoFechas?.[1]?.toISOString(),
               )
             }
             onExportPDF={() => {
@@ -213,7 +213,7 @@ export default function ReporteClientes() {
                   nombreFiltro,
                 },
                 columnasPDF,
-                { title: "Reporte Prestamos y Anticipos" }
+                { title: "Reporte Prestamos y Anticipos" },
               );
             }}
             disableExport={!datosFiltrados.length}

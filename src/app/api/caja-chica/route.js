@@ -4,7 +4,11 @@ import { checkRole } from "@/lib/checkRole";
 
 export async function GET(req) {
   // 🔹 Validar roles
-  const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
+  const sessionOrResponse = await checkRole(req, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   const session = sessionOrResponse;
 
@@ -129,7 +133,11 @@ export async function GET(req) {
 
 export async function POST(request) {
   // 🔹 Validar roles
-  const sessionOrResponse = await checkRole(request, ["ADMIN", "GERENCIA"]);
+  const sessionOrResponse = await checkRole(request, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   const session = sessionOrResponse;
 

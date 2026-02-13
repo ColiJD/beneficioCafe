@@ -6,7 +6,7 @@ export async function DELETE(req, context) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -44,12 +44,12 @@ export async function DELETE(req, context) {
           error:
             "No se puede eliminar el producto porque está asociado a otras transacciones.",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
     return new Response(
       JSON.stringify({ error: "Error interno del servidor: " + error.message }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -59,7 +59,7 @@ export async function PUT(req, { params }) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -92,7 +92,7 @@ export async function PUT(req, { params }) {
       if (duplicado) {
         return new Response(
           JSON.stringify({ error: "El nombre del producto ya existe" }),
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -118,7 +118,7 @@ export async function PUT(req, { params }) {
     console.error("Error actualizando producto:", error);
     return new Response(
       JSON.stringify({ error: "Error interno del servidor: " + error.message }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

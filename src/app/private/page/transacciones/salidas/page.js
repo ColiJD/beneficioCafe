@@ -254,7 +254,7 @@ export default function FormSalida() {
   ];
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
         <FloatingNotificationButton

@@ -112,7 +112,7 @@ export default function InventarioActualPage() {
   if (!mounted) return null;
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <FloatingButton
         title="Transferir Inventario"

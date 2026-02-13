@@ -23,7 +23,7 @@ export default function ReporteContratosPendientes() {
   const [nombreFiltro, setNombreFiltro] = useState("");
   const { data, loading, contextHolder, fetchData } = useFetchReport(
     "/api/contratos/vista",
-    rangoInicial
+    rangoInicial,
   );
 
   const datosFiltrados = useMemo(() => {
@@ -73,7 +73,7 @@ export default function ReporteContratosPendientes() {
     return Array.from(mapClientes.values()).filter((cliente) =>
       !nombreFiltro
         ? true
-        : cliente.cliente.toLowerCase().includes(nombreFiltro.toLowerCase())
+        : cliente.cliente.toLowerCase().includes(nombreFiltro.toLowerCase()),
     );
   }, [data, nombreFiltro]);
 
@@ -97,7 +97,7 @@ export default function ReporteContratosPendientes() {
         totalEntregadoLps: 0,
         totalPendienteQQ: 0,
         totalPendienteLps: 0,
-      }
+      },
     );
   }, [datosFiltrados]);
 
@@ -209,7 +209,7 @@ export default function ReporteContratosPendientes() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -246,7 +246,7 @@ export default function ReporteContratosPendientes() {
                   totalEntregado: Number(c.totalEntregado),
                   pendiente: Number(c.pendiente),
                   totalPendiente: Number(c.totalPendiente),
-                }))
+                })),
               );
 
               // Generar PDF
@@ -294,7 +294,7 @@ export default function ReporteContratosPendientes() {
                     isTotal: true,
                   },
                 ],
-                { title: "Reporte de Contratos Pendientes" }
+                { title: "Reporte de Contratos Pendientes" },
               );
             }}
             disableExport={!datosFiltrados.length}

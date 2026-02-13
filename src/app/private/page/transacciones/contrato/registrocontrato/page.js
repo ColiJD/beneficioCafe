@@ -42,7 +42,9 @@ export default function ReporteRegistroContrato() {
     return lista.filter((item) =>
       !nombreFiltro
         ? true
-        : item.nombreCliente?.toLowerCase().includes(nombreFiltro.toLowerCase())
+        : item.nombreCliente
+            ?.toLowerCase()
+            .includes(nombreFiltro.toLowerCase()),
     );
   }, [data, nombreFiltro]);
 
@@ -54,7 +56,7 @@ export default function ReporteRegistroContrato() {
         totalQQ: (acc.totalQQ || 0) + (parseFloat(item.cantidadQQ) || 0),
         totalLps: (acc.totalLps || 0) + (parseFloat(item.totalLps) || 0),
       }),
-      {}
+      {},
     );
   }, [datosFiltrados]);
 
@@ -201,12 +203,14 @@ export default function ReporteRegistroContrato() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+          <ProtectedButton
+            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
+          >
             <Popconfirm
               title="¿Seguro que deseas EDITAR este contrato?"
               onConfirm={() =>
                 router.push(
-                  `/private/page/transacciones/contrato/${record.contratoID}`
+                  `/private/page/transacciones/contrato/${record.contratoID}`,
                 )
               }
               okText="Sí"
@@ -248,7 +252,7 @@ export default function ReporteRegistroContrato() {
         if (rangoFechas?.[0] && rangoFechas?.[1]) {
           fetchData(
             rangoFechas[0].startOf("day").toISOString(),
-            rangoFechas[1].endOf("day").toISOString()
+            rangoFechas[1].endOf("day").toISOString(),
           );
         } else {
           fetchData();
@@ -267,7 +271,7 @@ export default function ReporteRegistroContrato() {
                 size="small"
                 onClick={() =>
                   router.push(
-                    "/private/page/transacciones/contrato/detallecontrato"
+                    "/private/page/transacciones/contrato/detallecontrato",
                   )
                 }
               >
@@ -302,7 +306,7 @@ export default function ReporteRegistroContrato() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -324,7 +328,7 @@ export default function ReporteRegistroContrato() {
               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                 fetchData(
                   rangoFechas[0].startOf("day").toISOString(),
-                  rangoFechas[1].endOf("day").toISOString()
+                  rangoFechas[1].endOf("day").toISOString(),
                 );
               } else {
                 fetchData();
@@ -342,7 +346,7 @@ export default function ReporteRegistroContrato() {
                   totalRegistros: estadisticas?.totalRegistros || 0,
                   totalQQ: estadisticas?.totalQQ || 0,
                   totalLps: estadisticas?.totalLps || 0,
-                }
+                },
               )
             }
             disableExport={!datosFiltrados.length}
@@ -408,7 +412,7 @@ export default function ReporteRegistroContrato() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>
@@ -457,7 +461,7 @@ export default function ReporteRegistroContrato() {
                           // Éxito
                           messageApi.destroy("generandoComprobante");
                           messageApi.success(
-                            "Comprobante generado correctamente"
+                            "Comprobante generado correctamente",
                           );
                         } catch (err) {
                           console.error("Error generando comprobante:", err);
@@ -475,7 +479,7 @@ export default function ReporteRegistroContrato() {
                       />
                     </Popconfirm>
                     {/* <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}
+                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
                     >
                       <Button
                         size="small"

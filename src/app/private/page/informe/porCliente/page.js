@@ -87,7 +87,7 @@ export default function MovimientosComprasPage() {
       const fechaFin = fechaRango[1].format("YYYY-MM-DD");
 
       const res = await fetch(
-        `/api/reportes/porCliente?clienteID=${clienteID}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        `/api/reportes/porCliente?clienteID=${clienteID}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`,
       );
       if (!res.ok) throw new Error("Error al obtener movimientos");
 
@@ -102,17 +102,17 @@ export default function MovimientosComprasPage() {
 
       const totalQQCompras = detallesCompras.reduce(
         (acc, c) => acc + c.cantidadQQ,
-        0
+        0,
       );
       const totalLpsCompras = detallesCompras.reduce(
         (acc, c) => acc + c.totalLps,
-        0
+        0,
       );
       const promedioPrecioCompras =
         totalQQCompras > 0
           ? detallesCompras.reduce(
               (acc, c) => acc + c.precioQQ * c.cantidadQQ,
-              0
+              0,
             ) / totalQQCompras
           : 0;
 
@@ -146,7 +146,7 @@ export default function MovimientosComprasPage() {
             totalQQ > 0
               ? detalles.reduce(
                   (acc, d) => acc + d.precioQQ * d.cantidadQQ,
-                  0
+                  0,
                 ) / totalQQ
               : 0;
 
@@ -164,7 +164,7 @@ export default function MovimientosComprasPage() {
             promedioPrecio,
             detalles, // solo cantidad, precio, total y fecha
           };
-        }
+        },
       );
 
       const filaContratos = {
@@ -172,7 +172,7 @@ export default function MovimientosComprasPage() {
 
         totalQQPorLiquidar: detallesContratos.reduce(
           (sum, c) => sum + ((c.cantidadContrato || 0) - c.totalQQ),
-          0
+          0,
         ),
 
         totalQQ: detallesContratos.reduce((sum, c) => sum + c.totalQQ, 0),
@@ -180,11 +180,11 @@ export default function MovimientosComprasPage() {
         promedioPrecio:
           detallesContratos.reduce(
             (sum, c) => sum + c.promedioPrecio * c.totalQQ,
-            0
+            0,
           ) /
           Math.max(
             1,
-            detallesContratos.reduce((sum, c) => sum + c.totalQQ, 0)
+            detallesContratos.reduce((sum, c) => sum + c.totalQQ, 0),
           ),
         detalles: detallesContratos.map((c) => ({
           ...c,
@@ -210,12 +210,12 @@ export default function MovimientosComprasPage() {
 
           const totalQQLiquidado = detallesLiq.reduce(
             (sum, l) => sum + l.cantidadQQ,
-            0
+            0,
           );
 
           const totalLpsLiquidado = detallesLiq.reduce(
             (sum, l) => sum + l.totalLps,
-            0
+            0,
           );
 
           const promedioPrecio =
@@ -237,7 +237,7 @@ export default function MovimientosComprasPage() {
             liquidado: totalQQLiquidado >= (dep.cantidadQQ || 0) ? "Sí" : "No",
             detalles: detallesLiq,
           };
-        }
+        },
       );
 
       // FILA DE RESUMEN
@@ -246,27 +246,27 @@ export default function MovimientosComprasPage() {
 
         totalQQPorLiquidar: detallesDepositos.reduce(
           (sum, d) => sum + ((d.cantidadQQ || 0) - d.totalQQLiquidado),
-          0
+          0,
         ),
 
         totalQQ: detallesDepositos.reduce(
           (sum, d) => sum + d.totalQQLiquidado,
-          0
+          0,
         ),
 
         totalLps: detallesDepositos.reduce(
           (sum, d) => sum + d.totalLpsLiquidado,
-          0
+          0,
         ),
 
         promedioPrecio:
           detallesDepositos.reduce(
             (sum, d) => sum + d.promedioPrecio * d.totalQQLiquidado,
-            0
+            0,
           ) /
           Math.max(
             1,
-            detallesDepositos.reduce((sum, d) => sum + d.totalQQLiquidado, 0)
+            detallesDepositos.reduce((sum, d) => sum + d.totalQQLiquidado, 0),
           ),
 
         detalles: detallesDepositos,
@@ -348,7 +348,7 @@ export default function MovimientosComprasPage() {
 
         const abonado = movimientos
           .filter((m) =>
-            ["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo)
+            ["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo),
           )
           .reduce((sum, m) => sum + m.monto, 0);
 
@@ -376,15 +376,15 @@ export default function MovimientosComprasPage() {
       // 🔹 Calcular totales combinados
       const totalPrestamosMonto = prestamosYAnticipos.reduce(
         (sum, p) => sum + p.monto,
-        0
+        0,
       );
       const totalPrestamosAbonado = prestamosYAnticipos.reduce(
         (sum, p) => sum + p.abonado,
-        0
+        0,
       );
       const totalPrestamosRestante = prestamosYAnticipos.reduce(
         (sum, p) => sum + p.total,
-        0
+        0,
       );
 
       setData([filaCompras, filaContratos, filaDepositos]);
@@ -412,7 +412,7 @@ export default function MovimientosComprasPage() {
 
       const hayRegistros =
         [filaCompras, filaContratos, filaDepositos].some(
-          (f) => f.detalles?.length > 0
+          (f) => f.detalles?.length > 0,
         ) || detallesPrestamos.length > 0;
 
       if (hayRegistros) {
@@ -430,7 +430,7 @@ export default function MovimientosComprasPage() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       {contextHolder}
       <Card>
@@ -444,14 +444,14 @@ export default function MovimientosComprasPage() {
             // Validaciones iniciales
             if (!Array.isArray(data) || data.length === 0) {
               messageApi.warning(
-                "No hay datos válidos para generar el reporte."
+                "No hay datos válidos para generar el reporte.",
               );
               return;
             }
 
             if (!clienteID) {
               messageApi.warning(
-                "Seleccione un cliente para generar el reporte."
+                "Seleccione un cliente para generar el reporte.",
               );
               return;
             }
@@ -628,8 +628,8 @@ export default function MovimientosComprasPage() {
           data.some((row) =>
             // Revisar si hay al menos un valor numérico >= 0
             Object.values(row).some(
-              (val) => typeof val === "number" && val >= 0
-            )
+              (val) => typeof val === "number" && val >= 0,
+            ),
           ) ? (
           <Table
             columns={columns}
@@ -789,11 +789,11 @@ export function ResumenTablaGenerico({ columns, data, options = {} }) {
       const weightedSum = data.reduce(
         (sum, row) =>
           sum + (row[col.dataIndex] || 0) * (row[weightedColumn] || 0),
-        0
+        0,
       );
       const totalWeight = data.reduce(
         (sum, row) => sum + (row[weightedColumn] || 0),
-        0
+        0,
       );
       totals[col.dataIndex] = totalWeight > 0 ? weightedSum / totalWeight : 0;
     }
@@ -820,7 +820,7 @@ export function ResumenTablaGenerico({ columns, data, options = {} }) {
 
           // Buscar si la columna está en highlightColumns
           const highlightObj = highlightColumns.find(
-            (h) => h.dataIndex === col.dataIndex
+            (h) => h.dataIndex === col.dataIndex,
           );
 
           return (

@@ -133,7 +133,7 @@ export default function PrestamosGeneral() {
                   ? Number(mov.monto || 0)
                   : null,
               intAbono: ["ABONO_INTERES", "PAGO_INTERES"].includes(
-                mov.tipo_movimiento
+                mov.tipo_movimiento,
               )
                 ? Number(mov.monto || 0)
                 : null,
@@ -144,7 +144,7 @@ export default function PrestamosGeneral() {
                   ? Number(mov.monto || 0)
                   : 0) -
                 (["ABONO", "ABONO_INTERES", "PAGO_INTERES"].includes(
-                  mov.tipo_movimiento
+                  mov.tipo_movimiento,
                 )
                   ? Number(mov.monto || 0)
                   : 0),
@@ -219,7 +219,7 @@ export default function PrestamosGeneral() {
                   ? Number(mov.monto || 0)
                   : 0) -
                 (["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(
-                  mov.tipo_movimiento
+                  mov.tipo_movimiento,
                 )
                   ? Number(mov.monto || 0)
                   : 0),
@@ -245,22 +245,22 @@ export default function PrestamosGeneral() {
         if (tipo === "prestamo") {
           const totalPrestamo = filas.reduce(
             (acc, f) => acc + (f.prestamo || 0) + (f.intCargo || 0),
-            0
+            0,
           );
           const totalAbonos = filas.reduce(
             (acc, f) => acc + (f.abono || 0) + (f.intAbono || 0),
-            0
+            0,
           );
           t.prestamo = filas.reduce((acc, f) => acc + (f.prestamo || 0), 0);
           t.totalGeneral = totalPrestamo - totalAbonos; // 🔹 CAMBIO: saldo real
         } else {
           const totalAnticipo = filas.reduce(
             (acc, f) => acc + (f.anticipo || 0) + (f.intCargo || 0),
-            0
+            0,
           );
           const totalAbonos = filas.reduce(
             (acc, f) => acc + (f.abono || 0) + (f.intAbono || 0),
-            0
+            0,
           );
           t.anticipo = filas.reduce((acc, f) => acc + (f.anticipo || 0), 0);
           t.totalGeneral = totalAnticipo - totalAbonos; // 🔹 CAMBIO: saldo real
@@ -567,26 +567,28 @@ export default function PrestamosGeneral() {
           };
 
           return (
-            <Popconfirm
-              title={`¿Anular ${
-                tipo.includes("MOVIMIENTO")
-                  ? "movimiento"
-                  : tipo === "PRESTAMO"
-                  ? "préstamo"
-                  : "anticipo"
-              }? Esta acción no se puede deshacer.`}
-              okText="Sí, anular"
-              cancelText="Cancelar"
-              okType="danger"
-              onConfirm={handleConfirmAnular}
-            >
-              <Button size="small" danger icon={<DeleteFilled />} />
-            </Popconfirm>
+            <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+              <Popconfirm
+                title={`¿Anular ${
+                  tipo.includes("MOVIMIENTO")
+                    ? "movimiento"
+                    : tipo === "PRESTAMO"
+                      ? "préstamo"
+                      : "anticipo"
+                }? Esta acción no se puede deshacer.`}
+                okText="Sí, anular"
+                cancelText="Cancelar"
+                okType="danger"
+                onConfirm={handleConfirmAnular}
+              >
+                <Button size="small" danger icon={<DeleteFilled />} />
+              </Popconfirm>
+            </ProtectedButton>
           );
         },
       },
     ],
-    [isDesktop]
+    [isDesktop],
   );
 
   const columnasPrestamos = useMemo(() => {
@@ -615,9 +617,9 @@ export default function PrestamosGeneral() {
           tipo.includes("MOVIMIENTO")
             ? "Movimiento"
             : tipo === "PRESTAMO"
-            ? "Préstamo"
-            : "Anticipo"
-        } anulado correctamente`
+              ? "Préstamo"
+              : "Anticipo"
+        } anulado correctamente`,
       );
 
       // 🔹 Recargar la tabla del cliente
@@ -660,7 +662,7 @@ export default function PrestamosGeneral() {
         };
       } else if (
         ["ABONO_ANTICIPO", "INTERES_ANTICIPO", "CARGO_ANTICIPO"].includes(
-          nuevoRegistro.tipo
+          nuevoRegistro.tipo,
         )
       ) {
         url = "/api/anticipos/movimiento";
@@ -686,7 +688,7 @@ export default function PrestamosGeneral() {
       if (res.ok) {
         messageApiRef.current.destroy();
         messageApiRef.current.success(
-          data.message || "Registro guardado correctamente"
+          data.message || "Registro guardado correctamente",
         );
 
         await cargarPrestamos(clienteSeleccionado.clienteID);
@@ -752,7 +754,7 @@ export default function PrestamosGeneral() {
 
     if (!data.length) {
       messageApiRef.current.error(
-        `No hay ${nombre.toLowerCase()} para imprimir`
+        `No hay ${nombre.toLowerCase()} para imprimir`,
       );
       return;
     }
@@ -775,13 +777,13 @@ export default function PrestamosGeneral() {
       {
         title: `${nombre} - ${clienteSeleccionado.clienteNombre} ${clienteSeleccionado.clienteApellido}`,
         orientation: "landscape",
-      }
+      },
     );
   };
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <>
         <style>{`
@@ -837,20 +839,25 @@ export default function PrestamosGeneral() {
               {clienteSeleccionado && (
                 <Col xs={24} sm={24} md={12} lg={16} xl={18}>
                   <Space wrap style={{ marginTop: 8 }}>
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => setOpenDrawer(true)}
+                    <ProtectedButton
+                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
                     >
-                      Ingresar Movimiento
-                    </Button>
-                    <Button
-                      type="primary"
-                      onClick={() => setOpenDrawerInteres(true)}
-                      icon={<CalculatorOutlined />}
-                    >
-                      Calculo de Interes
-                    </Button>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => setOpenDrawer(true)}
+                      >
+                        Ingresar Movimiento
+                      </Button>
+                      <Button
+                        type="primary"
+                        onClick={() => setOpenDrawerInteres(true)}
+                        icon={<CalculatorOutlined />}
+                        style={{ marginLeft: 8 }}
+                      >
+                        Calculo de Interes
+                      </Button>
+                    </ProtectedButton>
 
                     <Button
                       danger

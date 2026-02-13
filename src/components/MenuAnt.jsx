@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }) {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <SessionTimeout warnBeforeSeconds={60} />
       <Layout style={{ minHeight: "100vh" }}>

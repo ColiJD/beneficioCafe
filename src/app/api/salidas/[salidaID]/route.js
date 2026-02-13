@@ -74,7 +74,7 @@ export async function PUT(request, { params }) {
   const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
