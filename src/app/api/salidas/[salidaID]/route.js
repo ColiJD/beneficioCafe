@@ -8,7 +8,8 @@ export async function DELETE(req, { params }) {
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const salidaID = Number(params.salidaID);
+    const { salidaID: paramId } = await params;
+    const salidaID = Number(paramId);
     if (!salidaID) {
       return new Response(JSON.stringify({ error: "ID inválido" }), {
         status: 400,
@@ -79,7 +80,8 @@ export async function PUT(request, { params }) {
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const salidaID = Number(params.salidaID);
+    const { salidaID: paramId } = await params;
+    const salidaID = Number(paramId);
     if (!salidaID) {
       return new Response(JSON.stringify({ error: "ID de salida inválido" }), {
         status: 400,

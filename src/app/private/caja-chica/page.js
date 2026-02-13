@@ -79,15 +79,47 @@ export default function CajaChicaPage() {
   const totales = movimientosFiltrados.reduce(
     (acc, mov) => {
       const m = parseFloat(mov.monto);
-      if (mov.tipo === "Saldo Inicial") acc.saldoInicial += m;
+      const movDate = dayjs(mov.fecha).format("YYYY-MM-DD");
+
+      // Track the latest date in the current list
+      if (!acc.latestDay || movDate > acc.latestDay) {
+        acc.latestDay = movDate;
+        acc.latestSI = 0;
+        acc.latestE = 0;
+        acc.latestS = 0;
+      }
+
+      if (movDate === acc.latestDay) {
+        if (mov.tipo === "Saldo Inicial") acc.latestSI += m;
+        if (mov.tipo === "Entrada") acc.latestE += m;
+        if (mov.tipo === "Salida") acc.latestS += m;
+      }
+
+      // We still sum all Entradas and Salidas in the view for the cards
       if (mov.tipo === "Entrada") acc.entradas += m;
       if (mov.tipo === "Salida") acc.salidas += m;
+      if (mov.tipo === "Saldo Inicial") acc.countSI++;
+
       return acc;
     },
-    { saldoInicial: 0, entradas: 0, salidas: 0 }
+    {
+      entradas: 0,
+      salidas: 0,
+      countSI: 0,
+      latestDay: null,
+      latestSI: 0,
+      latestE: 0,
+      latestS: 0,
+    },
   );
 
-  totales.balance = totales.saldoInicial + totales.entradas - totales.salidas;
+  // The 'Saldo Inicial' shown in the card will be the SI of the day being viewed
+  // or the latest day in the list if viewing all.
+  totales.saldoInicialView = totales.latestSI;
+
+  // The 'Balance Actual' will be the balance of the latest day in the view
+  // (which represents the liquid cash state).
+  totales.balance = totales.latestSI + totales.latestE - totales.latestS;
 
   useEffect(() => {
     if (!descripcion.trim()) {
@@ -172,7 +204,6 @@ export default function CajaChicaPage() {
       descripcion: descripcion.trim(),
       monto: parseFloat(monto),
       tipo: tipo.value, // Extract value from object
-      usuarioId: 1,
     };
     const url = selectedMovimiento
       ? `/api/caja-chica/${selectedMovimiento.id}`
@@ -187,7 +218,7 @@ export default function CajaChicaPage() {
       });
       if (res.ok) {
         messageApiRef.current.success(
-          selectedMovimiento ? "Movimiento actualizado" : "Movimiento agregado"
+          selectedMovimiento ? "Movimiento actualizado" : "Movimiento agregado",
         );
 
         setPreviewVisible(false);
@@ -230,7 +261,7 @@ export default function CajaChicaPage() {
     setDescripcion(mov.descripcion);
     setMonto(mov.monto.toString());
     const opcion = tipoOptions.find(
-      (o) => o.value.toLowerCase() === mov.tipo.trim().toLowerCase()
+      (o) => o.value.toLowerCase() === mov.tipo.trim().toLowerCase(),
     );
     setTipo(opcion || { label: "Salida", value: "Salida" });
     messageApiRef.current.info("Modo edición activado");
@@ -267,8 +298,8 @@ export default function CajaChicaPage() {
             t === "Entrada"
               ? "bg-green-100 text-green-800"
               : t === "Salida"
-              ? "bg-red-100 text-red-800"
-              : "bg-blue-100 text-blue-800"
+                ? "bg-red-100 text-red-800"
+                : "bg-blue-100 text-blue-800"
           }`}
         >
           {t}
@@ -311,7 +342,7 @@ export default function CajaChicaPage() {
   const stats = [
     {
       titulo: "Saldo Inicial",
-      valor: formatNumber(totales.saldoInicial),
+      valor: formatNumber(totales.saldoInicialView),
       color: "#1677ff",
     },
     {
@@ -403,7 +434,7 @@ export default function CajaChicaPage() {
               const res = await fetch(`/api/caja-chica?date=${tomorrow}`);
               if (res.ok) {
                 messageApiRef.current.success(
-                  "Caja cerrada. Saldo inicial generado para mañana."
+                  "Caja cerrada. Saldo inicial generado para mañana.",
                 );
                 // Optionally switch view to tomorrow or stay?
                 // User likely wants to stay, just confirm it's done.
