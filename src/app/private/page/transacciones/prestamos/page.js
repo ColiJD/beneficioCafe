@@ -27,6 +27,7 @@ import DrawerPrestamo from "@/components/Prestamos/DrawerPrestamo.jsx";
 import useClientAndDesktop from "@/hook/useClientAndDesktop";
 import DrawerCalculoInteres from "@/components/Prestamos/calculoInteres";
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 import { DeleteFilled, FilePdfOutlined } from "@ant-design/icons";
 import { generarReportePDF } from "@/Doc/Reportes/FormatoDoc";
 
@@ -588,7 +589,7 @@ export default function PrestamosGeneral() {
         },
       },
     ],
-    [isDesktop],
+    [isDesktop, handleAnular],
   );
 
   const columnasPrestamos = useMemo(() => {
@@ -601,36 +602,39 @@ export default function PrestamosGeneral() {
     return columnas.filter((col) => col.dataIndex !== "prestamo");
   }, [columnas]);
 
-  const handleAnular = async (id, tipo, endpoint) => {
-    try {
-      const res = await fetch(endpoint, {
-        method: "DELETE",
-      });
+  const handleAnular = useCallback(
+    async (id, tipo, endpoint) => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "DELETE",
+        });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || `No se pudo anular el ${tipo}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || `No se pudo anular el ${tipo}`);
+        }
+
+        messageApiRef.current.success(
+          `${
+            tipo.includes("MOVIMIENTO")
+              ? "Movimiento"
+              : tipo === "PRESTAMO"
+                ? "Préstamo"
+                : "Anticipo"
+          } anulado correctamente`,
+        );
+
+        // 🔹 Recargar la tabla del cliente
+        if (clienteSeleccionado?.clienteID) {
+          await cargarPrestamos(clienteSeleccionado.clienteID);
+        }
+      } catch (err) {
+        console.error(err);
+        messageApiRef.current.error(err.message || `Error al anular ${tipo}`);
       }
-
-      messageApiRef.current.success(
-        `${
-          tipo.includes("MOVIMIENTO")
-            ? "Movimiento"
-            : tipo === "PRESTAMO"
-              ? "Préstamo"
-              : "Anticipo"
-        } anulado correctamente`,
-      );
-
-      // 🔹 Recargar la tabla del cliente
-      if (clienteSeleccionado?.clienteID) {
-        await cargarPrestamos(clienteSeleccionado.clienteID);
-      }
-    } catch (err) {
-      console.error(err);
-      messageApiRef.current.error(err.message || `Error al anular ${tipo}`);
-    }
-  };
+    },
+    [clienteSeleccionado, cargarPrestamos],
+  );
 
   const handleAgregarPrestamo = async (nuevoRegistro) => {
     try {
