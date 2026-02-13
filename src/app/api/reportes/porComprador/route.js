@@ -16,7 +16,7 @@ export async function GET(req) {
       } catch (error) {
         return new Response(
           JSON.stringify({ error: "Error cargando compradores" }),
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -51,6 +51,7 @@ export async function GET(req) {
         },
         include: {
           detalleliqsalida: true, // Traemos las liquidaciones
+          producto: { select: { productName: true } },
         },
         orderBy: { salidaFecha: "asc" },
       });
@@ -58,6 +59,7 @@ export async function GET(req) {
       detallesSalidas = salidas.map((s) => {
         const cantidadQQ = Number(s.salidaCantidadQQ) || 0;
         const precioQQ = Number(s.salidaPrecio) || 0;
+        const producto = s.producto?.productName || "Desconocido";
 
         // Filtrar liquidaciones anuladas
         const totalQQEntregado = s.detalleliqsalida
@@ -70,6 +72,7 @@ export async function GET(req) {
           id: s.salidaID,
           fecha: s.salidaFecha,
           descripcion: s.salidaDescripcion || "Confirmación de Venta",
+          producto,
           cantidadQQ, // Inicial QQ
           totalQQ: totalQQEntregado, // Entregado según liquidaciones
           totalQQPorLiquidar, // Pendiente real
@@ -82,11 +85,11 @@ export async function GET(req) {
       // Totales generales
       const totalQQSalidas = detallesSalidas.reduce(
         (sum, s) => sum + s.cantidadQQ, // SUMA DE INICIALES
-        0
+        0,
       );
       const totalLpsSalidas = detallesSalidas.reduce(
         (sum, s) => sum + s.totalLps,
-        0
+        0,
       );
       const promedioPrecioSalidas =
         totalQQSalidas > 0 ? totalLpsSalidas / totalQQSalidas : 0;
@@ -135,17 +138,17 @@ export async function GET(req) {
 
       const totalQQCompras = detallesComprasSalida.reduce(
         (sum, c) => sum + c.cantidadQQ,
-        0
+        0,
       );
       const totalLpsCompras = detallesComprasSalida.reduce(
         (sum, c) => sum + c.totalLps,
-        0
+        0,
       );
       const promedioPrecioCompras =
         totalQQCompras > 0
           ? detallesComprasSalida.reduce(
               (sum, c) => sum + c.precioQQ * c.cantidadQQ,
-              0
+              0,
             ) / totalQQCompras
           : 0;
       totalsCompras = {
@@ -205,11 +208,11 @@ export async function GET(req) {
 
         const totalQQEntregado = detalles.reduce(
           (sum, d) => sum + d.cantidadQQ,
-          0
+          0,
         );
         const totalLpsEntregado = detalles.reduce(
           (sum, d) => sum + d.totalLps,
-          0
+          0,
         );
 
         const cantidadContrato = Number(c.contratoCantidadQQ) || 0;
@@ -231,11 +234,11 @@ export async function GET(req) {
 
       const totalQQContratos = detallesContratos.reduce(
         (sum, c) => sum + c.totalQQ,
-        0
+        0,
       );
       const totalLpsContratos = detallesContratos.reduce(
         (sum, c) => sum + c.totalLps,
-        0
+        0,
       );
 
       totalsContratos = {
@@ -280,13 +283,13 @@ export async function GET(req) {
         Totales,
         filas: [filaConfirmacionVenta, filaComprasSalida, filaContratos],
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err) {
     console.error(err);
     return new Response(
       JSON.stringify({ error: "Error al obtener movimientos del comprador" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

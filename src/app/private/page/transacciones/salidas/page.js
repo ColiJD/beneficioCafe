@@ -12,6 +12,7 @@ import {
   obtenerSelectData,
   obtenerSalidasPendientes,
   verificarContratosSalidaPendientes,
+  obtenerProductosSelect,
 } from "@/lib/consultas"; // tu función de referencia
 import {
   SolutionOutlined,
@@ -24,6 +25,8 @@ import { PDFComprobante } from "@/Doc/Documentos/generico";
 export default function FormSalida() {
   const [compradores, setCompradores] = useState([]);
   const [comprador, setComprador] = useState(null);
+  const [productos, setProductos] = useState([]);
+  const [producto, setProducto] = useState(null);
   const [salidaCantidadQQ, setSalidaCantidadQQ] = useState("");
   const [salidaPrecio, setSalidaPrecio] = useState("");
   const [salidaDescripcion, setSalidaDescripcion] = useState("");
@@ -46,13 +49,13 @@ export default function FormSalida() {
 
       const data = await obtenerSalidasPendientes(comprador.value);
       const contratos = await verificarContratosSalidaPendientes(
-        comprador.value
+        comprador.value,
       );
 
       const mensajes = [];
       if (data.cantidadPendiente > 0) {
         mensajes.push(
-          `Salidas pendientes: ${Number(data.cantidadPendiente).toFixed(2)} QQ`
+          `Salidas pendientes: ${Number(data.cantidadPendiente).toFixed(2)} QQ`,
         );
       }
 
@@ -78,13 +81,18 @@ export default function FormSalida() {
       });
       setCompradores(compradoresData);
     }
+    async function cargarProductos() {
+      const data = await obtenerProductosSelect(messageApiRef.current);
+      setProductos(data);
+    }
     cargarCompradores();
+    cargarProductos();
   }, []);
 
   const handleAbrirLiquidacion = async (comprador) => {
     if (!comprador?.value) {
       messageApiRef.current.warning(
-        "No se ha seleccionado un comprador válido."
+        "No se ha seleccionado un comprador válido.",
       );
       return;
     }
@@ -104,6 +112,7 @@ export default function FormSalida() {
   const validarDatos = () => {
     const newErrors = {};
     if (!comprador) newErrors["Comprador"] = "Seleccione un comprador";
+    if (!producto) newErrors["Producto"] = "Seleccione un producto";
     if (!salidaCantidadQQ || parseFloat(salidaCantidadQQ) <= 0)
       newErrors["Cantidad"] = "Cantidad debe ser mayor que cero";
     if (!salidaPrecio || parseFloat(salidaPrecio) <= 0)
@@ -125,6 +134,7 @@ export default function FormSalida() {
     setSubmitting(true);
     const data = {
       compradorID: comprador.value,
+      productoID: producto.value,
       salidaCantidadQQ: parseFloat(salidaCantidadQQ),
       salidaPrecio: parseFloat(salidaPrecio),
       salidaDescripcion,
@@ -157,9 +167,10 @@ export default function FormSalida() {
         await PDFComprobante({
           tipoComprobante: "COMPROBANTE DE SALIDA",
           cliente: comprador.label,
+          producto: producto.label,
           productos: [
             {
-              nombre: "Cafe Seco", // o usar salidaDescripcion si es más general
+              nombre: producto.label,
               cantidad: parseFloat(salidaCantidadQQ),
               precio: parseFloat(salidaPrecio),
               total: parseFloat(salidaCantidadQQ) * parseFloat(salidaPrecio),
@@ -186,6 +197,7 @@ export default function FormSalida() {
 
       // Limpiar formulario
       setComprador(null);
+      setProducto(null);
       setSalidaCantidadQQ("");
       setSalidaPrecio("");
       setSalidaDescripcion("");
@@ -207,6 +219,15 @@ export default function FormSalida() {
       options: compradores,
       required: true,
       error: errors["Comprador"],
+    },
+    {
+      label: "Producto",
+      value: producto,
+      setter: setProducto,
+      type: "select",
+      options: productos,
+      required: true,
+      error: errors["Producto"],
     },
     {
       label: "Cantidad (QQ)",
@@ -293,12 +314,12 @@ export default function FormSalida() {
                   "No hay salidas pendientes para este comprador"
                 ) {
                   messageApiRef.current.warning(
-                    "No hay pendientes para liquidar."
+                    "No hay pendientes para liquidar.",
                   );
                   return;
                 }
                 messageApiRef.current.error(
-                  result.error || "Error en la liquidación"
+                  result.error || "Error en la liquidación",
                 );
                 return;
               }

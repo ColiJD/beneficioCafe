@@ -4,19 +4,21 @@ import { checkRole } from "@/lib/checkRole";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { compradorID, cantidadLiquidar, descripcion } = body;
+    const { compradorID, productoID, cantidadLiquidar, descripcion } = body;
 
     const compradorIdNum = Number(compradorID);
+    const productoIdNum = Number(productoID);
     const cantidadSolicitada = Number(cantidadLiquidar);
 
     if (
       isNaN(compradorIdNum) ||
+      isNaN(productoIdNum) ||
       isNaN(cantidadSolicitada) ||
       cantidadSolicitada <= 0
     ) {
       return NextResponse.json(
         { error: "Faltan datos obligatorios o inválidos" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -26,45 +28,43 @@ export async function POST(req) {
       let cantidad = roundToTwo(cantidadSolicitada);
 
       // ----------------------------
-      // ✔ Verificar inventario global disponible
+      // ✔ Verificar inventario específico disponible
       // ----------------------------
-      const totalInventario = await tx.inventariocliente.aggregate({
-        _sum: { cantidadQQ: true },
+      const inventarioExistente = await tx.inventariocliente.findUnique({
+        where: { productoID: productoIdNum },
       });
 
       const inventarioDisponible = roundToTwo(
-        Number(totalInventario._sum?.cantidadQQ ?? 0)
+        Number(inventarioExistente?.cantidadQQ ?? 0),
       );
 
       if (inventarioDisponible < cantidad) {
         throw new Error(
-          `Inventario insuficiente. Disponible: ${inventarioDisponible.toFixed(
-            2
-          )} QQ, Solicitado: ${cantidad.toFixed(2)} QQ`
+          `Inventario insuficiente para el producto. Disponible: ${inventarioDisponible.toFixed(
+            2,
+          )} QQ, Solicitado: ${cantidad.toFixed(2)} QQ`,
         );
       }
 
       // ----------------------------
-      // ✔ Obtener salidas válidas (NO ANULADAS)
-      // ✔ No filtrar detalles en SQL (evita convertir LEFT JOIN en INNER)
+      // ✔ Obtener salidas válidas (NO ANULADAS) para el producto específico
       // ----------------------------
       const salidas = await tx.salida.findMany({
         where: {
           compradorID: compradorIdNum,
+          productoID: productoIdNum,
           salidaMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] },
         },
         orderBy: { salidaFecha: "asc" },
         include: {
           detalleliqsalida: {
             select: { cantidadQQ: true, movimiento: true },
-            // ❌ NO usar notIn aquí, se filtra manualmente
           },
         },
       });
 
       // ----------------------------
-      // ✔ Calcular pendientes con filtro correcto:
-      //   d.movimiento IS NULL OR d.movimiento NOT IN (...)
+      // ✔ Calcular pendientes
       // ----------------------------
       const pendientes = salidas
         .map((s) => {
@@ -72,13 +72,13 @@ export async function POST(req) {
             .filter(
               (d) =>
                 d.movimiento === null ||
-                !["ANULADO", "Anulado", "anulado"].includes(d.movimiento)
+                !["ANULADO", "Anulado", "anulado"].includes(d.movimiento),
             )
             .reduce((acc, d) => acc + Number(d.cantidadQQ || 0), 0);
 
           const totalLiquidadoRounded = roundToTwo(totalLiquidado);
           const pendiente = roundToTwo(
-            Number(s.salidaCantidadQQ) - totalLiquidadoRounded
+            Number(s.salidaCantidadQQ) - totalLiquidadoRounded,
           );
 
           return { salidaID: s.salidaID, pendiente };
@@ -98,7 +98,8 @@ export async function POST(req) {
           liqMovimiento: "Salida",
           liqCantidadQQ: cantidad,
           liqDescripcion: descripcion || "",
-          compradores: { connect: { compradorId: compradorIdNum } }, // Relación correcta
+          compradorID: compradorIdNum, // Relación directa ahora
+          productoID: productoIdNum,
         },
       });
 
@@ -123,91 +124,55 @@ export async function POST(req) {
       }
 
       // ----------------------------
-      // ✔ Reducir inventario global (FIFO)
+      // ✔ Reducir inventario específico
       // ----------------------------
-      const inventarios = await tx.inventariocliente.findMany({
-        orderBy: { inventarioClienteID: "asc" },
+      await tx.inventariocliente.update({
+        where: { inventarioClienteID: inventarioExistente.inventarioClienteID },
+        data: {
+          cantidadQQ: { decrement: cantidadSolicitada },
+        },
       });
 
-      let restanteQQ = roundToTwo(cantidadSolicitada);
-      const movimientosACrear = [];
-
-      for (const inv of inventarios) {
-        if (restanteQQ <= 0) break;
-
-        const cantidadDisponible = roundToTwo(Number(inv.cantidadQQ));
-        if (cantidadDisponible <= 0) continue;
-
-        const descontarQQ = roundToTwo(
-          Math.min(restanteQQ, cantidadDisponible)
-        );
-
-        // Actualizar inventario
-        await tx.inventariocliente.update({
-          where: { inventarioClienteID: inv.inventarioClienteID },
-          data: {
-            cantidadQQ: { decrement: descontarQQ },
-          },
-        });
-
-        // Preparar movimiento para crear en lote
-        movimientosACrear.push({
-          inventarioClienteID: inv.inventarioClienteID,
+      // Registrar movimiento
+      await tx.movimientoinventario.create({
+        data: {
+          inventarioClienteID: inventarioExistente.inventarioClienteID,
           tipoMovimiento: "Salida",
           referenciaTipo: "Liquidación Salida",
           referenciaID: liqSalida.liqSalidaID,
-          cantidadQQ: descontarQQ,
+          cantidadQQ: cantidadSolicitada,
           nota: `Liquidación de salida #${liqSalida.liqSalidaID} - Comprador ID: ${compradorIdNum}`,
-        });
-
-        restanteQQ = roundToTwo(restanteQQ - descontarQQ);
-      }
-
-      // Crear todos los movimientos en una sola operación
-      if (movimientosACrear.length > 0) {
-        await tx.movimientoinventario.createMany({
-          data: movimientosACrear,
-        });
-      }
-
-      // Verificación final (margen por decimales)
-      if (restanteQQ > 0) {
-        // Mayor a 0 exacto porque roundToTwo ya maneja precisión
-        // Ojo: si roundToTwo funcionó perfecto, esto debería ser 0 exácto.
-        // Pero por seguridad podemos dejar un margen minúsculo o confiar en el redondeo
-      }
-
-      if (restanteQQ > 0.009) {
-        throw new Error(
-          `Error interno: No se pudo descontar todo el inventario. Faltan ${restanteQQ.toFixed(
-            2
-          )} QQ`
-        );
-      }
+        },
+      });
 
       return liqSalida;
     });
 
     return NextResponse.json(
       { liqSalidaID: resultado.liqSalidaID },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error FIFO transacción:", error);
 
     if (error.message === "NO_PENDIENTES") {
       return NextResponse.json(
-        { error: "No hay salidas pendientes para este comprador" },
-        { status: 400 }
+        {
+          error:
+            "No hay salidas pendientes de este producto para este comprador",
+        },
+        { status: 400 },
       );
     }
 
-    // Manejar error de inventario insuficiente
     if (error.message && error.message.includes("Inventario insuficiente")) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error interno: " + error.message },
+      { status: 500 },
+    );
   }
 }
 
@@ -247,6 +212,12 @@ export async function GET(req) {
             compradorNombre: true,
           },
         },
+        producto: {
+          select: {
+            productID: true,
+            productName: true,
+          },
+        },
       },
       orderBy: { liqFecha: "desc" },
     });
@@ -259,7 +230,7 @@ export async function GET(req) {
     console.error("Error en reporte de liquidaciones de salida:", error);
     return new Response(
       JSON.stringify({ error: "Error al obtener liquidaciones de salida" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

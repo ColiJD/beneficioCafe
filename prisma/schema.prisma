@@ -241,6 +241,8 @@ model producto {
   deposito          deposito[]
   inventariocliente inventariocliente?
   liqdeposito       liqdeposito[]
+  liqsalida         liqsalida[]
+  salida            salida[]
 }
 
 model movimientos_prestamo {
@@ -318,27 +320,33 @@ model liqsalida {
   liqSalidaID      Int                @id @default(autoincrement())
   liqFecha         DateTime?          @db.DateTime(0)
   compradorID      Int?
+  productoID       Int?
   liqMovimiento    String?            @db.VarChar(20)
   liqCantidadQQ    Decimal?           @db.Decimal(15, 2)
   liqDescripcion   String?            @db.VarChar(200)
   detalleliqsalida detalleliqsalida[]
   compradores      compradores?       @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "liqsalida_ibfk_1")
+  producto         producto?          @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "liqsalida_ibfk_2")
 
   @@index([compradorID], map: "compradorID")
+  @@index([productoID], map: "liqsalida_productoID")
 }
 
 model salida {
   salidaID          Int                @id @default(autoincrement())
   salidaFecha       DateTime?          @db.DateTime(0)
   compradorID       Int
+  productoID        Int
   salidaMovimiento  String?            @db.VarChar(20)
   salidaCantidadQQ  Decimal?           @db.Decimal(15, 2)
   salidaPrecio      Decimal?           @db.Decimal(15, 2)
   salidaDescripcion String?            @db.VarChar(200)
   detalleliqsalida  detalleliqsalida[]
   compradores       compradores        @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "salida_ibfk_1")
+  producto          producto           @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "salida_ibfk_2")
 
   @@index([compradorID], map: "compradorID")
+  @@index([productoID], map: "salida_productoID")
 }
 
 model caja_chica {
