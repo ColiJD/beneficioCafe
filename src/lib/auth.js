@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { prismaSafe } from "@/lib/prismaSafe";
 
 export const authOptions = {
   providers: [
@@ -13,9 +14,12 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const user = await prisma.users.findUnique({
-          where: { userEmail: credentials.email },
-          include: { roles: true },
+        // Envolvemos la consulta en prismaSafe para manejar errores de conexión
+        const user = await prismaSafe(async () => {
+          return prisma.users.findUnique({
+            where: { userEmail: credentials.email },
+            include: { roles: true },
+          });
         });
 
         const errorMsg = "Usuario o contraseña incorrecta";
@@ -23,7 +27,7 @@ export const authOptions = {
 
         const isValid = await bcrypt.compare(
           credentials.password,
-          user.userPassword
+          user.userPassword,
         );
 
         if (!isValid) throw new Error(errorMsg);
@@ -32,17 +36,19 @@ export const authOptions = {
         const refreshToken = crypto.randomBytes(32).toString("hex");
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 día
 
-        // Limpiar tokens anteriores del usuario
-        await prisma.password_resets.deleteMany({
-          where: { userId: user.userId },
-        });
+        // Limpiar tokens anteriores y crear nuevo token de manera segura
+        await prismaSafe(async () => {
+          await prisma.password_resets.deleteMany({
+            where: { userId: user.userId },
+          });
 
-        await prisma.password_resets.create({
-          data: {
-            userId: user.userId,
-            token: refreshToken,
-            expiresAt,
-          },
+          await prisma.password_resets.create({
+            data: {
+              userId: user.userId,
+              token: refreshToken,
+              expiresAt,
+            },
+          });
         });
 
         return {
