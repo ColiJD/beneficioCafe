@@ -108,6 +108,7 @@ model compra {
   @@index([compraTipoCafe], map: "compraTipoCafe")
   @@index([compradorID], map: "compradorID")
   @@index([clienteID, compraMovimiento, compraFecha])
+  @@index([compraMovimiento, compraFecha])
 }
 
 model contrato {
@@ -156,6 +157,7 @@ model deposito {
   @@index([depositoTipoCafe], map: "depositoTipoCafe")
   @@index([contratoID], map: "contratoID")
   @@index([clienteID, depositoMovimiento, depositoFecha])
+  @@index([depositoMovimiento, depositoFecha])
 }
 
 model detallecontrato {
@@ -216,6 +218,7 @@ model liqdeposito {
   @@index([liqTipoCafe], map: "liqTipoCafe")
   @@index([liqclienteID], map: "liqclienteID")
   @@index([liqclienteID, liqMovimiento, liqFecha])
+  @@index([liqMovimiento, liqFecha])
 }
 
 model movimientoinventario {
@@ -262,6 +265,7 @@ model movimientos_prestamo {
 
   @@index([prestamo_id], map: "prestamo_id")
   @@index([prestamo_id, fecha, tipo_movimiento])
+  @@index([tipo_movimiento])
 }
 
 model prestamos {
@@ -278,6 +282,7 @@ model prestamos {
 
   @@index([clienteId], map: "clienteId")
   @@index([clienteId, estado])
+  @@index([estado])
 }
 
 model anticipo {
@@ -294,6 +299,7 @@ model anticipo {
 
   @@index([clienteId], map: "clienteId")
   @@index([clienteId, estado])
+  @@index([estado])
 }
 
 model movimientos_anticipos {
@@ -309,6 +315,7 @@ model movimientos_anticipos {
 
   @@index([anticipoId], map: "anticipoId")
   @@index([anticipoId, fecha, tipo_movimiento])
+  @@index([tipo_movimiento])
 }
 
 model detalleliqsalida {
@@ -357,6 +364,7 @@ model salida {
   @@index([compradorID], map: "compradorID")
   @@index([productoID], map: "salida_productoID")
   @@index([compradorID, salidaMovimiento, salidaFecha])
+  @@index([salidaMovimiento, salidaFecha])
 }
 
 model caja_chica {

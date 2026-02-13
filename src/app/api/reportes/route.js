@@ -24,7 +24,7 @@ export async function GET(req) {
     } else {
       const ahora = new Date();
       desde = new Date(
-        Date.UTC(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0)
+        Date.UTC(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0),
       );
       hasta = new Date(
         Date.UTC(
@@ -34,8 +34,8 @@ export async function GET(req) {
           23,
           59,
           59,
-          999
-        )
+          999,
+        ),
       );
     }
 
@@ -68,7 +68,7 @@ export async function GET(req) {
         acc.total += Number(item.cantidadQQ || 0) * Number(item.precioQQ || 0);
         return acc;
       },
-      { cantidadQQ: 0, total: 0 }
+      { cantidadQQ: 0, total: 0 },
     );
 
     // 🔹 Depósitos
@@ -91,7 +91,7 @@ export async function GET(req) {
       },
     });
     const totalDepositosQQ = Number(
-      totalDepositosRaw._sum.depositoCantidadQQ ?? 0
+      totalDepositosRaw._sum.depositoCantidadQQ ?? 0,
     );
 
     // 🔹 Salidas
@@ -111,7 +111,7 @@ export async function GET(req) {
         acc.total += cantidad * precio;
         return acc;
       },
-      { cantidadQQ: 0, total: 0 }
+      { cantidadQQ: 0, total: 0 },
     );
 
     const contratoSalidas = await prisma.detalleContratoSalida.findMany({
@@ -128,13 +128,13 @@ export async function GET(req) {
         acc.total += Number(item.cantidadQQ || 0) * Number(item.precioQQ || 0);
         return acc;
       },
-      { cantidadQQ: 0, total: 0 }
+      { cantidadQQ: 0, total: 0 },
     );
 
     // 🔹 Préstamos
     const prestamosActivos = await prisma.prestamos.aggregate({
       _sum: { monto: true },
-      where: { estado: "ACTIVO" },
+      where: { estado: { notIn: ["ANULADO", "Anulado"] } },
     });
 
     // 🔹 Movimientos de préstamo filtrando los tres tipos
@@ -143,7 +143,7 @@ export async function GET(req) {
       _sum: { monto: true },
       where: {
         tipo_movimiento: { in: ["ABONO", "PAGO_INTERES", "Int-Cargo"] },
-        // usa el rango de fechas definido arriba
+        prestamos: { estado: { notIn: ["ANULADO", "Anulado"] } },
       },
     });
 
@@ -172,7 +172,7 @@ export async function GET(req) {
     // 🔹 Anticipos
     const anticiposActivos = await prisma.anticipo.aggregate({
       _sum: { monto: true },
-      where: { estado: "ACTIVO" },
+      where: { estado: { notIn: ["ANULADO", "Anulado"] } },
     });
 
     // 🔹 Movimientos de anticipo filtrando los dos tipos
@@ -184,6 +184,7 @@ export async function GET(req) {
           in: ["CARGO_ANTICIPO", "INTERES_ANTICIPO", "ABONO_ANTICIPO"],
         },
         // usa el mismo rango de fechas
+        anticipo: { estado: { notIn: ["ANULADO", "Anulado"] } },
       },
     });
 
@@ -200,7 +201,7 @@ export async function GET(req) {
         resumenMovimientosAnticipo.hasOwnProperty(mov.tipo_movimiento)
       ) {
         resumenMovimientosAnticipo[mov.tipo_movimiento] = Number(
-          mov._sum.monto ?? 0
+          mov._sum.monto ?? 0,
         );
       }
     });
@@ -252,7 +253,7 @@ export async function GET(req) {
         pendiente,
         contratoSalidasTotal,
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error en API:", error);
