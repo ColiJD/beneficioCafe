@@ -8,7 +8,7 @@ export async function GET(req, { params }) {
       JSON.stringify({
         error: "compradorID es obligatorio y debe ser un número válido",
       }),
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -25,6 +25,10 @@ export async function GET(req, { params }) {
         salidaID: true,
         salidaCantidadQQ: true,
         salidaDescripcion: true,
+        productoID: true,
+        producto: {
+          select: { productName: true },
+        },
 
         // LEFT JOIN detalles
         detalleliqsalida: {
@@ -44,12 +48,14 @@ export async function GET(req, { params }) {
           .filter(
             (d) =>
               d.movimiento === null ||
-              !["ANULADO", "Anulado", "anulado"].includes(d.movimiento)
+              !["ANULADO", "Anulado", "anulado"].includes(d.movimiento),
           )
           .reduce((acc, d) => acc + Number(d.cantidadQQ || 0), 0);
 
         return {
           salidaID: s.salidaID,
+          productoID: s.productoID,
+          productName: s.producto?.productName || "Desconocido",
           cantidadPendiente: Number(s.salidaCantidadQQ) - entregado,
           detalles: s.salidaDescripcion,
         };
@@ -59,7 +65,7 @@ export async function GET(req, { params }) {
     // TOTAL GENERAL
     const cantidadPendiente = pendientes.reduce(
       (acc, s) => acc + s.cantidadPendiente,
-      0
+      0,
     );
 
     return new Response(
@@ -67,13 +73,13 @@ export async function GET(req, { params }) {
         cantidadPendiente,
         detalles: pendientes,
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
     return new Response(
       JSON.stringify({ error: "Error obteniendo salidas pendientes" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

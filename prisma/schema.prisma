@@ -67,21 +67,20 @@ model cierrecontrato {
 }
 
 model cliente {
-  clienteID          Int                 @id @default(autoincrement())
-  clienteCedula      String?             @unique(map: "clienteCedula") @db.VarChar(15)
-  clienteNombre      String?             @db.VarChar(20)
-  clienteApellido    String?             @db.VarChar(20)
-  clienteDirecion    String?             @db.VarChar(200)
-  clienteMunicipio   String?             @db.VarChar(30)
-  clienteDepartament String?             @db.VarChar(30)
-  claveIHCAFE        String?             @db.VarChar(30)
-  clienteTelefono    String?             @db.VarChar(30)
-  clienteRTN         String?             @db.VarChar(17)
+  clienteID          Int           @id @default(autoincrement())
+  clienteCedula      String?       @unique(map: "clienteCedula") @db.VarChar(15)
+  clienteNombre      String?       @db.VarChar(20)
+  clienteApellido    String?       @db.VarChar(20)
+  clienteDirecion    String?       @db.VarChar(200)
+  clienteMunicipio   String?       @db.VarChar(30)
+  clienteDepartament String?       @db.VarChar(30)
+  claveIHCAFE        String?       @db.VarChar(30)
+  clienteTelefono    String?       @db.VarChar(30)
+  clienteRTN         String?       @db.VarChar(17)
   anticipo           anticipo[]
   compra             compra[]
   contrato           contrato[]
   deposito           deposito[]
-  inventariocliente  inventariocliente[]
   liqdeposito        liqdeposito[]
   prestamos          prestamos[]
 }
@@ -108,6 +107,8 @@ model compra {
   @@index([clienteID], map: "clienteID")
   @@index([compraTipoCafe], map: "compraTipoCafe")
   @@index([compradorID], map: "compradorID")
+  @@index([clienteID, compraMovimiento, compraFecha])
+  @@index([compraMovimiento, compraFecha])
 }
 
 model contrato {
@@ -130,6 +131,7 @@ model contrato {
   detallecontrato     detallecontrato[]
 
   @@index([contratoTipoCafe], map: "contratoTipoCafe")
+  @@index([contratoclienteID, contratoMovimiento])
   @@index([contratoclienteID], map: "contratoclienteID")
 }
 
@@ -154,6 +156,8 @@ model deposito {
   @@index([clienteID], map: "clienteID")
   @@index([depositoTipoCafe], map: "depositoTipoCafe")
   @@index([contratoID], map: "contratoID")
+  @@index([clienteID, depositoMovimiento, depositoFecha])
+  @@index([depositoMovimiento, depositoFecha])
 }
 
 model detallecontrato {
@@ -186,16 +190,12 @@ model detalleliqdeposito {
 
 model inventariocliente {
   inventarioClienteID  Int                    @id @default(autoincrement())
-  clienteID            Int?
-  compradorID          Int?
-  productoID           Int
+  productoID           Int                    @unique(map: "uq_producto")
   cantidadQQ           Decimal                @default(0.00) @db.Decimal(15, 2)
   cantidadSacos        Decimal                @default(0.00) @db.Decimal(15, 2)
-  cliente              cliente?               @relation(fields: [clienteID], references: [clienteID], onUpdate: NoAction, map: "inventariocliente_ibfk_1")
   producto             producto               @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "inventariocliente_ibfk_2")
   movimientoinventario movimientoinventario[]
 
-  @@unique([clienteID, productoID], map: "uq_cliente_producto")
   @@index([productoID], map: "productoID")
 }
 
@@ -217,6 +217,8 @@ model liqdeposito {
 
   @@index([liqTipoCafe], map: "liqTipoCafe")
   @@index([liqclienteID], map: "liqclienteID")
+  @@index([liqclienteID, liqMovimiento, liqFecha])
+  @@index([liqMovimiento, liqFecha])
 }
 
 model movimientoinventario {
@@ -235,17 +237,19 @@ model movimientoinventario {
 }
 
 model producto {
-  productID         Int                 @id @default(autoincrement())
-  productName       String              @unique(map: "productName") @db.VarChar(50)
-  tara              Decimal?            @default(0.00) @db.Decimal(5, 2)
-  descuento         Decimal?            @default(0.00) @db.Decimal(5, 2)
-  factorOro         Decimal?            @default(1.00) @db.Decimal(10, 2)
+  productID         Int                @id @default(autoincrement())
+  productName       String             @unique(map: "productName") @db.VarChar(50)
+  tara              Decimal?           @default(0.00) @db.Decimal(5, 2)
+  descuento         Decimal?           @default(0.00) @db.Decimal(5, 2)
+  factorOro         Decimal?           @default(1.00) @db.Decimal(10, 2)
   compra            compra[]
   contrato          contrato[]
   contratoSalida    contratoSalida[]
   deposito          deposito[]
-  inventariocliente inventariocliente[]
+  inventariocliente inventariocliente?
   liqdeposito       liqdeposito[]
+  liqsalida         liqsalida[]
+  salida            salida[]
 }
 
 model movimientos_prestamo {
@@ -260,6 +264,8 @@ model movimientos_prestamo {
   prestamos       prestamos? @relation(fields: [prestamo_id], references: [prestamoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_prestamo_ibfk_1")
 
   @@index([prestamo_id], map: "prestamo_id")
+  @@index([prestamo_id, fecha, tipo_movimiento])
+  @@index([tipo_movimiento])
 }
 
 model prestamos {
@@ -275,6 +281,8 @@ model prestamos {
   cliente              cliente?               @relation(fields: [clienteId], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_ibfk_1")
 
   @@index([clienteId], map: "clienteId")
+  @@index([clienteId, estado])
+  @@index([estado])
 }
 
 model anticipo {
@@ -290,6 +298,8 @@ model anticipo {
   movimientos_anticipos movimientos_anticipos[]
 
   @@index([clienteId], map: "clienteId")
+  @@index([clienteId, estado])
+  @@index([estado])
 }
 
 model movimientos_anticipos {
@@ -304,6 +314,8 @@ model movimientos_anticipos {
   anticipo        anticipo? @relation(fields: [anticipoId], references: [anticipoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_anticipos_ibfk_1")
 
   @@index([anticipoId], map: "anticipoId")
+  @@index([anticipoId, fecha, tipo_movimiento])
+  @@index([tipo_movimiento])
 }
 
 model detalleliqsalida {
@@ -323,27 +335,36 @@ model liqsalida {
   liqSalidaID      Int                @id @default(autoincrement())
   liqFecha         DateTime?          @db.DateTime(0)
   compradorID      Int?
+  productoID       Int?
   liqMovimiento    String?            @db.VarChar(20)
   liqCantidadQQ    Decimal?           @db.Decimal(15, 2)
   liqDescripcion   String?            @db.VarChar(200)
   detalleliqsalida detalleliqsalida[]
   compradores      compradores?       @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "liqsalida_ibfk_1")
+  producto         producto?          @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "liqsalida_ibfk_2")
 
   @@index([compradorID], map: "compradorID")
+  @@index([productoID], map: "liqsalida_productoID")
+  @@index([compradorID, liqMovimiento, liqFecha])
 }
 
 model salida {
   salidaID          Int                @id @default(autoincrement())
   salidaFecha       DateTime?          @db.DateTime(0)
   compradorID       Int
+  productoID        Int
   salidaMovimiento  String?            @db.VarChar(20)
   salidaCantidadQQ  Decimal?           @db.Decimal(15, 2)
   salidaPrecio      Decimal?           @db.Decimal(15, 2)
   salidaDescripcion String?            @db.VarChar(200)
   detalleliqsalida  detalleliqsalida[]
   compradores       compradores        @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "salida_ibfk_1")
+  producto          producto           @relation(fields: [productoID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "salida_ibfk_2")
 
   @@index([compradorID], map: "compradorID")
+  @@index([productoID], map: "salida_productoID")
+  @@index([compradorID, salidaMovimiento, salidaFecha])
+  @@index([salidaMovimiento, salidaFecha])
 }
 
 model caja_chica {
@@ -391,4 +412,5 @@ model detalleContratoSalida {
   contratoSalida contratoSalida @relation(fields: [contratoID], references: [contratoID], onDelete: NoAction, onUpdate: NoAction, map: "detalleContratoSalida_ibfk_1")
 
   @@index([contratoID], map: "detalleContratoSalidaContratoID")
+  @@index([tipoMovimiento, fecha])
 }

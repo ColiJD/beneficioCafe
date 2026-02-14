@@ -64,15 +64,15 @@ export default function ContratoForm({ contratoID }) {
       try {
         const data = await obtenerSalidasPendientes(formState.comprador.value);
         const contratos = await verificarContratosSalidaPendientes(
-          formState.comprador.value
+          formState.comprador.value,
         );
 
         const mensajes = [];
         if (data.cantidadPendiente > 0) {
           mensajes.push(
             `Salidas pendientes: ${Number(data.cantidadPendiente).toFixed(
-              2
-            )} QQ`
+              2,
+            )} QQ`,
           );
         }
         if (contratos.length > 0) {
@@ -223,7 +223,7 @@ export default function ContratoForm({ contratoID }) {
                 style={{ marginTop: 6 }}
                 onClick={() =>
                   router.push(
-                    "/private/page/transacciones/contratoSalida/registrocontrato"
+                    "/private/page/transacciones/contratoSalida/registrocontrato",
                   )
                 }
               >
@@ -237,7 +237,7 @@ export default function ContratoForm({ contratoID }) {
       messageApi.success(
         contratoID
           ? "Contrato actualizado exitosamente"
-          : "Contrato registrado exitosamente"
+          : "Contrato registrado exitosamente",
       );
 
       setPreviewVisible(false);
@@ -267,7 +267,7 @@ export default function ContratoForm({ contratoID }) {
 
       // 🔹 Limpieza del formulario
       limpiarFormulario(
-        Object.fromEntries(fieldsConfig.map((f) => [f.key, formState[f.key]]))
+        Object.fromEntries(fieldsConfig.map((f) => [f.key, formState[f.key]])),
       );
       setFormState({
         comprador: null,
@@ -300,14 +300,14 @@ export default function ContratoForm({ contratoID }) {
 
         // Buscar comprador y producto en los selects
         const compradorSeleccionado = compradores.find(
-          (c) => c.value === data.compradorID
+          (c) => c.value === data.compradorID,
         ) || {
           value: data.compradores?.compradorId ?? "nuevo",
           label: data.compradores?.compradorNombre || "Sin nombre",
         };
 
         const productoSeleccionado = productos.find(
-          (p) => p.value === data.contratoTipoCafe
+          (p) => p.value === data.contratoTipoCafe,
         ) || {
           value: data.contratoTipoCafe,
           label: data.producto?.productName || "Sin nombre",
@@ -335,7 +335,7 @@ export default function ContratoForm({ contratoID }) {
   }, [contratoID, loadingData]);
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder} {/* Contenedor de mensajes Ant Design */}
         {loading || loadingData ? (
@@ -367,7 +367,7 @@ export default function ContratoForm({ contratoID }) {
                   icon: <SolutionOutlined />,
                   onClick: () =>
                     router.push(
-                      "/private/page/transacciones/contratoSalida/registrocontrato"
+                      "/private/page/transacciones/contratoSalida/registrocontrato",
                     ),
                 },
               ]}

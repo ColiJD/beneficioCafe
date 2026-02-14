@@ -7,7 +7,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -43,7 +43,7 @@ export async function GET(req) {
         .map((c) => {
           const cantidadEntregada = c.detalleContratoSalida.reduce(
             (sum, d) => sum + Number(d.cantidadQQ || 0),
-            0
+            0,
           );
           const cantidadInicial = Number(c.contratoCantidadQQ || 0);
           const saldoInicial = Number(c.contratoTotalLps || 0);
@@ -95,7 +95,7 @@ export async function GET(req) {
     for (const c of contratos) {
       const entregado = c.detalleContratoSalida.reduce(
         (sum, d) => sum + Number(d.cantidadQQ || 0),
-        0
+        0,
       );
       const pactado = Number(c.contratoCantidadQQ || 0);
 
@@ -117,7 +117,7 @@ export async function GET(req) {
     console.error("❌ Error al obtener contratos pendientes:", error);
     return new Response(
       JSON.stringify({ error: "No se pudieron cargar los contratos." }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -165,7 +165,7 @@ export default function CompradorForm() {
         messageApi.success(
           selectedComprador?.data?.compradorId
             ? "Comprador actualizado con éxito"
-            : "Comprador creado con éxito"
+            : "Comprador creado con éxito",
         );
         setFormState({
           compradorNombre: "",
@@ -184,7 +184,7 @@ export default function CompradorForm() {
           messageApi.error("Error: " + errores);
         } else {
           messageApi.error(
-            "Error: " + (resJson.error || "No se pudo guardar el comprador")
+            "Error: " + (resJson.error || "No se pudo guardar el comprador"),
           );
         }
       }
@@ -220,7 +220,7 @@ export default function CompradorForm() {
       } else {
         const err = await res.json();
         messageApi.error(
-          "Error eliminando: " + (err.error || "Error desconocido")
+          "Error eliminando: " + (err.error || "Error desconocido"),
         );
       }
     } catch (error) {
@@ -230,7 +230,7 @@ export default function CompradorForm() {
   };
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
 

@@ -118,8 +118,8 @@ export default function ResumenMovimientos() {
           key === "totalQQ"
             ? "QQ Total"
             : key === "totalLps"
-            ? "Total Lps"
-            : "Promedio",
+              ? "Total Lps"
+              : "Promedio",
         dataIndex: key,
         key,
         align: "left",
@@ -245,7 +245,7 @@ export default function ResumenMovimientos() {
       row.contratoQQ > 0 ||
       row.contratoLps > 0 ||
       row.depositoQQ > 0 ||
-      row.depositoLps > 0
+      row.depositoLps > 0,
   );
 
   // 🔹 Normalizar y calcular totales de préstamos
@@ -324,8 +324,8 @@ export default function ResumenMovimientos() {
           key === "totalCreditos"
             ? "Total Créditos"
             : key === "totalAbonos"
-            ? "Total Abonos"
-            : "Saldo",
+              ? "Total Abonos"
+              : "Saldo",
         dataIndex: key,
         key,
         align: "left",
@@ -353,15 +353,15 @@ export default function ResumenMovimientos() {
             key === "totalPrestamos"
               ? "Monto Inicial"
               : key === "abono"
-              ? "Abono"
-              : key === "pagoInteres"
-              ? "Pago de interes"
-              : "Cargar Interes",
+                ? "Abono"
+                : key === "pagoInteres"
+                  ? "Pago de interes"
+                  : "Cargar Interes",
           dataIndex: key,
           key,
           align: "left",
           render: (v) => `L. ${formatNumber(v)}`,
-        })
+        }),
       ),
       onHeaderCell: () => ({
         style: {
@@ -378,7 +378,7 @@ export default function ResumenMovimientos() {
       if (col.children) {
         return flattenColumns(
           col.children,
-          parentTitle ? `${parentTitle} ${col.title}` : col.title
+          parentTitle ? `${parentTitle} ${col.title}` : col.title,
         );
       }
       return {
@@ -442,7 +442,7 @@ export default function ResumenMovimientos() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -463,13 +463,13 @@ export default function ResumenMovimientos() {
             onRefresh={() =>
               fetchData(
                 rangoFechas?.[0]?.startOf("day").toISOString(),
-                rangoFechas?.[1]?.endOf("day").toISOString()
+                rangoFechas?.[1]?.endOf("day").toISOString(),
               )
             }
             onExportPDF={() => {
               if (!hayDatos) {
                 messageApi.warning(
-                  "No hay datos válidos para generar el reporte."
+                  "No hay datos válidos para generar el reporte.",
                 );
                 return;
               }
@@ -488,7 +488,7 @@ export default function ResumenMovimientos() {
                     ...datosInventario,
                   ],
                   { fechaInicio: rangoFechas?.[0], fechaFin: rangoFechas?.[1] },
-                  { title: "Reporte Completo" }
+                  { title: "Reporte Completo" },
                 );
                 messageApi.success({
                   content: "Reporte generado correctamente",
@@ -552,7 +552,7 @@ export default function ResumenMovimientos() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>

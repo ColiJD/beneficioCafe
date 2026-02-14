@@ -5,7 +5,7 @@ export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -42,7 +42,7 @@ export async function DELETE(req, { params }) {
           error:
             "No se puede eliminar este cliente porque tiene contratos asociados",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,7 +61,7 @@ export async function DELETE(req, { params }) {
         JSON.stringify({ error: "Cliente no encontrado para eliminar" }),
         {
           status: 404,
-        }
+        },
       );
     }
     if (error.code === "P2003") {
@@ -70,13 +70,13 @@ export async function DELETE(req, { params }) {
           error:
             "No se puede eliminar este cliente por restricciones de integridad referencial",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return new Response(
       JSON.stringify({ error: "Error interno del servidor: " + error.message }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -85,7 +85,7 @@ export async function PUT(req, context) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -123,7 +123,7 @@ export async function PUT(req, context) {
       if (cedulaDuplicada) {
         return new Response(
           JSON.stringify({ error: "Ya existe un cliente con esa cédula" }),
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -161,19 +161,19 @@ export async function PUT(req, context) {
         JSON.stringify({
           error: "Ya existe un registro con algún dato único duplicado",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (error.code === "P2025") {
       return new Response(
         JSON.stringify({ error: "Cliente no encontrado para actualizar" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return new Response(
       JSON.stringify({ error: "Error interno del servidor: " + error.message }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

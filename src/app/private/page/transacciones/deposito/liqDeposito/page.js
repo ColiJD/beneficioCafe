@@ -60,14 +60,14 @@ export default function DepositoForm() {
       if (!formState.cliente || !formState.cliente.value) return;
 
       const mensajesContratos = await verificarClientesPendientesContratos(
-        formState.cliente.value
+        formState.cliente.value,
       );
 
       const mensajesPrestamos = await verificarPrestamosPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
       const mensajesAnticipos = await verificarAnticiposPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
 
       setNotifications([
@@ -128,7 +128,7 @@ export default function DepositoForm() {
           .filter((p) => p.saldoPendiente > 0)
           .map((p) => {
             const prodInfo = todosProductos.find(
-              (prod) => prod.value === p.tipoCafe
+              (prod) => prod.value === p.tipoCafe,
             );
             return {
               value: p.tipoCafe,
@@ -141,7 +141,7 @@ export default function DepositoForm() {
 
         if (productosConSaldo.length === 0) {
           messageRef.current.warning(
-            "El cliente no tiene saldo disponible en ningún café."
+            "El cliente no tiene saldo disponible en ningún café.",
           );
         }
 
@@ -183,7 +183,7 @@ export default function DepositoForm() {
 
       try {
         const resSaldoProducto = await fetch(
-          `/api/liqDeposito?clienteID=${cliente.value}&tipoCafe=${producto.value}`
+          `/api/liqDeposito?clienteID=${cliente.value}&tipoCafe=${producto.value}`,
         );
         const saldoData = await resSaldoProducto.json();
         const saldo = saldoData.saldoDisponible || 0;
@@ -193,7 +193,7 @@ export default function DepositoForm() {
           handleChange("depositoCantidadQQ", "");
           handleChange("depositoPrecioQQ", "");
           messageRef.current.warning(
-            "El cliente no tiene saldo disponible en este café."
+            "El cliente no tiene saldo disponible en este café.",
           );
         }
       } catch {
@@ -217,7 +217,7 @@ export default function DepositoForm() {
   // Confirmar registro de la liquidación
   // ------------------------------
   const handleConfirmar = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setSubmitting(true);
 
     // Validación: cantidad no puede superar saldo
@@ -238,7 +238,6 @@ export default function DepositoForm() {
       liqEn: formState.depositoEn || "Liquidación Depósito",
     };
 
-
     try {
       const res = await fetch("/api/liqDeposito", {
         method: "POST",
@@ -250,7 +249,7 @@ export default function DepositoForm() {
         const result = await res.json();
 
         messageApi.success(
-          `Liquidación registrada. Saldo restante: ${result.saldoDespues}`
+          `Liquidación registrada. Saldo restante: ${result.saldoDespues}`,
         );
         setPreviewVisible(false);
         // 🔹 Cargar depósitos pendientes para el comprobante
@@ -286,7 +285,7 @@ export default function DepositoForm() {
             Object.keys(formState).map((k) => [
               `set${k[0].toUpperCase() + k.slice(1)}`,
               (v) => handleChange(k, v),
-            ])
+            ]),
           ),
         });
         await cargarClientes();
@@ -375,7 +374,7 @@ export default function DepositoForm() {
   // Renderizado del formulario y modal de previsualización
   // ------------------------------
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
         <FloatingNotificationButton
@@ -394,7 +393,7 @@ export default function DepositoForm() {
               icon: <SolutionOutlined />,
               onClick: () =>
                 router.push(
-                  "/private/page/transacciones/deposito/lipdedeposito"
+                  "/private/page/transacciones/deposito/lipdedeposito",
                 ),
             },
           ]}

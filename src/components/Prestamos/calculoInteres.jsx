@@ -115,7 +115,7 @@ export default function DrawerInteres({ open, onClose, onSubmit, cliente }) {
           rules={[{ required: true, message: "Seleccione un tipo" }]}
         >
           <Select placeholder="Seleccione tipo de movimiento">
-            <Select.Option value="Int-Cargo">Int-Cargo</Select.Option>
+            <Select.Option value="Int-Cargo">CARGO_PRESTAMO</Select.Option>
             <Select.Option value="CARGO_ANTICIPO">CARGO_ANTICIPO</Select.Option>
           </Select>
         </Form.Item>

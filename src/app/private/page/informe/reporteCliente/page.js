@@ -59,7 +59,7 @@ export default function ReporteClientesEntradas() {
       .filter((item) =>
         !nombreFiltro
           ? true
-          : item.nombre?.toLowerCase().includes(nombreFiltro.toLowerCase())
+          : item.nombre?.toLowerCase().includes(nombreFiltro.toLowerCase()),
       )
       .map((item) => {
         const { totalQQ, totalLps, depositoPendienteQQ } =
@@ -92,7 +92,7 @@ export default function ReporteClientesEntradas() {
 
         return acc;
       },
-      { totalClientes: 0, totalQQ: 0, totalLps: 0 }
+      { totalClientes: 0, totalQQ: 0, totalLps: 0 },
     );
 
     // Promedio general ponderado
@@ -341,7 +341,7 @@ export default function ReporteClientesEntradas() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -365,7 +365,7 @@ export default function ReporteClientesEntradas() {
               if (rangoFechas && rangoFechas[0] && rangoFechas[1]) {
                 fetchData(
                   rangoFechas[0].startOf("day").toISOString(),
-                  rangoFechas[1].endOf("day").toISOString()
+                  rangoFechas[1].endOf("day").toISOString(),
                 );
               } else {
                 fetchData();
@@ -406,7 +406,7 @@ export default function ReporteClientesEntradas() {
                     format: "moneda",
                   },
                 ],
-                { title: "Reporte de Entradas" }
+                { title: "Reporte de Entradas" },
               );
             }}
             disableExport={!datosFiltrados.length}
@@ -480,7 +480,7 @@ export default function ReporteClientesEntradas() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>

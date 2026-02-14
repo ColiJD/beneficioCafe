@@ -18,14 +18,22 @@ export default function CajaChicaBalanceWidget({ collapsed }) {
         const data = await res.json();
 
         let saldoInicial = 0;
+        let hasSaldoInicial = false;
         let entradas = 0;
         let salidas = 0;
 
         data.forEach((mov) => {
           const m = parseFloat(mov.monto);
-          if (mov.tipo === "Saldo Inicial") saldoInicial += m;
-          if (mov.tipo === "Entrada") entradas += m;
-          if (mov.tipo === "Salida") salidas += m;
+          if (mov.tipo === "Saldo Inicial") {
+            if (!hasSaldoInicial) {
+              saldoInicial = m;
+              hasSaldoInicial = true;
+            }
+          } else if (mov.tipo === "Entrada") {
+            entradas += m;
+          } else if (mov.tipo === "Salida") {
+            salidas += m;
+          }
         });
 
         setBalance(saldoInicial + entradas - salidas);

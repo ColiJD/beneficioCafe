@@ -72,7 +72,7 @@ export default function TablaCompras() {
 
       // 🔹 Filtrar solo los movimientos si la API devuelve ambos tipos
       const dataFiltrada = data.filter(
-        (item) => item.compraMovimiento === movimientoFiltro
+        (item) => item.compraMovimiento === movimientoFiltro,
       );
 
       // 🔹 Agrupar por cliente y tipo de café
@@ -157,11 +157,11 @@ export default function TablaCompras() {
   // 🔹 Totales
   const totalQQ = filteredData.reduce(
     (acc, item) => acc + (item.cantidadTotal || 0),
-    0
+    0,
   );
   const totalLps = filteredData.reduce(
     (acc, item) => acc + (item.totalLps || 0),
-    0
+    0,
   );
 
   // 🔹 Columnas de tabla principal
@@ -297,9 +297,8 @@ export default function TablaCompras() {
               try {
                 if (esVenta) {
                   // ✅ VENTA
-                  const { exportVentaDirecta } = await import(
-                    "@/Doc/Documentos/venta"
-                  );
+                  const { exportVentaDirecta } =
+                    await import("@/Doc/Documentos/venta");
 
                   await exportVentaDirecta({
                     comprador: { label: record.clienteNombreCompleto },
@@ -349,14 +348,16 @@ export default function TablaCompras() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+          <ProtectedButton
+            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
+          >
             <Popconfirm
               title="¿Seguro que deseas EDITAR esta compra"
               onConfirm={() =>
                 router.push(
                   movimientoFiltro === "Salida"
                     ? `/private/page/transacciones/venta/${record.compraId}`
-                    : `/private/page/transacciones/compra/${record.compraId}`
+                    : `/private/page/transacciones/compra/${record.compraId}`,
                 )
               }
               okText="Sí"
@@ -392,7 +393,7 @@ export default function TablaCompras() {
         cargarDatos();
       } else {
         messageApiRef.current.error(
-          data.error || "Error al eliminar la compra"
+          data.error || "Error al eliminar la compra",
         );
       }
     } catch (error) {
@@ -408,7 +409,7 @@ export default function TablaCompras() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <>
         {contextHolder}
@@ -447,7 +448,7 @@ export default function TablaCompras() {
                     title: `Registro de ${
                       movimientoFiltro === "Salida" ? "ventas" : "compras"
                     }`,
-                  }
+                  },
                 );
               }}
             />
@@ -599,13 +600,13 @@ export default function TablaCompras() {
                                               {
                                                 nombre: record.tipoCafeNombre,
                                                 cantidad: parseFloat(
-                                                  record.compraCantidadQQ
+                                                  record.compraCantidadQQ,
                                                 ),
                                                 precio: parseFloat(
-                                                  record.compraPrecioQQ
+                                                  record.compraPrecioQQ,
                                                 ),
                                                 total: parseFloat(
-                                                  record.totalLps
+                                                  record.totalLps,
                                                 ),
                                               },
                                             ],
@@ -625,13 +626,13 @@ export default function TablaCompras() {
                                               {
                                                 nombre: record.tipoCafeNombre,
                                                 cantidad: parseFloat(
-                                                  record.compraCantidadQQ
+                                                  record.compraCantidadQQ,
                                                 ),
                                                 precio: parseFloat(
-                                                  record.compraPrecioQQ
+                                                  record.compraPrecioQQ,
                                                 ),
                                                 total: parseFloat(
-                                                  record.totalLps
+                                                  record.totalLps,
                                                 ),
                                               },
                                             ],
@@ -644,18 +645,18 @@ export default function TablaCompras() {
                                         }
 
                                         messageApi.destroy(
-                                          "generandoComprobante"
+                                          "generandoComprobante",
                                         );
                                         messageApi.success(
-                                          `Comprobante de ${titulo} generado`
+                                          `Comprobante de ${titulo} generado`,
                                         );
                                       } catch (err) {
                                         console.error(err);
                                         messageApi.destroy(
-                                          "generandoComprobante"
+                                          "generandoComprobante",
                                         );
                                         messageApi.error(
-                                          `Error generando comprobante de ${titulo}`
+                                          `Error generando comprobante de ${titulo}`,
                                         );
                                       }
                                     }}
@@ -671,14 +672,14 @@ export default function TablaCompras() {
                                     allowedRoles={[
                                       "ADMIN",
                                       "GERENCIA",
-                                      "OPERARIOS",
+                                      "COLABORADORES",
                                     ]}
                                   >
                                     <Popconfirm
                                       title={`¿Seguro que deseas EDITAR esta ${titulo}?`}
                                       onConfirm={() =>
                                         router.push(
-                                          `/private/page/transacciones/${tipoRuta}/${record.compraId}`
+                                          `/private/page/transacciones/${tipoRuta}/${record.compraId}`,
                                         )
                                       }
                                       okText="Sí"

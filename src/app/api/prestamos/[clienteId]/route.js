@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(req, { params }) {
   try {
-    const { clienteId } = params;
+    const { clienteId } = await params;
 
     // Buscar cliente con préstamos, movimientos y anticipos
     const cliente = await prisma.cliente.findUnique({
@@ -30,7 +30,7 @@ export async function GET(req, { params }) {
     if (!cliente) {
       return new Response(
         JSON.stringify({ message: "Cliente no encontrado" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -42,29 +42,29 @@ export async function GET(req, { params }) {
     console.error("Error al obtener datos del cliente:", error);
     return new Response(
       JSON.stringify({ message: "Error interno del servidor" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 import { checkRole } from "@/lib/checkRole";
 
-export async function DELETE(req) {
+export async function DELETE(req, { params }) {
   // Validar permisos
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
     // Obtener ID desde la URL
-    const url = new URL(req.url);
-    const prestamoId = Number(url.pathname.split("/").pop());
+    const { clienteId } = await params;
+    const prestamoId = Number(clienteId);
 
     if (!prestamoId || isNaN(prestamoId)) {
       return new Response(
         JSON.stringify({ error: "ID de préstamo inválido" }),
         {
           status: 400,
-        }
+        },
       );
     }
 
@@ -89,7 +89,7 @@ export async function DELETE(req) {
       JSON.stringify({ message: "Préstamo anulado correctamente" }),
       {
         status: 200,
-      }
+      },
     );
   } catch (error) {
     console.error("❌ Error al anular préstamo:", error);
@@ -97,7 +97,7 @@ export async function DELETE(req) {
       JSON.stringify({ error: "Error interno al anular el préstamo" }),
       {
         status: 500,
-      }
+      },
     );
   }
 }

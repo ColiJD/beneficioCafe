@@ -13,7 +13,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -33,7 +33,7 @@ export async function POST(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -75,7 +75,7 @@ export async function POST(req) {
     if (error.code === "P2002") {
       return new Response(
         JSON.stringify({ error: "Ya existe un registro con ese RTN" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 

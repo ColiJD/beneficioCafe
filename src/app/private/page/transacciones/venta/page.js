@@ -175,15 +175,15 @@ export default function VentaForm({ compraId }) {
       try {
         const data = await obtenerSalidasPendientes(comprador.value);
         const contratos = await verificarContratosSalidaPendientes(
-          comprador.value
+          comprador.value,
         );
 
         const mensajes = [];
         if (data.cantidadPendiente > 0) {
           mensajes.push(
             `Salidas pendientes: ${Number(data.cantidadPendiente).toFixed(
-              2
-            )} QQ`
+              2,
+            )} QQ`,
           );
         }
         if (contratos.length > 0) {
@@ -206,7 +206,7 @@ export default function VentaForm({ compraId }) {
       ventaCantidadQQ,
       ventaTotalSacos,
       producto,
-      ventaPrecioQQ
+      ventaPrecioQQ,
     );
 
     setVentaTotal(resultado.total);
@@ -275,7 +275,7 @@ export default function VentaForm({ compraId }) {
       messageApi.success(
         compraId
           ? "Venta actualizada correctamente"
-          : "Venta registrada correctamente"
+          : "Venta registrada correctamente",
       );
       setPreviewVisible(false);
 
@@ -347,16 +347,16 @@ export default function VentaForm({ compraId }) {
         if (!res.ok) throw new Error(data.error || "Error cargando la venta");
 
         const compradorMatch = compradores.find(
-          (c) => c.value === data.compradorID
+          (c) => c.value === data.compradorID,
         );
         const productoMatch = productos.find(
-          (p) => p.value === data.compraTipoCafe
+          (p) => p.value === data.compraTipoCafe,
         );
         setComprador(
-          compradorMatch || { value: data.compradorID, label: "Cargando..." }
+          compradorMatch || { value: data.compradorID, label: "Cargando..." },
         );
         setProducto(
-          productoMatch || { value: data.compraTipoCafe, label: "Cargando..." }
+          productoMatch || { value: data.compraTipoCafe, label: "Cargando..." },
         );
         setVentaCantidadQQ(data.compraCantidadQQ.toString());
         setVentaTotalSacos(data.compraTotalSacos.toString());
@@ -368,7 +368,7 @@ export default function VentaForm({ compraId }) {
         const pesoBruto = calcularPesoBrutoDesdeOro(
           data.compraCantidadQQ,
           data.compraTotalSacos,
-          productoMatch
+          productoMatch,
         );
         setVentaCantidadQQ(pesoBruto.pesoBruto);
       } catch (err) {
@@ -383,7 +383,7 @@ export default function VentaForm({ compraId }) {
   useEffect(() => {}, [compraId]);
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
         <FloatingNotificationButton
@@ -408,7 +408,7 @@ export default function VentaForm({ compraId }) {
               icon: <FileSearchOutlined />,
               onClick: () =>
                 router.push(
-                  "/private/page/transacciones/contratoSalida/registrocontrato"
+                  "/private/page/transacciones/contratoSalida/registrocontrato",
                 ),
             },
             {
@@ -456,8 +456,9 @@ export default function VentaForm({ compraId }) {
                   f.label === "Total Sacos" && producto?.label === "Cafe Lata"
                     ? 0
                     : f.type === "select"
-                    ? f.options?.find((o) => o.value === f.value?.value)?.label
-                    : f.value || "-",
+                      ? f.options?.find((o) => o.value === f.value?.value)
+                          ?.label
+                      : f.value || "-",
               }))}
             />
           </>

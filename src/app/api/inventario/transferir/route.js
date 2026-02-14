@@ -5,7 +5,7 @@ export async function POST(req, res) {
   const sessionOrResponse = await checkRole(res, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -25,7 +25,7 @@ export async function POST(req, res) {
         JSON.stringify({
           error: "No se puede transferir al mismo tipo de café",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,80 +34,71 @@ export async function POST(req, res) {
     if (isNaN(cantidad) || cantidad <= 0) {
       return new Response(
         JSON.stringify({ error: "Cantidad inválida. Debe ser mayor a 0" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // 🔹 4️⃣ Transacción para mover inventario de manera atómica
     const result = await prisma.$transaction(async (tx) => {
-      // 🔹 4a️⃣ Buscar inventario origen disponible (FIFO)
-      const inventarioOrigen = await tx.inventariocliente.findMany({
-        where: { productoID: fromProductID, cantidadQQ: { gt: 0 } },
-        orderBy: { inventarioClienteID: "asc" },
+      // 🔹 4a️⃣ Buscar inventario origen
+      const inventarioOrigen = await tx.inventariocliente.findUnique({
+        where: { productoID: fromProductID },
       });
 
       // 🔹 4b️⃣ Validar que hay suficiente inventario
-      const totalDisponible = inventarioOrigen.reduce(
-        (sum, inv) => sum + Number(inv.cantidadQQ),
-        0
-      );
-      if (totalDisponible < cantidad) {
+      if (!inventarioOrigen || Number(inventarioOrigen.cantidadQQ) < cantidad) {
         return {
           ok: false,
           error: "No hay suficiente inventario para transferir",
         };
       }
 
-      let cantidadRestante = cantidad;
+      // 🔹 4c️⃣ Procesar la transferencia
+      // Reducir inventario origen
+      await tx.inventariocliente.update({
+        where: { productoID: fromProductID },
+        data: { cantidadQQ: { decrement: cantidad } },
+      });
 
-      // 🔹 4c️⃣ Procesar la transferencia usando FIFO
-      for (const inv of inventarioOrigen) {
-        if (cantidadRestante <= 0) break;
+      // Actualizar inventario destino
+      const inventarioDestino = await tx.inventariocliente.upsert({
+        where: { productoID: toProductID },
+        update: { cantidadQQ: { increment: cantidad } },
+        create: {
+          productoID: toProductID,
+          cantidadQQ: cantidad,
+          cantidadSacos: 0,
+        },
+      });
 
-        const extraer = Math.min(Number(inv.cantidadQQ), cantidadRestante);
+      // 🔹 Registrar movimiento de salida
+      await tx.movimientoinventario.create({
+        data: {
+          inventarioClienteID: inventarioOrigen.inventarioClienteID,
+          tipoMovimiento: "Transferencia",
+          referenciaTipo: `Transferencia de producto ${fromProductID} ➜ ${toProductID}`,
+          referenciaID: toProductID,
+          cantidadQQ: cantidad,
+          cantidadSacos: 0,
+          nota:
+            nota ||
+            `Transferencia de ${cantidad} QQ desde producto #${fromProductID} hacia producto #${toProductID}`,
+        },
+      });
 
-        // 🔹 Reducir inventario origen
-        await tx.inventariocliente.update({
-          where: { inventarioClienteID: inv.inventarioClienteID },
-          data: { cantidadQQ: Number(inv.cantidadQQ) - extraer },
-        });
+      // 🔹 Registrar movimiento de entrada (opcional, pero ayuda a rastrear en el destino)
+      await tx.movimientoinventario.create({
+        data: {
+          inventarioClienteID: inventarioDestino.inventarioClienteID,
+          tipoMovimiento: "Entrada por Transferencia",
+          referenciaTipo: `Transferencia desde ${fromProductID}`,
+          referenciaID: fromProductID,
+          cantidadQQ: cantidad,
+          cantidadSacos: 0,
+          nota: `Entrada por transferencia desde producto #${fromProductID}`,
+        },
+      });
 
-        // 🔹 Actualizar inventario destino
-        let inventarioDestino = await tx.inventariocliente.findFirst({
-          where: { productoID: toProductID },
-        });
-
-        if (!inventarioDestino) {
-          inventarioDestino = await tx.inventariocliente.create({
-            data: { productoID: toProductID, cantidadQQ: 0, cantidadSacos: 0 },
-          });
-        }
-
-        const cantidadDestino = Number(inventarioDestino.cantidadQQ) + extraer;
-        await tx.inventariocliente.update({
-          where: { inventarioClienteID: inventarioDestino.inventarioClienteID },
-          data: { cantidadQQ: cantidadDestino },
-        });
-
-        // 🔹 Registrar solo un movimiento: salida explicando la transferencia
-        await tx.movimientoinventario.create({
-          data: {
-            inventarioClienteID: inv.inventarioClienteID,
-            tipoMovimiento: "Transferencia",
-            referenciaTipo: `Transferencia de producto ${fromProductID} ➜ ${toProductID}`,
-            referenciaID: toProductID,
-            cantidadQQ: extraer,
-            cantidadSacos: 0,
-            nota:
-              nota ||
-              `Transferencia de ${extraer} QQ desde producto #${fromProductID} hacia producto #${toProductID}`,
-          },
-        });
-
-        cantidadRestante -= extraer;
-      }
-
-      // 🔹 5️⃣ Confirmación de éxito
       return { ok: true };
     });
 
@@ -128,7 +119,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;

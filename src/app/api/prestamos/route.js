@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function POST(req) {
+  const sessionOrResponse = await checkRole(req, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
+
   try {
     const body = await req.json();
     const { clienteID, monto, tasa_interes, fecha, observacion } = body;
@@ -10,7 +18,7 @@ export async function POST(req) {
     if (!clienteID || !monto || isNaN(monto)) {
       return NextResponse.json(
         { error: "Datos incompletos o monto inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -58,12 +66,12 @@ export async function POST(req) {
     const totalCapital = Number(prestamoConMovimientos.monto || 0);
 
     const totalIntereses = prestamoConMovimientos.movimientos_prestamo
-      .filter((m) => ["CARGO_INTERES", "ANTICIPO"].includes(m.tipo_movimiento))
+      .filter((m) => ["Int-Cargo"].includes(m.tipo_movimiento))
       .reduce((acc, m) => acc + Number(m.monto), 0);
 
     const totalAbonado = prestamoConMovimientos.movimientos_prestamo
       .filter((m) =>
-        ["ABONO", "ABONO_INTERES", "PAGO_INTERES"].includes(m.tipo_movimiento)
+        ["ABONO", "ABONO_INTERES", "PAGO_INTERES"].includes(m.tipo_movimiento),
       )
       .reduce((acc, m) => acc + Number(m.monto), 0);
 
@@ -80,7 +88,7 @@ export async function POST(req) {
     console.error("Error al crear préstamo:", error);
     return NextResponse.json(
       { error: "Error al crear préstamo" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

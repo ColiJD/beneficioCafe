@@ -72,7 +72,7 @@ export default function MovimientosCompradorPage() {
       const fechaFin = fechaRango[1].format("YYYY-MM-DD");
 
       const res = await fetch(
-        `/api/reportes/porComprador?compradorID=${compradorID}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        `/api/reportes/porComprador?compradorID=${compradorID}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`,
       );
       if (!res.ok) throw new Error("Error al obtener movimientos");
 
@@ -97,7 +97,7 @@ export default function MovimientosCompradorPage() {
             totalLps,
             liquidado: totalQQPorLiquidar <= 0 ? "Sí" : "No",
           };
-        }
+        },
       );
 
       const filaConfirmacion = {
@@ -106,7 +106,7 @@ export default function MovimientosCompradorPage() {
         totalLps: detallesConfirmacion.reduce((sum, d) => sum + d.totalLps, 0),
         totalQQPorLiquidar: detallesConfirmacion.reduce(
           (sum, d) => sum + d.totalQQPorLiquidar,
-          0
+          0,
         ),
         promedioPrecio:
           detallesConfirmacion.reduce((sum, d) => sum + d.totalLps, 0) /
@@ -160,7 +160,7 @@ export default function MovimientosCompradorPage() {
             totalQQPorLiquidar,
             liquidado,
           };
-        }
+        },
       );
 
       const filaContratos = {
@@ -169,7 +169,7 @@ export default function MovimientosCompradorPage() {
         totalLps: detallesContratos.reduce((sum, c) => sum + c.totalLps, 0),
         totalQQPorLiquidar: detallesContratos.reduce(
           (sum, c) => sum + c.totalQQPorLiquidar,
-          0
+          0,
         ),
         promedioPrecio:
           detallesContratos.reduce((sum, c) => sum + c.totalLps, 0) /
@@ -180,7 +180,7 @@ export default function MovimientosCompradorPage() {
       setData([filaConfirmacion, filaVentas, filaContratos]);
 
       const hayRegistros = [filaConfirmacion, filaVentas, filaContratos].some(
-        (f) => f.detalles?.length > 0
+        (f) => f.detalles?.length > 0,
       );
       hayRegistros
         ? messageApi.success("Se encontraron registros")
@@ -195,7 +195,7 @@ export default function MovimientosCompradorPage() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       {contextHolder}
       <Card>
@@ -208,13 +208,13 @@ export default function MovimientosCompradorPage() {
           onExportPDF={() => {
             if (!Array.isArray(data) || data.length === 0) {
               messageApi.warning(
-                "No hay datos válidos para generar el reporte."
+                "No hay datos válidos para generar el reporte.",
               );
               return;
             }
             if (!compradorID) {
               messageApi.warning(
-                "Seleccione un comprador para generar el reporte."
+                "Seleccione un comprador para generar el reporte.",
               );
               return;
             }
@@ -228,7 +228,7 @@ export default function MovimientosCompradorPage() {
 
             try {
               const comprador = compradores.find(
-                (c) => (c.compradorId || c.compradorID) === compradorID
+                (c) => (c.compradorId || c.compradorID) === compradorID,
               );
               const compradorNombre = comprador?.compradorNombre || "-";
 
@@ -385,11 +385,11 @@ export function ResumenTablaGenerico({
       const weightedSum = data.reduce(
         (sum, row) =>
           sum + (row[col.dataIndex] || 0) * (row[weightedColumn] || 0),
-        0
+        0,
       );
       const totalWeight = data.reduce(
         (sum, row) => sum + (row[weightedColumn] || 0),
-        0
+        0,
       );
       totals[col.dataIndex] = totalWeight > 0 ? weightedSum / totalWeight : 0;
     }
@@ -409,14 +409,14 @@ export function ResumenTablaGenerico({
           );
         const val = totals[col.dataIndex];
         const highlightStyle = highlightColumns.find(
-          (h) => h.dataIndex === col.dataIndex
+          (h) => h.dataIndex === col.dataIndex,
         );
         const color =
           highlightStyle?.type === "danger"
             ? "red"
             : highlightStyle?.type === "warning"
-            ? "orange"
-            : "inherit";
+              ? "orange"
+              : "inherit";
 
         return (
           <Table.Summary.Cell index={cellIndex} key={index} align={col.align}>

@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function POST(req) {
+  const sessionOrResponse = await checkRole(req, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const body = await req.json();
     const {
@@ -17,7 +24,7 @@ export async function POST(req) {
     if (!clienteID || !tipo_movimiento || monto == null || isNaN(monto)) {
       return NextResponse.json(
         { error: "Datos incompletos o monto inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +55,7 @@ export async function POST(req) {
 
             const capitalPagadoRounded = roundToTwo(capitalPagado);
             const deudaCapital = roundToTwo(
-              Number(p.monto) - capitalPagadoRounded
+              Number(p.monto) - capitalPagadoRounded,
             );
 
             deudaTotalCapital = roundToTwo(deudaTotalCapital + deudaCapital);
@@ -63,10 +70,10 @@ export async function POST(req) {
         if (montoIngresado > deudaTotalCapital) {
           throw new Error(
             `El abono (L. ${montoIngresado.toFixed(
-              2
+              2,
             )}) excede el capital pendiente (L. ${deudaTotalCapital.toFixed(
-              2
-            )}).`
+              2,
+            )}).`,
           );
         }
 
@@ -76,7 +83,7 @@ export async function POST(req) {
           if (montoRestante <= 0) break;
 
           const montoAplicar = roundToTwo(
-            Math.min(montoRestante, p.deudaCapital)
+            Math.min(montoRestante, p.deudaCapital),
           );
 
           await tx.movimientos_prestamo.create({
@@ -90,6 +97,56 @@ export async function POST(req) {
               descripcion: observacion || tipo_movimiento,
             },
           });
+
+          const totalAbonos = p.prestamo.movimientos_prestamo
+            .filter((m) => m.tipo_movimiento === "ABONO")
+            .reduce((sum, m) => sum + Number(m.monto), 0);
+
+          const totalCapital = Number(p.prestamo.monto || 0);
+          const saldoCapital = roundToTwo(
+            totalCapital - (totalAbonos + montoAplicar),
+          );
+
+          // Verificar si el préstamo está completamente pagado
+          // Necesitamos recalcular intereses también para saber si TODO está pagado
+          // Pero aquí solo estamos abonando a capital.
+          // La lógica completa debería verificar (Capital Pendiente + Interes Pendiente) <= 0
+
+          // Recalcular estado del préstamo
+          const movimientosActualizados =
+            await tx.movimientos_prestamo.findMany({
+              where: { prestamo_id: p.prestamo.prestamoId },
+            });
+
+          const totalAbonado = movimientosActualizados
+            .filter((m) => ["ABONO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto), 0);
+
+          const totalPagadoInteres = movimientosActualizados
+            .filter((m) => ["PAGO_INTERES"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto), 0);
+
+          const totalCargoInteres = movimientosActualizados
+            .filter((m) => ["Int-Cargo"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto), 0);
+
+          const saldoTotal = roundToTwo(
+            Number(p.prestamo.monto) +
+              totalCargoInteres -
+              (totalAbonado + totalPagadoInteres),
+          );
+
+          if (saldoTotal <= 0) {
+            await tx.prestamos.update({
+              where: { prestamoId: p.prestamo.prestamoId },
+              data: { estado: "COMPLETADO" },
+            });
+          } else if (p.prestamo.estado === "COMPLETADO") {
+            await tx.prestamos.update({
+              where: { prestamoId: p.prestamo.prestamoId },
+              data: { estado: "ACTIVO" },
+            });
+          }
 
           montoRestante = roundToTwo(montoRestante - montoAplicar);
         }
@@ -112,7 +169,7 @@ export async function POST(req) {
             const cargosRounded = roundToTwo(cargos);
             const pagosInteresRounded = roundToTwo(pagosInteres);
             const interesPendiente = roundToTwo(
-              cargosRounded - pagosInteresRounded
+              cargosRounded - pagosInteresRounded,
             );
 
             interesesTotales = roundToTwo(interesesTotales + interesPendiente);
@@ -126,7 +183,7 @@ export async function POST(req) {
 
         if (montoIngresado > interesesTotales) {
           throw new Error(
-            `El pago de intereses (L. ${montoIngresado}) excede los intereses pendientes (L. ${interesesTotales}).`
+            `El pago de intereses (L. ${montoIngresado}) excede los intereses pendientes (L. ${interesesTotales}).`,
           );
         }
 
@@ -136,7 +193,7 @@ export async function POST(req) {
           if (montoRestante <= 0) break;
 
           const montoAplicar = roundToTwo(
-            Math.min(montoRestante, p.interesPendiente)
+            Math.min(montoRestante, p.interesPendiente),
           );
 
           await tx.movimientos_prestamo.create({
@@ -151,6 +208,42 @@ export async function POST(req) {
             },
           });
 
+          // Recalcular estado del préstamo tras pago de interés
+          const movimientosActualizados =
+            await tx.movimientos_prestamo.findMany({
+              where: { prestamo_id: p.prestamoId },
+            });
+
+          const totalAbonado = movimientosActualizados
+            .filter((m) => ["ABONO"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto), 0);
+
+          const totalPagadoInteres = movimientosActualizados
+            .filter((m) => ["PAGO_INTERES"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto), 0);
+
+          const totalCargoInteres = movimientosActualizados
+            .filter((m) => ["Int-Cargo"].includes(m.tipo_movimiento))
+            .reduce((acc, m) => acc + Number(m.monto), 0);
+
+          const saldoTotal = roundToTwo(
+            Number(p.monto) +
+              totalCargoInteres -
+              (totalAbonado + totalPagadoInteres),
+          );
+
+          if (saldoTotal <= 0) {
+            await tx.prestamos.update({
+              where: { prestamoId: p.prestamoId },
+              data: { estado: "COMPLETADO" },
+            });
+          } else if (p.estado === "COMPLETADO") {
+            await tx.prestamos.update({
+              where: { prestamoId: p.prestamoId },
+              data: { estado: "ACTIVO" },
+            });
+          }
+
           montoRestante = roundToTwo(montoRestante - montoAplicar);
         }
       }
@@ -163,7 +256,7 @@ export async function POST(req) {
 
         if (prestamosValidos.length === 0) {
           throw new Error(
-            "No hay préstamos activos para aplicar el interés cargado."
+            "No hay préstamos activos para aplicar el interés cargado.",
           );
         }
 
@@ -175,7 +268,7 @@ export async function POST(req) {
               .filter((m) => m.tipo_movimiento === "ABONO")
               .reduce((sum, m) => sum + Number(m.monto), 0);
             const capitalPendiente = roundToTwo(
-              Number(p.monto) - roundToTwo(totalAbonos)
+              Number(p.monto) - roundToTwo(totalAbonos),
             );
 
             // Intereses pendientes
@@ -186,7 +279,7 @@ export async function POST(req) {
               .filter((m) => m.tipo_movimiento === "PAGO_INTERES")
               .reduce((sum, m) => sum + Number(m.monto), 0);
             const interesPendiente = roundToTwo(
-              roundToTwo(totalCargosInt) - roundToTwo(totalPagosInteres)
+              roundToTwo(totalCargosInt) - roundToTwo(totalPagosInteres),
             );
 
             return {
@@ -201,7 +294,7 @@ export async function POST(req) {
 
         if (prestamosConDeuda.length === 0) {
           throw new Error(
-            "Todos los préstamos de este cliente están completamente pagados. No se pueden agregar más cargos de interés."
+            "Todos los préstamos de este cliente están completamente pagados. No se pueden agregar más cargos de interés.",
           );
         }
 
@@ -219,6 +312,14 @@ export async function POST(req) {
             descripcion: observacion || "Interés cargado",
           },
         });
+
+        // Al agregar un cargo, si el préstamo estaba completado, vuelve a estar activo
+        if (p.estado === "COMPLETADO") {
+          await tx.prestamos.update({
+            where: { prestamoId: p.prestamoId },
+            data: { estado: "ACTIVO" },
+          });
+        }
       }
     });
 
@@ -230,7 +331,7 @@ export async function POST(req) {
     console.error("Error al registrar movimiento:", error);
     return NextResponse.json(
       { error: error.message || "Error interno al registrar movimiento." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

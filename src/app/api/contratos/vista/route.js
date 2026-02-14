@@ -6,7 +6,7 @@ export async function GET(req) {
     "ADMIN",
     "GERENCIA",
     "AUDITORES",
-    "OPERARIOS",
+    "COLABORADORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
@@ -23,7 +23,7 @@ export async function GET(req) {
 
     // Convertir resultados a un mapa rápido
     const mapaMov = new Map(
-      movimientos.map((m) => [m.contratoID, Number(m._sum.cantidadQQ || 0)])
+      movimientos.map((m) => [m.contratoID, Number(m._sum.cantidadQQ || 0)]),
     );
 
     // 2. Obtener TODOS los contratos que no estén anulados
@@ -65,14 +65,12 @@ export async function GET(req) {
       })
       .filter((c) => c.pendiente > 0); // solo contratos pendientes
 
-
-
     return Response.json({ ok: true, pendientes });
   } catch (error) {
     console.error(error);
     return Response.json(
       { ok: false, error: "Error obteniendo contratos pendientes" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

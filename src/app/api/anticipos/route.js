@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function POST(req) {
+  const sessionOrResponse = await checkRole(req, [
+    "ADMIN",
+    "GERENCIA",
+    "COLABORADORES",
+  ]);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const body = await req.json();
     const { clienteID, monto, tasa_interes, fecha, observacion, tipo } = body; // 👈 Incluido tipo
@@ -10,7 +17,7 @@ export async function POST(req) {
     if (!clienteID || !monto || isNaN(monto)) {
       return NextResponse.json(
         { error: "Datos incompletos o monto inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,7 +46,7 @@ export async function POST(req) {
     console.error("Error al crear préstamo o anticipo:", error);
     return NextResponse.json(
       { error: "Error al crear préstamo o anticipo" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -69,17 +69,17 @@ export default function CompraForm({ compraId }) {
 
       // Obtener contratos pendientes
       const mensajesContratos = await verificarClientesPendientesContratos(
-        cliente.value
+        cliente.value,
       );
       // Obtener depósitos pendientes
       const mensajesDepositos = await verificarDepositosPendientes(
-        cliente.value
+        cliente.value,
       );
       const mensajesPrestamos = await verificarPrestamosPendientes(
-        cliente.value
+        cliente.value,
       );
       const mensajesAnticipos = await verificarAnticiposPendientes(
-        cliente.value
+        cliente.value,
       );
 
       // Combinar todos los mensajes
@@ -126,7 +126,7 @@ export default function CompraForm({ compraId }) {
       compraCantidadQQ,
       compraTotalSacos,
       producto, // objeto con value, label y data
-      compraPrecioQQ
+      compraPrecioQQ,
     );
 
     const porc = parseFloat(compraPorcDano) || 0;
@@ -184,8 +184,8 @@ export default function CompraForm({ compraId }) {
         producto?.label === "Cafe Lata"
           ? 1
           : compraTotalSacos
-          ? parseInt(compraTotalSacos, 10)
-          : 0,
+            ? parseInt(compraTotalSacos, 10)
+            : 0,
       compraPrecioQQ: parseFloat(compraPrecioQQ),
       compraRetencio: parseFloat(compraRetencio),
       compraTotal: parseFloat(compraTotal),
@@ -211,7 +211,7 @@ export default function CompraForm({ compraId }) {
       messageApi.success(
         compraId
           ? "Compra actualizada correctamente"
-          : "Compra registrada correctamente"
+          : "Compra registrada correctamente",
       );
 
       setPreviewVisible(false);
@@ -403,20 +403,20 @@ export default function CompraForm({ compraId }) {
         // 🔹 Asignar cliente y producto asegurando que existan en options
         const clienteMatch = clientes.find((c) => c.value === data.clienteID);
         const productoMatch = productos.find(
-          (p) => p.value === data.compraTipoCafe
+          (p) => p.value === data.compraTipoCafe,
         );
 
         setCliente(
           clienteMatch || {
             value: data.clienteID,
             label: data.cliente?.clienteNombre || "Sin nombre",
-          }
+          },
         );
         setProducto(
           productoMatch || {
             value: data.compraTipoCafe,
             label: data.producto?.productName || "Sin nombre",
-          }
+          },
         );
 
         setCompraTipoDocumento(data.compraTipoDocumento || "");
@@ -433,7 +433,7 @@ export default function CompraForm({ compraId }) {
         const pesoBruto = calcularPesoBrutoDesdeOro(
           data.compraCantidadQQ,
           data.compraTotalSacos,
-          productoMatch || { data: {} }
+          productoMatch || { data: {} },
         );
         setCompraCantidadQQ(pesoBruto.pesoBruto);
       } catch (err) {
@@ -449,7 +449,7 @@ export default function CompraForm({ compraId }) {
   useEffect(() => {}, [compraId]);
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       {/* <FloatingButton
         title="Ir al registro"
         icon={<UnorderedListOutlined />}
@@ -533,9 +533,10 @@ export default function CompraForm({ compraId }) {
                   f.label === "Total Sacos" && producto?.label === "Cafe Lata"
                     ? 0
                     : f.type === "select"
-                    ? f.options?.find((o) => o.value === f.value?.value)?.label
-                    : f.value ||
-                      (f.label === "Compra en" ? "Compra Directa" : "-"),
+                      ? f.options?.find((o) => o.value === f.value?.value)
+                          ?.label
+                      : f.value ||
+                        (f.label === "Compra en" ? "Compra Directa" : "-"),
               }))}
             />
           </>

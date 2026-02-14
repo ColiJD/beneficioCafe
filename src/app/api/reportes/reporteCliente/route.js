@@ -5,7 +5,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -23,7 +23,7 @@ export async function GET(req) {
     } else {
       const ahora = new Date();
       desde = new Date(
-        Date.UTC(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0)
+        Date.UTC(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0),
       );
       hasta = new Date(
         Date.UTC(
@@ -33,101 +33,135 @@ export async function GET(req) {
           23,
           59,
           59,
-          999
-        )
+          999,
+        ),
       );
     }
 
-    // 🔹 Traer todos los clientes
+    // 🔹 1. Traer todos los clientes necesarios
     const clientes = await prisma.cliente.findMany({
       select: { clienteID: true, clienteNombre: true, clienteApellido: true },
     });
 
-    // 🔹 Para cada cliente, calcular agregados de entrada
-    const reportePromises = clientes.map(async (c) => {
-      // Compras entrada
-      const compraAgg = await prisma.compra.aggregate({
-        _sum: { compraCantidadQQ: true, compraTotal: true },
-        where: {
-          clienteID: c.clienteID,
-          compraMovimiento: "Entrada",
-          compraFecha: { gte: desde, lte: hasta },
-        },
-      });
-
-      // Contratos entrada
-      // Contratos entrada
-      const contratos = await prisma.detallecontrato.findMany({
-        where: {
-          contrato: { contratoclienteID: c.clienteID },
-          tipoMovimiento: "Entrada",
-          fecha: { gte: desde, lte: hasta },
-        },
-        select: { cantidadQQ: true, precioQQ: true },
-      });
-
-      const contratoCantidadQQ = contratos.reduce(
-        (sum, r) => sum + Number(r.cantidadQQ || 0),
-        0
-      );
-
-      const contratoTotalLps = contratos.reduce(
-        (sum, r) => sum + Number(r.cantidadQQ || 0) * Number(r.precioQQ || 0),
-        0
-      );
-
-      // Depósitos entrada usando detalleliqdeposito y liqdeposito
-      const depositoAgg = await prisma.detalleliqdeposito.aggregate({
-        _sum: { cantidadQQ: true, totalLps: true },
-        where: {
-          liqdeposito: {
-            liqclienteID: c.clienteID,
-            liqMovimiento: "Entrada",
-            liqFecha: { gte: desde, lte: hasta },
-          },
-        },
-      });
-
-      // 🔹 Depósitos Totales (Reales)
-      const totalDepositosRaw = await prisma.deposito.aggregate({
-        _sum: { depositoCantidadQQ: true },
-        where: {
-          clienteID: c.clienteID,
-          depositoMovimiento: "Deposito",
-
-          depositoFecha: { gte: desde, lte: hasta },
-        },
-      });
-      const totalDepositosQQ = Number(
-        totalDepositosRaw._sum.depositoCantidadQQ ?? 0
-      );
-
-      // 🔹 Si no hay movimientos, retornamos null
-      const hasMovimientos =
-        (compraAgg._sum.compraCantidadQQ ?? 0) > 0 ||
-        contratoCantidadQQ > 0 ||
-        (depositoAgg._sum.cantidadQQ ?? 0) > 0 ||
-        totalDepositosQQ > 0;
-
-      if (!hasMovimientos) return null;
-
-      return {
-        clienteID: c.clienteID,
-        nombre: `${c.clienteNombre || ""} ${c.clienteApellido || ""}`.trim(),
-        compraCantidadQQ: Number(compraAgg._sum.compraCantidadQQ || 0),
-        compraTotalLps: Number(compraAgg._sum.compraTotal || 0),
-        contratoCantidadQQ,
-        contratoTotalLps,
-        depositoCantidadQQ: Number(depositoAgg._sum.cantidadQQ || 0),
-        depositoTotalLps: Number(depositoAgg._sum.totalLps || 0),
-        totalDepositosQQ,
-      };
+    // 🔹 2. Consultas masivas para evitar N+1
+    // Compras
+    const comprasRaw = await prisma.compra.groupBy({
+      by: ["clienteID"],
+      _sum: { compraCantidadQQ: true, compraTotal: true },
+      where: {
+        compraMovimiento: "Entrada",
+        compraFecha: { gte: desde, lte: hasta },
+      },
     });
 
-    let reporte = await Promise.all(reportePromises);
+    // Contratos (detallecontrato -> contrato -> cliente)
+    const contratosRaw = await prisma.detallecontrato.findMany({
+      where: {
+        tipoMovimiento: "Entrada",
+        fecha: { gte: desde, lte: hasta },
+      },
+      select: {
+        cantidadQQ: true,
+        precioQQ: true,
+        contrato: { select: { contratoclienteID: true } },
+      },
+    });
 
-    // 🔹 Filtrar clientes sin movimientos
-    reporte = reporte.filter((r) => r !== null);
+    // Depósitos (detalleliqdeposito -> liqdeposito -> cliente)
+    const depositosRaw = await prisma.detalleliqdeposito.findMany({
+      where: {
+        liqdeposito: {
+          liqMovimiento: "Entrada",
+          liqFecha: { gte: desde, lte: hasta },
+        },
+      },
+      select: {
+        cantidadQQ: true,
+        totalLps: true,
+        liqdeposito: { select: { liqclienteID: true } },
+      },
+    });
+
+    // Depósitos Totales (Reales)
+    const depositosRealesRaw = await prisma.deposito.groupBy({
+      by: ["clienteID"],
+      _sum: { depositoCantidadQQ: true },
+      where: {
+        depositoMovimiento: "Deposito",
+        depositoFecha: { gte: desde, lte: hasta },
+      },
+    });
+
+    // 🔹 3. Mapeo en memoria
+    const comprasMap = new Map(comprasRaw.map((r) => [r.clienteID, r]));
+    const depositosRealesMap = new Map(
+      depositosRealesRaw.map((r) => [r.clienteID, r]),
+    );
+
+    // Agrupar contratos por cliente
+    const contratosMap = new Map();
+    contratosRaw.forEach((r) => {
+      const cid = r.contrato?.contratoclienteID;
+      if (!cid) return;
+      const current = contratosMap.get(cid) || { cantidadQQ: 0, totalLps: 0 };
+      current.cantidadQQ += Number(r.cantidadQQ || 0);
+      current.totalLps += Number(r.cantidadQQ || 0) * Number(r.precioQQ || 0);
+      contratosMap.set(cid, current);
+    });
+
+    // Agrupar depósitos por cliente
+    const depositosLiqMap = new Map();
+    depositosRaw.forEach((r) => {
+      const cid = r.liqdeposito?.liqclienteID;
+      if (!cid) return;
+      const current = depositosLiqMap.get(cid) || {
+        cantidadQQ: 0,
+        totalLps: 0,
+      };
+      current.cantidadQQ += Number(r.cantidadQQ || 0);
+      current.totalLps += Number(r.totalLps || 0);
+      depositosLiqMap.set(cid, current);
+    });
+
+    // 🔹 4. Construir reporte final
+    const reporte = clientes
+      .map((c) => {
+        const compra = comprasMap.get(c.clienteID);
+        const contrato = contratosMap.get(c.clienteID);
+        const depositoLiq = depositosLiqMap.get(c.clienteID);
+        const depositoReal = depositosRealesMap.get(c.clienteID);
+
+        const compraCantidadQQ = Number(compra?._sum?.compraCantidadQQ || 0);
+        const compraTotalLps = Number(compra?._sum?.compraTotal || 0);
+        const contratoCantidadQQ = Number(contrato?.cantidadQQ || 0);
+        const contratoTotalLps = Number(contrato?.totalLps || 0);
+        const depositoCantidadQQ = Number(depositoLiq?.cantidadQQ || 0);
+        const depositoTotalLps = Number(depositoLiq?.totalLps || 0);
+        const totalDepositosQQ = Number(
+          depositoReal?._sum?.depositoCantidadQQ || 0,
+        );
+
+        const hasMovimientos =
+          compraCantidadQQ > 0 ||
+          contratoCantidadQQ > 0 ||
+          depositoCantidadQQ > 0 ||
+          totalDepositosQQ > 0;
+
+        if (!hasMovimientos) return null;
+
+        return {
+          clienteID: c.clienteID,
+          nombre: `${c.clienteNombre || ""} ${c.clienteApellido || ""}`.trim(),
+          compraCantidadQQ,
+          compraTotalLps,
+          contratoCantidadQQ,
+          contratoTotalLps,
+          depositoCantidadQQ,
+          depositoTotalLps,
+          totalDepositosQQ,
+        };
+      })
+      .filter((r) => r !== null);
 
     return new Response(JSON.stringify(reporte), { status: 200 });
   } catch (error) {

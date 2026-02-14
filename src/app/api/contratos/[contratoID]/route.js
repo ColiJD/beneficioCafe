@@ -42,7 +42,7 @@ export async function DELETE(req, { params }) {
           error: `No se puede eliminar el contrato porque tiene entregas activas: ${lista}.`,
           detalles: detallesActivos,
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
     // 🔹 Anular el contrato si no hay detalles tipo Entrada activos
@@ -55,13 +55,13 @@ export async function DELETE(req, { params }) {
       JSON.stringify({
         message: "Contrato anulado correctamente",
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error al anular contrato:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el contrato" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -70,7 +70,7 @@ export async function PUT(request, { params }) {
   const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -80,7 +80,7 @@ export async function PUT(request, { params }) {
     if (!contratoID) {
       return new Response(
         JSON.stringify({ error: "ID de contrato inválido" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -107,7 +107,7 @@ export async function PUT(request, { params }) {
     ) {
       return new Response(
         JSON.stringify({ error: "Faltan datos obligatorios" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -135,7 +135,7 @@ export async function PUT(request, { params }) {
         JSON.stringify({
           error: `No se puede modificar este contrato #${contratoID} porque ya tiene entregas registradas (Detalle ID: ${detalleAsociado.detalleID}).`,
         }),
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -161,7 +161,7 @@ export async function PUT(request, { params }) {
     console.error("Error al actualizar contrato:", error);
     return new Response(
       JSON.stringify({ error: "Error al actualizar contrato" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -170,7 +170,7 @@ export async function GET(req, context) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
   ]);
 
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -201,7 +201,7 @@ export async function GET(req, context) {
     if (!contrato) {
       return NextResponse.json(
         { error: "Contrato no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -210,7 +210,7 @@ export async function GET(req, context) {
     console.error("Error en GET /api/contratos/[id]:", error);
     return NextResponse.json(
       { error: "Error interno del servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

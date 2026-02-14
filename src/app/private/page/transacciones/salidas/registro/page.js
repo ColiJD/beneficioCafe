@@ -56,13 +56,13 @@ export default function ReporteRegistroSalida() {
 
     const totalQQ = lista.reduce(
       (acc, s) => acc + Number(s.salidaCantidadQQ || 0),
-      0
+      0,
     );
 
     const totalLps = lista.reduce(
       (acc, s) =>
         acc + Number(s.salidaCantidadQQ || 0) * Number(s.salidaPrecio || 0),
-      0
+      0,
     );
 
     const promedioPonderado = totalQQ > 0 ? totalLps / totalQQ : 0;
@@ -73,7 +73,7 @@ export default function ReporteRegistroSalida() {
           ? item.compradores?.compradorNombre
               ?.toLowerCase()
               .includes(nombreFiltro.toLowerCase())
-          : true
+          : true,
       )
       .map((item) => ({
         ...item,
@@ -89,13 +89,13 @@ export default function ReporteRegistroSalida() {
 
     const totalQQ = datosFiltrados.reduce(
       (acc, s) => acc + Number(s.salidaCantidadQQ || 0),
-      0
+      0,
     );
 
     const totalLps = datosFiltrados.reduce(
       (acc, s) =>
         acc + Number(s.salidaCantidadQQ || 0) * Number(s.salidaPrecio || 0),
-      0
+      0,
     );
 
     const promedioPonderado = totalQQ > 0 ? totalLps / totalQQ : 0;
@@ -128,6 +128,12 @@ export default function ReporteRegistroSalida() {
       width: 180,
       fixed: "left",
       render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+    },
+    {
+      title: "Producto",
+      dataIndex: ["producto", "productName"],
+      width: 150,
+      render: (text) => <Text strong>{text || "—"}</Text>,
     },
     {
       title: "QQ",
@@ -191,7 +197,7 @@ export default function ReporteRegistroSalida() {
                   cliente: record.compradores?.compradorNombre || "Cliente",
                   productos: [
                     {
-                      nombre: "Café Seco", // siempre Café Seco
+                      nombre: record.producto?.productName || "Café Seco",
                       cantidad: parseFloat(record.salidaCantidadQQ),
                       precio: parseFloat(record.salidaPrecio),
                       total:
@@ -225,7 +231,9 @@ export default function ReporteRegistroSalida() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+          <ProtectedButton
+            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
+          >
             <Button
               size="small"
               type="default"
@@ -247,7 +255,7 @@ export default function ReporteRegistroSalida() {
                     if (rangoFechas?.[0] && rangoFechas?.[1]) {
                       await fetchData(
                         rangoFechas[0].startOf("day").toISOString(),
-                        rangoFechas[1].endOf("day").toISOString()
+                        rangoFechas[1].endOf("day").toISOString(),
                       );
                     } else {
                       await fetchData();
@@ -276,6 +284,7 @@ export default function ReporteRegistroSalida() {
       render: (val) => dayjs(val).format("DD/MM/YYYY"),
     },
     { label: "Comprador", key: "compradores.compradorNombre" },
+    { label: "Producto", key: "producto.productName" },
     { label: "Movimiento", key: "salidaMovimiento" },
     {
       label: "Cantidad QQ",
@@ -315,6 +324,8 @@ export default function ReporteRegistroSalida() {
 
         compradorID: data.compradores?.compradorId,
         compradorNombre: data.compradores?.compradorNombre,
+        productoID: data.producto?.productID,
+        productName: data.producto?.productName,
       });
 
       setDrawerVisible(true);
@@ -378,7 +389,7 @@ export default function ReporteRegistroSalida() {
       if (rangoFechas?.[0] && rangoFechas?.[1]) {
         await fetchData(
           rangoFechas[0].startOf("day").toISOString(),
-          rangoFechas[1].endOf("day").toISOString()
+          rangoFechas[1].endOf("day").toISOString(),
         );
       } else {
         await fetchData();
@@ -395,6 +406,7 @@ export default function ReporteRegistroSalida() {
 
   const camposDetalle = [
     { label: "Comprador", key: "compradorNombre", editable: false },
+    { label: "Producto", key: "productName", editable: false },
 
     {
       label: "Cantidad QQ",
@@ -436,7 +448,7 @@ export default function ReporteRegistroSalida() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -467,7 +479,7 @@ export default function ReporteRegistroSalida() {
               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                 fetchData(
                   rangoFechas[0].startOf("day").toISOString(),
-                  rangoFechas[1].endOf("day").toISOString()
+                  rangoFechas[1].endOf("day").toISOString(),
                 );
               } else {
                 fetchData();
@@ -482,7 +494,7 @@ export default function ReporteRegistroSalida() {
                   fechaFin: rangoFechas?.[1]?.toISOString(),
                   nombreFiltro,
                 },
-                "Reporte de Salidas"
+                "Reporte de Salidas",
               )
             }
           />
@@ -535,7 +547,7 @@ export default function ReporteRegistroSalida() {
                     titulo: "Promedio Ponderado",
                     valor: (estadisticas.promedioPonderado || 0).toLocaleString(
                       "es-HN",
-                      { minimumFractionDigits: 2 }
+                      { minimumFractionDigits: 2 },
                     ),
                     color: "#722ed1",
                   },
@@ -557,7 +569,7 @@ export default function ReporteRegistroSalida() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>
@@ -581,7 +593,7 @@ export default function ReporteRegistroSalida() {
                   <div style={{ display: "flex", gap: 6 }}>
                     {/* Botón Editar */}
                     <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}
+                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
                     >
                       <Button
                         size="small"
@@ -610,7 +622,8 @@ export default function ReporteRegistroSalida() {
                               item.compradores?.compradorNombre || "Cliente",
                             productos: [
                               {
-                                nombre: "Café Seco",
+                                nombre:
+                                  item.producto?.productName || "Café Seco",
                                 cantidad: parseFloat(item.salidaCantidadQQ),
                                 precio: parseFloat(item.salidaPrecio),
                                 total:
@@ -633,7 +646,7 @@ export default function ReporteRegistroSalida() {
 
                           messageApi.destroy("generandoComprobante");
                           messageApi.success(
-                            "Comprobante generado correctamente"
+                            "Comprobante generado correctamente",
                           );
                         } catch (err) {
                           console.error("Error generando comprobante:", err);
@@ -665,7 +678,7 @@ export default function ReporteRegistroSalida() {
                               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                                 await fetchData(
                                   rangoFechas[0].startOf("day").toISOString(),
-                                  rangoFechas[1].endOf("day").toISOString()
+                                  rangoFechas[1].endOf("day").toISOString(),
                                 );
                               } else {
                                 await fetchData();

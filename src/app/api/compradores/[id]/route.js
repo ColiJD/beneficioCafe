@@ -14,7 +14,7 @@ export async function PUT(req, { params }) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -35,7 +35,7 @@ export async function PUT(req, { params }) {
     if (!compradorExistente) {
       return new Response(
         JSON.stringify({ error: "Comprador no encontrado" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -65,7 +65,7 @@ export async function PUT(req, { params }) {
       if (rtnDuplicado) {
         return new Response(
           JSON.stringify({ error: "Ya existe un comprador con ese RTN" }),
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -94,13 +94,13 @@ export async function PUT(req, { params }) {
     if (error.code === "P2025") {
       return new Response(
         JSON.stringify({ error: "Comprador no encontrado para actualizar" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return new Response(
       JSON.stringify({ error: "Error interno: " + error.message }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -110,7 +110,7 @@ export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -128,7 +128,7 @@ export async function DELETE(req, { params }) {
     if (!compradorExistente) {
       return new Response(
         JSON.stringify({ error: "Comprador no encontrado" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -148,7 +148,7 @@ export async function DELETE(req, { params }) {
     if (error.code === "P2025") {
       return new Response(
         JSON.stringify({ error: "Comprador no encontrado para eliminar" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
     if (error.code === "P2003") {
@@ -157,13 +157,13 @@ export async function DELETE(req, { params }) {
           error:
             "No se puede eliminar por restricciones de integridad referencial",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return new Response(
       JSON.stringify({ error: "Error interno: " + error.message }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

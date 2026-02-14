@@ -84,7 +84,7 @@ export default function FormProducto() {
 
       if (res.ok) {
         messageApiRef.current.success(
-          selectedProducto ? "Producto actualizado" : "Producto agregado"
+          selectedProducto ? "Producto actualizado" : "Producto agregado",
         );
         setPreviewVisible(false);
         limpiarFormulario({
@@ -100,7 +100,7 @@ export default function FormProducto() {
       } else {
         const err = await res.json();
         messageApiRef.current.error(
-          err.error || "Error al guardar el producto"
+          err.error || "Error al guardar el producto",
         );
       }
     } catch {
@@ -185,7 +185,7 @@ export default function FormProducto() {
       } else {
         const err = await res.json();
         messageApiRef.current.error(
-          err.error || "Error al eliminar el producto"
+          err.error || "Error al eliminar el producto",
         );
       }
     } catch {
@@ -224,7 +224,7 @@ export default function FormProducto() {
   ];
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
 

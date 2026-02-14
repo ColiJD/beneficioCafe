@@ -65,7 +65,7 @@ export default function ReporteLiqSalida() {
                       if (rangoFechas?.[0] && rangoFechas?.[1]) {
                         await fetchData(
                           rangoFechas[0].startOf("day").toISOString(),
-                          rangoFechas[1].endOf("day").toISOString()
+                          rangoFechas[1].endOf("day").toISOString(),
                         );
                       } else {
                         await fetchData();
@@ -87,7 +87,7 @@ export default function ReporteLiqSalida() {
           ? item.compradorNombre
               .toLowerCase()
               .includes(nombreFiltro.toLowerCase())
-          : true
+          : true,
       );
   }, [data, nombreFiltro, messageApi, rangoFechas, fetchData]);
 
@@ -97,7 +97,7 @@ export default function ReporteLiqSalida() {
       totalRegistros: datosFiltrados.length,
       totalQQ: datosFiltrados.reduce(
         (acc, s) => acc + Number(s.liqCantidadQQ || 0),
-        0
+        0,
       ),
     };
   }, [datosFiltrados]);
@@ -120,6 +120,12 @@ export default function ReporteLiqSalida() {
       dataIndex: ["compradores", "compradorNombre"],
       width: 200,
       render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+    },
+    {
+      title: "Producto",
+      dataIndex: ["producto", "productName"],
+      width: 150,
+      render: (text) => <Text strong>{text || "—"}</Text>,
     },
     {
       title: "Movimiento",
@@ -166,16 +172,15 @@ export default function ReporteLiqSalida() {
 
                 // Datos a exportar
                 await PDFComprobante({
-                  tipoComprobante:
-                    "COMPROBANTE DE LIQUIDACION ",
+                  tipoComprobante: "COMPROBANTE DE LIQUIDACION ",
                   cliente: record.compradores?.compradorNombre || "—",
                   productos: [
                     {
-                      nombre: "Café Seco",
+                      nombre: record.producto?.productName || "Café Seco",
                       cantidad: parseFloat(record.liqCantidadQQ || 0),
                     },
                   ],
-                  total:parseFloat(record.liqCantidadQQ || 0), // para mostrar en letras,
+                  total: parseFloat(record.liqCantidadQQ || 0), // para mostrar en letras,
                   observaciones: record.liqDescripcion || "—",
                   comprobanteID: record.liqSalidaID,
                   columnas: [
@@ -210,7 +215,7 @@ export default function ReporteLiqSalida() {
                     if (rangoFechas?.[0] && rangoFechas?.[1]) {
                       await fetchData(
                         rangoFechas[0].startOf("day").toISOString(),
-                        rangoFechas[1].endOf("day").toISOString()
+                        rangoFechas[1].endOf("day").toISOString(),
                       );
                     } else {
                       await fetchData();
@@ -233,6 +238,7 @@ export default function ReporteLiqSalida() {
     { label: "ID", key: "liqSalidaID" },
     { label: "Fecha", key: "liqFecha" },
     { label: "Comprador", key: "compradores.compradorNombre" },
+    { label: "Producto", key: "producto.productName" },
     { label: "Movimiento", key: "liqMovimiento" },
     { label: "Cantidad QQ", key: "liqCantidadQQ" },
     { label: "Descripción", key: "liqDescripcion" },
@@ -243,7 +249,7 @@ export default function ReporteLiqSalida() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div
         style={{
@@ -265,7 +271,7 @@ export default function ReporteLiqSalida() {
               if (rangoFechas?.[0] && rangoFechas?.[1]) {
                 fetchData(
                   rangoFechas[0].startOf("day").toISOString(),
-                  rangoFechas[1].endOf("day").toISOString()
+                  rangoFechas[1].endOf("day").toISOString(),
                 );
               } else {
                 fetchData();
@@ -329,7 +335,7 @@ export default function ReporteLiqSalida() {
               {rangoFechas?.[0] &&
                 rangoFechas?.[1] &&
                 `Período: ${rangoFechas[0].format(
-                  "DD/MM/YYYY"
+                  "DD/MM/YYYY",
                 )} - ${rangoFechas[1].format("DD/MM/YYYY")}`}
             </Text>
           </div>

@@ -55,7 +55,7 @@ export default function ClienteDetalle() {
 
       // Filtrar por movimiento
       const dataFiltrada = compras.filter(
-        (item) => item.compraMovimiento === movimientoFiltro
+        (item) => item.compraMovimiento === movimientoFiltro,
       );
 
       // Agrupar por tipo de café
@@ -119,11 +119,11 @@ export default function ClienteDetalle() {
   // Totales
   const totalQQ = filteredData.reduce(
     (acc, item) => acc + (item.cantidadTotal || 0),
-    0
+    0,
   );
   const totalLps = filteredData.reduce(
     (acc, item) => acc + (item.totalLps || 0),
-    0
+    0,
   );
 
   // Exportar PDF
@@ -273,7 +273,7 @@ export default function ClienteDetalle() {
 
   return (
     <ProtectedPage
-      allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS", "AUDITORES"]}
+      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}
     >
       <div>
         <TarjetasDeTotales

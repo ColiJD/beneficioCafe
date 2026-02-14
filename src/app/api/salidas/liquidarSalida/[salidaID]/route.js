@@ -79,13 +79,13 @@ export async function DELETE(req, context) {
         message:
           "Registro de liquidación de salida y detalles anulados correctamente",
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error al anular registro de liqSalida:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el registro" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -105,7 +105,7 @@ export async function PUT(req, context) {
     if (!liqSalidaID || !cantidadLiquidar) {
       return new Response(
         JSON.stringify({ error: "Datos inválidos o incompletos" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -127,73 +127,55 @@ export async function PUT(req, context) {
         JSON.stringify({
           error: "No se puede modificar una liquidación anulada",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const cantidadActual = Number(registroActual.liqCantidadQQ);
     const diferencia = nuevaCantidad - cantidadActual;
+    const productoID = registroActual.productoID;
 
     // ✅ Transacción para actualizar
     await prisma.$transaction(async (tx) => {
-      // 1. Si aumenta la cantidad, verificar inventario disponible
+      // 1. Si aumenta la cantidad, verificar inventario disponible del producto específico
       if (diferencia > 0) {
-        const totalInventario = await tx.inventariocliente.aggregate({
-          _sum: { cantidadQQ: true },
+        const inventarioExistente = await tx.inventariocliente.findUnique({
+          where: { productoID },
         });
 
         const inventarioDisponible = Number(
-          totalInventario._sum?.cantidadQQ ?? 0
+          inventarioExistente?.cantidadQQ ?? 0,
         );
 
         if (inventarioDisponible < diferencia) {
           throw new Error(
-            `Inventario insuficiente para el aumento. Disponible: ${inventarioDisponible.toFixed(
-              2
-            )} QQ, Necesario: ${diferencia.toFixed(2)} QQ`
+            `Inventario insuficiente para el producto. Disponible: ${inventarioDisponible.toFixed(
+              2,
+            )} QQ, Necesario extra: ${diferencia.toFixed(2)} QQ`,
           );
         }
 
-        // Reducir inventario adicional
-        const inventarios = await tx.inventariocliente.findMany({
-          orderBy: { inventarioClienteID: "asc" },
+        // Reducir inventario del producto
+        await tx.inventariocliente.update({
+          where: {
+            inventarioClienteID: inventarioExistente.inventarioClienteID,
+          },
+          data: { cantidadQQ: { decrement: diferencia } },
         });
 
-        let restanteQQ = diferencia;
-        const movimientosACrear = [];
-
-        for (const inv of inventarios) {
-          if (restanteQQ <= 0) break;
-
-          const cantidadDisponible = Number(inv.cantidadQQ);
-          if (cantidadDisponible <= 0) continue;
-
-          const descontarQQ = Math.min(restanteQQ, cantidadDisponible);
-
-          await tx.inventariocliente.update({
-            where: { inventarioClienteID: inv.inventarioClienteID },
-            data: { cantidadQQ: { decrement: descontarQQ } },
-          });
-
-          movimientosACrear.push({
-            inventarioClienteID: inv.inventarioClienteID,
+        // Registrar movimiento
+        await tx.movimientoinventario.create({
+          data: {
+            inventarioClienteID: inventarioExistente.inventarioClienteID,
             tipoMovimiento: "Salida",
             referenciaTipo: "Modificación Liquidación Salida",
             referenciaID: liqSalidaID,
-            cantidadQQ: descontarQQ,
-            nota: `Ajuste por modificación de liquidación #${liqSalidaID} (+${diferencia.toFixed(
-              2
+            cantidadQQ: diferencia,
+            nota: `Ajuste (aumento) por modificación de liquidación #${liqSalidaID} (+${diferencia.toFixed(
+              2,
             )} QQ)`,
-          });
-
-          restanteQQ -= descontarQQ;
-        }
-
-        if (movimientosACrear.length > 0) {
-          await tx.movimientoinventario.createMany({
-            data: movimientosACrear,
-          });
-        }
+          },
+        });
       } else if (diferencia < 0) {
         // 2. Si disminuye la cantidad, devolver inventario
         const cantidadDevolver = Math.abs(diferencia);
@@ -230,7 +212,7 @@ export async function PUT(req, context) {
               referenciaID: liqSalidaID,
               cantidadQQ: devolver,
               nota: `Ajuste por modificación de liquidación #${liqSalidaID} (${diferencia.toFixed(
-                2
+                2,
               )} QQ)`,
             },
           });
@@ -254,7 +236,7 @@ export async function PUT(req, context) {
         message: "Liquidación actualizada correctamente",
         diferencia,
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error al actualizar liquidación:", error);
@@ -268,7 +250,7 @@ export async function PUT(req, context) {
 
     return new Response(
       JSON.stringify({ error: "Error interno al actualizar el registro" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

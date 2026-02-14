@@ -6,7 +6,7 @@ export async function POST(request) {
   const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -39,22 +39,23 @@ export async function POST(request) {
     ) {
       return new Response(
         JSON.stringify({ error: "Faltan datos obligatorios o son inválidos" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // 4️⃣ Obtener inventario total (solo cantidadQQ)
-    const totalInventario = await prisma.inventariocliente.aggregate({
+    // 4️⃣ Obtener inventario global
+    const inventario = await prisma.inventariocliente.findUnique({
       where: { productoID: Number(compraTipoCafe) },
-      _sum: { cantidadQQ: true },
     });
 
-    const totalQQ = totalInventario._sum?.cantidadQQ || 0;
+    const totalQQ = inventario
+      ? parseFloat(inventario.cantidadQQ.toString())
+      : 0;
 
     if (totalQQ < cantidadQQ) {
       return new Response(
-        JSON.stringify({ error: "Inventario total insuficiente" }),
-        { status: 400 }
+        JSON.stringify({ error: "Inventario insuficiente" }),
+        { status: 400 },
       );
     }
 
@@ -67,7 +68,7 @@ export async function POST(request) {
           compraFecha: new Date(),
           compraTipoCafe: Number(compraTipoCafe),
           compraCantidadQQ: new Prisma.Decimal(cantidadQQ),
-          compraTotalSacos: new Prisma.Decimal(totalSacos), // Solo para guardar
+          compraTotalSacos: new Prisma.Decimal(totalSacos),
           compraPrecioQQ: new Prisma.Decimal(precioQQ),
           compraTotal: new Prisma.Decimal(totalCompra),
           compraDescripcion: compraDescripcion || "",
@@ -76,42 +77,25 @@ export async function POST(request) {
         },
       });
 
-      // 5b️⃣ Distribuir la venta entre inventarios (solo cantidadQQ)
-      const inventarios = await tx.inventariocliente.findMany({
+      // 5b️⃣ Actualizar inventario global
+      await tx.inventariocliente.update({
         where: { productoID: Number(compraTipoCafe) },
-        orderBy: { inventarioClienteID: "asc" },
+        data: {
+          cantidadQQ: { decrement: new Prisma.Decimal(cantidadQQ) },
+        },
       });
 
-      let restanteQQ = cantidadQQ;
-
-      for (const inv of inventarios) {
-        if (restanteQQ <= 0) break;
-
-        const descontarQQ = Math.min(
-          restanteQQ,
-          parseFloat(inv.cantidadQQ.toString())
-        );
-
-        await tx.inventariocliente.update({
-          where: { inventarioClienteID: inv.inventarioClienteID },
-          data: {
-            cantidadQQ: { decrement: new Prisma.Decimal(descontarQQ) },
-          },
-        });
-
-        await tx.movimientoinventario.create({
-          data: {
-            inventarioClienteID: inv.inventarioClienteID,
-            tipoMovimiento: "Salida",
-            referenciaTipo: `Venta directa #${registro.compraId}`,
-            referenciaID: registro.compraId,
-            cantidadQQ: new Prisma.Decimal(descontarQQ),
-            nota: `Salida de café por venta a comprador ${compradorID}`,
-          },
-        });
-
-        restanteQQ -= descontarQQ;
-      }
+      // 5c️⃣ Registrar movimiento de inventario
+      await tx.movimientoinventario.create({
+        data: {
+          inventarioClienteID: inventario.inventarioClienteID,
+          tipoMovimiento: "Salida",
+          referenciaTipo: `Venta directa #${registro.compraId}`,
+          referenciaID: registro.compraId,
+          cantidadQQ: new Prisma.Decimal(cantidadQQ),
+          nota: `Salida de café por venta a comprador ${compradorID}`,
+        },
+      });
 
       return registro;
     });
@@ -121,7 +105,7 @@ export async function POST(request) {
     console.error("🔥 Error al registrar la venta:", error);
     return new Response(
       JSON.stringify({ error: "Error al registrar la venta" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

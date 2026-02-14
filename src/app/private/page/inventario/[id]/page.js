@@ -153,7 +153,7 @@ export default function DetalleCafePage() {
     doc.text(
       `TOTAL QQ: ${truncarDosDecimalesSinRedondear(totalQQ)}`,
       margin,
-      y
+      y,
     );
 
     doc.save(`Movimientos_Cafe_${nombreCafe}.pdf`);
@@ -189,7 +189,7 @@ export default function DetalleCafePage() {
   ];
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <div>
         <h2>{`Detalles de: ${nombreCafe || "Cargando..."}`}</h2>
 

@@ -64,16 +64,16 @@ export default function ContratoForm({ contratoID }) {
       if (!formState.cliente || !formState.cliente.value) return;
 
       const mensajesContratos = await verificarClientesPendientesContratos(
-        formState.cliente.value
+        formState.cliente.value,
       );
       const mensajesDepositos = await verificarDepositosPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
       const mensajesPrestamos = await verificarPrestamosPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
       const mensajesAnticipos = await verificarAnticiposPendientes(
-        formState.cliente.value
+        formState.cliente.value,
       );
 
       setNotifications([
@@ -235,7 +235,7 @@ export default function ContratoForm({ contratoID }) {
                 style={{ marginTop: 6 }}
                 onClick={() =>
                   router.push(
-                    "/private/page/transacciones/contrato/detallecontrato"
+                    "/private/page/transacciones/contrato/detallecontrato",
                   )
                 }
               >
@@ -249,7 +249,7 @@ export default function ContratoForm({ contratoID }) {
       messageApi.success(
         contratoID
           ? "Contrato actualizado exitosamente"
-          : "Contrato registrado exitosamente"
+          : "Contrato registrado exitosamente",
       );
 
       setPreviewVisible(false);
@@ -279,7 +279,7 @@ export default function ContratoForm({ contratoID }) {
 
       // 🔹 Limpieza del formulario
       limpiarFormulario(
-        Object.fromEntries(fieldsConfig.map((f) => [f.key, formState[f.key]]))
+        Object.fromEntries(fieldsConfig.map((f) => [f.key, formState[f.key]])),
       );
       setFormState({
         cliente: null,
@@ -314,14 +314,14 @@ export default function ContratoForm({ contratoID }) {
 
         // Buscar cliente y producto en los selects
         const clienteSeleccionado = clientes.find(
-          (c) => c.value === data.clienteID
+          (c) => c.value === data.clienteID,
         ) || {
           value: data.cliente?.clienteID ?? "nuevo", // si no hay ID, ponemos "nuevo" o algo único
           label: data.cliente?.clienteNombre || "Sin nombre",
         };
 
         const productoSeleccionado = productos.find(
-          (p) => p.value === data.contratoTipoCafe
+          (p) => p.value === data.contratoTipoCafe,
         ) || {
           value: data.contratoTipoCafe,
           label: data.producto?.productName || "Sin nombre",
@@ -351,7 +351,7 @@ export default function ContratoForm({ contratoID }) {
   }, [contratoID, loadingData]);
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder} {/* Contenedor de mensajes Ant Design */}
         {loading || loadingData ? (
@@ -383,7 +383,7 @@ export default function ContratoForm({ contratoID }) {
                   icon: <SolutionOutlined />,
                   onClick: () =>
                     router.push(
-                      "/private/page/transacciones/contrato/registrocontrato"
+                      "/private/page/transacciones/contrato/registrocontrato",
                     ),
                 },
               ]}

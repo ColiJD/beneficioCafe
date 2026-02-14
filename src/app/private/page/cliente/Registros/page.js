@@ -35,7 +35,7 @@ export default function ReporteClientes() {
         ? true
         : `${item.clienteNombre} ${item.clienteApellido}`
             ?.toLowerCase()
-            .includes(nombreFiltro.toLowerCase())
+            .includes(nombreFiltro.toLowerCase()),
     );
   }, [data, nombreFiltro]);
 
@@ -108,7 +108,7 @@ export default function ReporteClientes() {
   if (!mounted) return null;
 
   return (
-    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "OPERARIOS"]}>
+    <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <div
         style={{
           padding: isDesktop ? "24px" : "12px",
@@ -134,7 +134,7 @@ export default function ReporteClientes() {
                   nombreFiltro,
                 },
                 columnasDesktop,
-                { title: "Clientes Registrados" }
+                { title: "Clientes Registrados" },
               )
             }
             disableExport={!datosFiltrados.length}

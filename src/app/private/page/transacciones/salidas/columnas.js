@@ -2,6 +2,7 @@ export const columnas = [
   { label: "ID", key: "salidaID" },
   { label: "Fecha", key: "salidaFecha", type: "date" },
   { label: "Comprador", key: "compradorNombre" },
+  { label: "Producto", key: "productName" },
 
   {
     label: "QQ",

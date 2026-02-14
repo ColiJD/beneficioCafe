@@ -6,7 +6,7 @@ export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -16,7 +16,7 @@ export async function GET(req) {
   } catch (error) {
     return new Response(
       JSON.stringify({ error: "Error al obtener productos" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -26,7 +26,7 @@ export async function POST(req) {
   const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
-    "OPERARIOS",
+    "COLABORADORES",
     "AUDITORES",
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -37,7 +37,7 @@ export async function POST(req) {
     if (!productName?.trim()) {
       return new Response(
         JSON.stringify({ error: "El nombre del producto es obligatorio" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
     // 🔹 Validación de nombre único
@@ -48,7 +48,7 @@ export async function POST(req) {
     if (existente) {
       return new Response(
         JSON.stringify({ error: "El nombre del producto ya existe" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 

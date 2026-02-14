@@ -10,7 +10,7 @@ export async function POST(req) {
   if (!user) {
     return new Response(
       JSON.stringify({ message: "Si el correo existe, se enviará un enlace" }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -25,7 +25,11 @@ export async function POST(req) {
     },
   });
 
-  const resetLink = `${process.env.NEXT_PUBLIC_URL}/login/reset-password?token=${token}`;
+  const host = req.headers.get("host");
+  const protocol = req.headers.get("x-forwarded-proto") || "http";
+  const baseUrl = process.env.NEXT_PUBLIC_URL || `${protocol}://${host}`;
+
+  const resetLink = `${baseUrl}/login/reset-password?token=${token}`;
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -63,6 +67,6 @@ export async function POST(req) {
 
   return new Response(
     JSON.stringify({ message: "Si el correo existe, se enviará un enlace" }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
+    { status: 200, headers: { "Content-Type": "application/json" } },
   );
 }
