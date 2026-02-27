@@ -988,15 +988,15 @@ export default function PrestamosGeneral() {
             <DrawerPrestamo
               open={openDrawer}
               onClose={() => setOpenDrawer(false)}
-              onSubmit={handleAgregarPrestamo}
-              cliente={clienteSeleccionado}
+              onFinish={handleAgregarPrestamo}
+              clienteSeleccionado={clienteSeleccionado}
               formRef={drawerFormRef}
             />
             <DrawerCalculoInteres
               open={openDrawerInteres}
               onClose={() => setOpenDrawerInteres(false)}
               onSubmit={handleAgregarPrestamo}
-              cliente={clienteSeleccionado}
+              clienteSeleccionado={clienteSeleccionado}
             />
           </Card>
         </div>

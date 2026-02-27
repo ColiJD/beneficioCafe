@@ -15,7 +15,13 @@ import dayjs from "dayjs";
 import { formatNumber } from "../Formulario";
 import { moneyFormatter, percentFormatter } from "./DrawerPrestamo";
 
-export default function DrawerInteres({ open, onClose, onSubmit, cliente }) {
+export default function DrawerInteres({
+  open,
+  onClose,
+  onSubmit,
+  clienteSeleccionado,
+  tipoPersona = "cliente",
+}) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [dias, setDias] = useState(0);
@@ -64,16 +70,23 @@ export default function DrawerInteres({ open, onClose, onSubmit, cliente }) {
   const handleFinish = async (values) => {
     setLoading(true);
     try {
-      await onSubmit({
+      const payload = {
         tipo: values.tipoMovimiento,
-        clienteID: cliente?.clienteID,
         tipo_movimiento: "Int-Cargo",
         monto: values.totalInteres,
         fecha: new Date(),
         descripcion: values.observacion,
         interes: values.interes,
         dias: values.dias,
-      });
+      };
+
+      if (tipoPersona === "comprador") {
+        payload.compradorID = clienteSeleccionado?.compradorId;
+      } else {
+        payload.clienteID = clienteSeleccionado?.clienteID;
+      }
+
+      await onSubmit(payload);
 
       form.resetFields();
       setDias(0);
@@ -90,8 +103,12 @@ export default function DrawerInteres({ open, onClose, onSubmit, cliente }) {
 
   return (
     <Drawer
-      title={`Cálculo de Interés - ${cliente?.clienteNombre || ""} ${
-        cliente?.clienteApellido || ""
+      title={`Cálculo de Interés - ${
+        tipoPersona === "comprador"
+          ? clienteSeleccionado?.compradorNombre || ""
+          : `${clienteSeleccionado?.clienteNombre || ""} ${
+              clienteSeleccionado?.clienteApellido || ""
+            }`
       }`}
       width={400}
       onClose={onClose}

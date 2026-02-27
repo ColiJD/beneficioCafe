@@ -177,8 +177,21 @@ export const menuItems = [
   {
     id: 7,
     name: "Prestamo",
-    href: RutaTransaccion + "/prestamos",
     image: Contrato,
+    subItems: [
+      {
+        id: 701,
+        name: "Clientes",
+        href: RutaTransaccion + "/prestamos",
+        image: cliente,
+      },
+      {
+        id: 702,
+        name: "Compradores",
+        href: RutaTransaccion + "/prestamosCompradores",
+        image: producto,
+      },
+    ],
   },
 
   {

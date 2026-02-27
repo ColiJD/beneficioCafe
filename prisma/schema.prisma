@@ -51,6 +51,7 @@ model compradores {
   contratoSalida     contratoSalida[]
   liqsalida          liqsalida[]
   salida             salida[]
+  prestamos          prestamos_compradores[]
 }
 
 model cierrecontrato {
@@ -413,4 +414,37 @@ model detalleContratoSalida {
 
   @@index([contratoID], map: "detalleContratoSalidaContratoID")
   @@index([tipoMovimiento, fecha])
+}
+
+model prestamos_compradores {
+  prestamoId           Int                                @id @default(autoincrement())
+  compradorId          Int?
+  fecha                DateTime?                          @db.DateTime(0)
+  monto                Decimal?                           @db.Decimal(12, 2)
+  tasa_interes         Decimal?                           @db.Decimal(5, 2)
+  tipo                 String?                            @default("PRESTAMO") @db.VarChar(25)
+  estado               String?                            @default("ACTIVO") @db.VarChar(25)
+  observacion          String?                            @db.Text
+  movimientos_prestamo movimientos_prestamo_compradores[]
+  comprador            compradores?                       @relation(fields: [compradorId], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_compradores_ibfk_1")
+
+  @@index([compradorId], map: "compradorId_idx")
+  @@index([compradorId, estado])
+  @@index([estado])
+}
+
+model movimientos_prestamo_compradores {
+  MovimientoId    Int                   @id @default(autoincrement())
+  prestamo_id     Int?
+  fecha           DateTime?             @db.DateTime(0)
+  tipo_movimiento String?               @db.VarChar(25)
+  monto           Decimal?              @db.Decimal(12, 2)
+  descripcion     String?               @db.Text
+  interes         Decimal?              @db.Decimal(5, 2)
+  dias            Int?
+  prestamos       prestamos_compradores? @relation(fields: [prestamo_id], references: [prestamoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_prestamo_compradores_ibfk_1")
+
+  @@index([prestamo_id], map: "prestamoComprador_id_idx")
+  @@index([prestamo_id, fecha, tipo_movimiento])
+  @@index([tipo_movimiento])
 }

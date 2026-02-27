@@ -26,9 +26,10 @@ export const percentFormatter = {
 export default function DrawerPrestamo({
   open,
   onClose,
-  onSubmit,
-  cliente,
+  onFinish,
+  clienteSeleccionado,
   formRef,
+  tipoPersona = "cliente",
 }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -55,12 +56,19 @@ export default function DrawerPrestamo({
   const handleFinish = async (values) => {
     setLoading(true);
     try {
-      await onSubmit({
+      const payload = {
         ...values,
         tipo: tipoMovimiento,
-        clienteID: cliente?.clienteID,
-      });
-      // ❌ NO resetear ni cerrar aquí
+      };
+
+      // Manejar dinámicamente según el tipo de persona
+      if (tipoPersona === "comprador") {
+        payload.compradorID = clienteSeleccionado?.compradorId;
+      } else {
+        payload.clienteID = clienteSeleccionado?.clienteID;
+      }
+
+      await onFinish(payload);
     } catch (err) {
       console.error("Error al guardar:", err);
     } finally {
@@ -174,8 +182,12 @@ export default function DrawerPrestamo({
 
   return (
     <Drawer
-      title={`Nuevo Registro - ${cliente?.clienteNombre || ""} ${
-        cliente?.clienteApellido || ""
+      title={`Nuevo Registro - ${
+        tipoPersona === "comprador"
+          ? clienteSeleccionado?.compradorNombre || ""
+          : `${clienteSeleccionado?.clienteNombre || ""} ${
+              clienteSeleccionado?.clienteApellido || ""
+            }`
       }`}
       width={400}
       onClose={onClose}
