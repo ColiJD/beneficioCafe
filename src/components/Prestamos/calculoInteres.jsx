@@ -116,6 +116,7 @@ export default function DrawerInteres({
       placement="left"
       maskClosable
       mask={false}
+      forceRender
     >
       <Form
         layout="vertical"

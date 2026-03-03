@@ -72,6 +72,7 @@ export default function LiquidacionDrawer({
       width={450}
       onClose={onClose}
       open={visible}
+      forceRender
       footer={
         <div style={{ textAlign: "right" }}>
           <Button onClick={onClose} style={{ marginRight: 8 }}>
