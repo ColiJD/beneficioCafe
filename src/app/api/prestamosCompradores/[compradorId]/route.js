@@ -18,12 +18,24 @@ export async function GET(req, props) {
     const prestamos = await prisma.prestamos_compradores.findMany({
       where: { compradorId: parseInt(compradorId) },
       include: {
-        movimientos_prestamo: true,
+        movimientos_prestamo: {
+          orderBy: { fecha: "asc" },
+        },
       },
       orderBy: { fecha: "desc" },
     });
 
-    return NextResponse.json({ ok: true, prestamos });
+    const anticipos = await prisma.anticipo_compradores.findMany({
+      where: { compradorId: parseInt(compradorId) },
+      include: {
+        movimientos_anticipos: {
+          orderBy: { fecha: "asc" },
+        },
+      },
+      orderBy: { fecha: "desc" },
+    });
+
+    return NextResponse.json({ ok: true, prestamos, anticipos });
   } catch (error) {
     console.error("Error al obtener préstamos de comprador:", error);
     return NextResponse.json(

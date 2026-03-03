@@ -15,6 +15,7 @@ import { formatNumber } from "@/components/Formulario";
  */
 export const exportPDFMovimientosComprador = ({
   dataTabla = [],
+  prestamos = [],
   compradorNombre = "-",
   rangoFechas = {},
   options = {},
@@ -62,10 +63,10 @@ export const exportPDFMovimientosComprador = ({
   if (rangoFechas.inicio && rangoFechas.fin) {
     doc.text(
       `• Período: ${dayjs(rangoFechas.inicio).format("DD/MM/YYYY")} - ${dayjs(
-        rangoFechas.fin
+        rangoFechas.fin,
       ).format("DD/MM/YYYY")}`,
       20,
-      yPosition
+      yPosition,
     );
     yPosition += 5;
   } else {
@@ -74,7 +75,7 @@ export const exportPDFMovimientosComprador = ({
   }
   yPosition += 3;
 
-  // ==== TABLA COMBINADA ====
+  // ==== TABLA COMBINADA COFÉ ====
   const safeData = Array.isArray(dataTabla) ? dataTabla : [];
   const body = safeData
     .filter((row) => row.totalQQ !== undefined || row.totalLps !== undefined)
@@ -86,7 +87,6 @@ export const exportPDFMovimientosComprador = ({
       `L. ${formatNumber(row.promedioPrecio ?? 0, 2)}`,
     ]);
 
-  // ==== CALCULAR TOTALES PRINCIPAL ====
   const totals = safeData.reduce(
     (acc, row) => {
       acc.totalQQPorLiquidar += row.totalQQPorLiquidar ?? 0;
@@ -94,7 +94,7 @@ export const exportPDFMovimientosComprador = ({
       acc.totalLps += row.totalLps ?? 0;
       return acc;
     },
-    { totalQQPorLiquidar: 0, totalQQ: 0, totalLps: 0 }
+    { totalQQPorLiquidar: 0, totalQQ: 0, totalLps: 0 },
   );
   const promedioPrecioTotal =
     totals.totalQQ > 0 ? totals.totalLps / totals.totalQQ : 0;
@@ -132,10 +132,65 @@ export const exportPDFMovimientosComprador = ({
       alternateRowStyles: { fillColor: colorSecundario },
       margin: { left: 20, right: 20 },
     });
-    yPosition = doc.lastAutoTable.finalY + 8;
+    yPosition = doc.lastAutoTable.finalY + 12;
   }
 
-  if (body.length === 0) {
+  // ==== SECCIÓN FINANCIERA ====
+  const renderFinancialTable = (title, items) => {
+    if (!items || items.length === 0) return;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colorPrimario);
+    doc.text(title, 20, yPosition);
+    yPosition += 6;
+
+    const tableBody = items.map((item) => [
+      dayjs(item.fecha).format("DD/MM/YYYY"),
+      `L. ${formatNumber(item.monto, 2)}`,
+      `L. ${formatNumber(item.abonado, 2)}`,
+      `L. ${formatNumber(item.total, 2)}`,
+      item.estado,
+    ]);
+
+    const financialTotals = items.reduce(
+      (acc, item) => {
+        acc.monto += item.monto;
+        acc.abonado += item.abonado;
+        acc.total += item.total;
+        return acc;
+      },
+      { monto: 0, abonado: 0, total: 0 },
+    );
+
+    tableBody.push([
+      "TOTAL",
+      `L. ${formatNumber(financialTotals.monto, 2)}`,
+      `L. ${formatNumber(financialTotals.abonado, 2)}`,
+      `L. ${formatNumber(financialTotals.total, 2)}`,
+      "",
+    ]);
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["Fecha", "Monto", "Abonado", "Saldo", "Estado"]],
+      body: tableBody,
+      theme: "striped",
+      headStyles: { fillColor: [52, 73, 94], textColor: [255, 255, 255] },
+      bodyStyles: { fontSize: 8 },
+      margin: { left: 20, right: 20 },
+    });
+
+    yPosition = doc.lastAutoTable.finalY + 10;
+  };
+
+  const prestamosList = prestamos.filter((p) => p.tipo !== "ANTICIPO");
+  const anticiposList = prestamos.filter((p) => p.tipo === "ANTICIPO");
+
+  renderFinancialTable("DETALLE DE PRÉSTAMOS", prestamosList);
+  renderFinancialTable("DETALLE DE ANTICIPOS", anticiposList);
+
+  if (body.length === 0 && prestamos.length === 0) {
     doc.setFontSize(10);
     doc.setTextColor(200, 100, 100);
     doc.text("No hay datos disponibles para mostrar", 108, yPosition + 10, {
@@ -144,7 +199,7 @@ export const exportPDFMovimientosComprador = ({
   }
 
   const nombreArchivo = `reporte-comprador-${compradorNombre}-${dayjs().format(
-    "YYYY-MM-DD-HHmm"
+    "YYYY-MM-DD-HHmm",
   )}.pdf`;
   doc.save(nombreArchivo);
   return doc;

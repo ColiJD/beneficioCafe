@@ -52,7 +52,42 @@ model compradores {
   liqsalida          liqsalida[]
   salida             salida[]
   prestamos          prestamos_compradores[]
+  anticipos          anticipo_compradores[]
 }
+
+model anticipo_compradores {
+  anticipoId            Int                     @id @default(autoincrement())
+  compradorId           Int?
+  fecha                 DateTime?               @db.DateTime(0)
+  monto                 Decimal?                @db.Decimal(12, 2)
+  tasa_interes          Decimal?                @db.Decimal(5, 2)
+  tipo                  String?                 @default("ANTICIPO") @db.VarChar(25)
+  estado                String?                 @default("ACTIVO") @db.VarChar(25)
+  observacion           String?                 @db.Text
+  comprador             compradores?            @relation(fields: [compradorId], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "anticipo_compradores_ibfk_1")
+  movimientos_anticipos movimientos_anticipos_compradores[]
+
+  @@index([compradorId], map: "compradorId_anticipo_idx")
+  @@index([compradorId, estado])
+  @@index([estado])
+}
+
+model movimientos_anticipos_compradores {
+  MovimientoId    Int       @id @default(autoincrement())
+  anticipoId      Int?
+  fecha           DateTime? @db.DateTime(0)
+  tipo_movimiento String?   @db.VarChar(25)
+  monto           Decimal?  @db.Decimal(12, 2)
+  descripcion     String?   @db.Text
+  interes         Decimal?  @db.Decimal(5, 2)
+  dias            Int?
+  anticipo        anticipo_compradores? @relation(fields: [anticipoId], references: [anticipoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_anticipos_compradores_ibfk_1")
+
+  @@index([anticipoId], map: "anticipoCompradorId_idx")
+  @@index([anticipoId, fecha, tipo_movimiento])
+  @@index([tipo_movimiento])
+}
+
 
 model cierrecontrato {
   cierreID         Int       @id @default(autoincrement())

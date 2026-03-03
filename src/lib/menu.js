@@ -176,7 +176,7 @@ export const menuItems = [
   },
   {
     id: 7,
-    name: "Prestamo",
+    name: "Prestamos y Anticipos",
     image: Contrato,
     subItems: [
       {
@@ -208,7 +208,7 @@ const iconMap = {
   Salidas: <MinusCircleOutlined />,
   Inventario: <AppstoreOutlined />,
   Informe: <FileTextOutlined />,
-  Prestamo: <FileTextOutlined />,
+  "Prestamos y Anticipos": <FileTextOutlined />,
   Registros: <SettingOutlined />,
   Listado: <UserOutlined />,
 };

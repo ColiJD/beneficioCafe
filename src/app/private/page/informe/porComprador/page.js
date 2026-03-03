@@ -23,7 +23,12 @@ import SectionHeader from "@/components/ReportesElement/AccionesResporte";
 import { exportPDFMovimientosComprador } from "@/Doc/Reportes/porComprador";
 
 import { CalendarOutlined } from "@ant-design/icons";
-import { columnasPorTipo, columns } from "./columnas";
+import {
+  columnasPorTipo,
+  columns,
+  columnsPrestamos,
+  getPrestamosMoviColumns,
+} from "./columnas";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -36,6 +41,7 @@ export default function MovimientosCompradorPage() {
     dayjs().endOf("year"),
   ]);
   const [data, setData] = useState([]);
+  const [prestamos, setPrestamos] = useState([]);
   const [loading, setLoading] = useState(false);
   const { mounted, isDesktop } = useClientAndDesktop();
   const [messageApi, contextHolder] = message.useMessage();
@@ -178,10 +184,18 @@ export default function MovimientosCompradorPage() {
       };
 
       setData([filaConfirmacion, filaVentas, filaContratos]);
+      setPrestamos([
+        ...(movimientos.Prestamos || []),
+        ...(movimientos.Anticipos || []),
+      ]);
 
-      const hayRegistros = [filaConfirmacion, filaVentas, filaContratos].some(
-        (f) => f.detalles?.length > 0,
-      );
+      const hayRegistros =
+        [filaConfirmacion, filaVentas, filaContratos].some(
+          (f) => f.detalles?.length > 0,
+        ) ||
+        movimientos.Prestamos?.length > 0 ||
+        movimientos.Anticipos?.length > 0;
+
       hayRegistros
         ? messageApi.success("Se encontraron registros")
         : messageApi.info("No se encontraron registros");
@@ -234,6 +248,7 @@ export default function MovimientosCompradorPage() {
 
               exportPDFMovimientosComprador({
                 dataTabla: data,
+                prestamos: prestamos,
                 compradorNombre,
                 rangoFechas: {
                   inicio: fechaRango?.[0]?.format("YYYY-MM-DD") || null,
@@ -357,6 +372,75 @@ export default function MovimientosCompradorPage() {
             <Text>No hay datos para mostrar</Text>
           </div>
         )}
+
+        {!loading && prestamos.length > 0 && (
+          <>
+            <Divider />
+            {/* Tabla de Préstamos */}
+            <Title level={4}>Préstamos</Title>
+            <Table
+              columns={columnsPrestamos}
+              dataSource={prestamos.filter((p) => p.tipo !== "ANTICIPO")}
+              rowKey={(r) => r.prestamoId}
+              scroll={{ x: "max-content" }}
+              expandable={{
+                expandedRowRender: (record) => (
+                  <Table
+                    size="small"
+                    columns={getPrestamosMoviColumns("PRESTAMO")}
+                    dataSource={record.movimientos}
+                    pagination={false}
+                    rowKey="movimientoId"
+                    scroll={{ x: "max-content" }}
+                  />
+                ),
+              }}
+              pagination={false}
+              summary={() => (
+                <ResumenTablaGenerico
+                  columns={columnsPrestamos}
+                  data={prestamos.filter((p) => p.tipo !== "ANTICIPO")}
+                  options={{
+                    highlightColumns: [{ dataIndex: "total", type: "danger" }],
+                  }}
+                />
+              )}
+            />
+
+            <Divider />
+            {/* Tabla de Anticipos */}
+            <Title level={4}>Anticipos</Title>
+            <Table
+              columns={columnsPrestamos}
+              dataSource={prestamos.filter((p) => p.tipo === "ANTICIPO")}
+              rowKey={(r) => r.anticipoId}
+              scroll={{ x: "max-content" }}
+              expandable={{
+                expandedRowRender: (record) => (
+                  <Table
+                    size="small"
+                    columns={getPrestamosMoviColumns("ANTICIPO")}
+                    dataSource={record.movimientos}
+                    pagination={false}
+                    rowKey="movimientoId"
+                    scroll={{ x: "max-content" }}
+                  />
+                ),
+              }}
+              pagination={false}
+              summary={() => (
+                <ResumenTablaGenerico
+                  columns={columnsPrestamos}
+                  data={prestamos.filter((p) => p.tipo === "ANTICIPO")}
+                  options={{
+                    highlightColumns: [{ dataIndex: "total", type: "danger" }],
+                  }}
+                />
+              )}
+            />
+            <Divider />
+          </>
+        )}
       </Card>
     </ProtectedPage>
   );
@@ -397,9 +481,9 @@ export function ResumenTablaGenerico({
 
   return (
     <Table.Summary.Row>
-      {hasExpandable && <Table.Summary.Cell index={0} />}
+      {(hasExpandable || true) && <Table.Summary.Cell index={0} />}
       {columns.map((col, index) => {
-        const cellIndex = hasExpandable ? index + 1 : index;
+        const cellIndex = hasExpandable || true ? index + 1 : index;
 
         if (index === 0)
           return (
@@ -423,7 +507,10 @@ export function ResumenTablaGenerico({
             {val !== undefined ? (
               <Text strong style={{ color }}>
                 {col.dataIndex === "totalLps" ||
-                col.dataIndex === "promedioPrecio"
+                col.dataIndex === "promedioPrecio" ||
+                col.dataIndex === "monto" ||
+                col.dataIndex === "abonado" ||
+                col.dataIndex === "total"
                   ? "L. "
                   : ""}
                 {formatNumber(val, 2)}

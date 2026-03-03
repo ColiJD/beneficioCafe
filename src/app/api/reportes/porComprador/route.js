@@ -31,69 +31,99 @@ export async function GET(req) {
       : new Date();
 
     // 🔹 Ejecución en paralelo de todas las consultas
-    const [salidas, comprasSalida, contratos] = await Promise.all([
-      // 1. ConfirmacionVenta (Salidas)
-      prisma.salida.findMany({
-        where: {
-          compradorID: Number(compradorID),
-          salidaFecha: { gte: startDate, lte: endDate },
-          salidaMovimiento: { not: "Anulado" },
-        },
-        include: {
-          detalleliqsalida: {
-            where: { movimiento: { not: "Anulado" } },
+    const [salidas, comprasSalida, contratos, prestamos, anticipos] =
+      await Promise.all([
+        // 1. ConfirmacionVenta (Salidas)
+        prisma.salida.findMany({
+          where: {
+            compradorID: Number(compradorID),
+            salidaFecha: { gte: startDate, lte: endDate },
+            salidaMovimiento: { not: "Anulado" },
           },
-          producto: { select: { productName: true } },
-        },
-        orderBy: { salidaFecha: "asc" },
-      }),
+          include: {
+            detalleliqsalida: {
+              where: { movimiento: { not: "Anulado" } },
+            },
+            producto: { select: { productName: true } },
+          },
+          orderBy: { salidaFecha: "asc" },
+        }),
 
-      // 2. Compras (Tipo movimiento "Salida")
-      prisma.compra.findMany({
-        where: {
-          compradorID: Number(compradorID),
-          compraMovimiento: "Salida",
-          compraFecha: { gte: startDate, lte: endDate },
-          // NOT: { tipoMovimiento: "Anulado" }, // ELIMINADO - NO EXISTE EL CAMPO
-        },
-        select: {
-          compraId: true,
-          compraFecha: true,
-          compraCantidadQQ: true,
-          compraPrecioQQ: true,
-          producto: { select: { productName: true } },
-        },
-        orderBy: { compraFecha: "asc" },
-      }),
+        // 2. Compras (Tipo movimiento "Salida")
+        prisma.compra.findMany({
+          where: {
+            compradorID: Number(compradorID),
+            compraMovimiento: "Salida",
+            compraFecha: { gte: startDate, lte: endDate },
+          },
+          select: {
+            compraId: true,
+            compraFecha: true,
+            compraCantidadQQ: true,
+            compraPrecioQQ: true,
+            producto: { select: { productName: true } },
+          },
+          orderBy: { compraFecha: "asc" },
+        }),
 
-      // 3. Contratos de Salida
-      prisma.contratoSalida.findMany({
-        where: {
-          compradorID: Number(compradorID),
-          contratoMovimiento: "Salida",
-          contratoFecha: { gte: startDate, lte: endDate },
-          estado: { not: "Anulado" },
-        },
-        select: {
-          contratoID: true,
-          contratoFecha: true,
-          contratoCantidadQQ: true,
-          contratoPrecio: true,
-          contratoDescripcion: true,
-          detalleContratoSalida: {
-            where: { tipoMovimiento: { not: "Anulado" } },
-            select: {
-              detalleID: true,
-              fecha: true,
-              cantidadQQ: true,
-              precioQQ: true,
-              tipoMovimiento: true,
+        // 3. Contratos de Salida
+        prisma.contratoSalida.findMany({
+          where: {
+            compradorID: Number(compradorID),
+            contratoMovimiento: "Salida",
+            contratoFecha: { gte: startDate, lte: endDate },
+            estado: { not: "Anulado" },
+          },
+          select: {
+            contratoID: true,
+            contratoFecha: true,
+            contratoCantidadQQ: true,
+            contratoPrecio: true,
+            contratoDescripcion: true,
+            detalleContratoSalida: {
+              where: { tipoMovimiento: { not: "Anulado" } },
+              select: {
+                detalleID: true,
+                fecha: true,
+                cantidadQQ: true,
+                precioQQ: true,
+                tipoMovimiento: true,
+              },
             },
           },
-        },
-        orderBy: { contratoFecha: "asc" },
-      }),
-    ]);
+          orderBy: { contratoFecha: "asc" },
+        }),
+
+        // 4. Préstamos de Compradores
+        prisma.prestamos_compradores.findMany({
+          where: {
+            compradorId: Number(compradorID),
+            fecha: { gte: startDate, lte: endDate },
+            estado: { not: "ANULADO" },
+          },
+          include: {
+            movimientos_prestamo: {
+              where: { tipo_movimiento: { not: "ANULADO" } },
+            },
+          },
+          orderBy: { fecha: "asc" },
+        }),
+
+        // 5. Anticipos de Compradores
+        prisma.anticipo_compradores.findMany({
+          where: {
+            compradorId: Number(compradorID),
+            fecha: { gte: startDate, lte: endDate },
+            estado: { not: "ANULADO" },
+          },
+          include: {
+            movimientos_anticipos: {
+              where: { tipo_movimiento: { not: "ANULADO" } },
+            },
+          },
+          orderBy: { fecha: "asc" },
+        }),
+      ]);
 
     /** -------- PROCESAMIENTO CONFIRMACION DE VENTA (SALIDAS) -------- */
     let detallesSalidas = [];
@@ -248,6 +278,84 @@ export async function GET(req) {
       console.error("Error processing Contratos:", error);
     }
 
+    /** -------- PROCESAMIENTO PRESTAMOS -------- */
+    const processedPrestamos = (prestamos || []).map((p) => {
+      const movimientos = (p.movimientos_prestamo || []).map((m) => ({
+        movimientoId: m.MovimientoId,
+        fecha: m.fecha,
+        tipo: m.tipo_movimiento,
+        monto: Number(m.monto) || 0,
+        interes: Number(m.interes) || 0,
+        descripcion: m.descripcion || "-",
+      }));
+
+      const montoTotal =
+        Number(p.monto || 0) +
+        movimientos
+          .filter((m) => ["PRESTAMO", "Int-Cargo"].includes(m.tipo))
+          .reduce((sum, m) => sum + m.monto, 0);
+
+      const abonado = movimientos
+        .filter((m) =>
+          ["ABONO", "PAGO_INTERES", "ABONO_INTERES"].includes(m.tipo),
+        )
+        .reduce((sum, m) => sum + m.monto, 0);
+
+      return {
+        prestamoId: p.prestamoId,
+        fecha: p.fecha,
+        monto: montoTotal,
+        abonado,
+        total: montoTotal - abonado,
+        tipo: "PRESTAMO",
+        estado: p.estado,
+        tasaInteres: Number(p.tasa_interes) || 0,
+        observacion: p.observacion || "-",
+        movimientos,
+      };
+    });
+
+    /** -------- PROCESAMIENTO ANTICIPOS -------- */
+    const processedAnticipos = (anticipos || []).map((a) => {
+      const movimientos = (a.movimientos_anticipos || []).map((m) => ({
+        movimientoId: m.MovimientoId,
+        fecha: m.fecha,
+        tipo: m.tipo_movimiento,
+        monto: Number(m.monto) || 0,
+        interes: Number(m.interes) || 0,
+        descripcion: m.descripcion || "-",
+      }));
+
+      const montoTotal =
+        Number(a.monto || 0) +
+        movimientos
+          .filter((m) => ["ANTICIPO", "CARGO_ANTICIPO"].includes(m.tipo))
+          .reduce((sum, m) => sum + m.monto, 0);
+
+      const abonado = movimientos
+        .filter((m) => ["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo))
+        .reduce((sum, m) => sum + m.monto, 0);
+
+      return {
+        anticipoId: a.anticipoId,
+        fecha: a.fecha,
+        monto: montoTotal,
+        abonado,
+        total: montoTotal - abonado,
+        tipo: "ANTICIPO",
+        estado: a.estado,
+        tasaInteres: Number(a.tasa_interes) || 0,
+        observacion: a.observacion || "-",
+        movimientos,
+      };
+    });
+
+    const Totales = {
+      ConfirmacionVenta: totalsSalidas,
+      Venta: totalsCompras,
+      Contratos: totalsContratos,
+    };
+
     const filaConfirmacionVenta = {
       tipo: "ConfirmacionVenta",
       ...totalsSalidas,
@@ -264,18 +372,14 @@ export async function GET(req) {
       detalles: detallesContratos,
     };
 
-    const Totales = {
-      ConfirmacionVenta: totalsSalidas,
-      Venta: totalsCompras,
-      Contratos: totalsContratos,
-    };
-
     return new Response(
       JSON.stringify({
         movimientos: {
           ConfirmacionVenta: detallesSalidas,
           Ventas: detallesComprasSalida,
           Contratos: detallesContratos,
+          Prestamos: processedPrestamos,
+          Anticipos: processedAnticipos,
         },
         Totales,
         filas: [filaConfirmacionVenta, filaComprasSalida, filaContratos],

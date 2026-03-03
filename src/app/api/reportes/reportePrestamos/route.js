@@ -60,14 +60,70 @@ export async function GET(req) {
       },
     });
 
-    // 4️⃣ Procesar datos en memoria
-    const clientesMap = new Map();
+    // 4️⃣ Compradores
+    const compradores = await prisma.compradores.findMany({
+      select: { compradorId: true, compradorNombre: true },
+      orderBy: { compradorNombre: "asc" },
+    });
+
+    // 5️⃣ Préstamos de Compradores
+    const prestamosCompradores = await prisma.prestamos_compradores.findMany({
+      where: {
+        OR: [
+          { estado: "ACTIVO" },
+          {
+            movimientos_prestamo: {
+              some: { fecha: { gte: desde, lte: hasta } },
+            },
+          },
+        ],
+      },
+      include: {
+        movimientos_prestamo: true,
+      },
+    });
+
+    // 6️⃣ Anticipos de Compradores
+    const anticiposCompradores = await prisma.anticipo_compradores.findMany({
+      where: {
+        OR: [
+          { estado: "ACTIVO" },
+          {
+            movimientos_anticipos: {
+              some: { fecha: { gte: desde, lte: hasta } },
+            },
+          },
+        ],
+      },
+      include: {
+        movimientos_anticipos: true,
+      },
+    });
+
+    // 7️⃣ Procesar datos en memoria
+    const finalMap = new Map();
 
     // Inicializar mapa de clientes
     clientes.forEach((c) => {
-      clientesMap.set(c.clienteID, {
-        clienteID: c.clienteID,
+      finalMap.set(`cliente-${c.clienteID}`, {
+        id: c.clienteID,
+        tipo: "CLIENTE",
         nombre: `${c.clienteNombre || ""} ${c.clienteApellido || ""}`.trim(),
+        activoPrestamo: 0,
+        abonoPrestamo: 0,
+        saldoPrestamo: 0,
+        activoAnticipo: 0,
+        abonoAnticipo: 0,
+        saldoAnticipo: 0,
+      });
+    });
+
+    // Inicializar mapa de compradores
+    compradores.forEach((c) => {
+      finalMap.set(`comprador-${c.compradorId}`, {
+        id: c.compradorId,
+        tipo: "COMPRADOR",
+        nombre: c.compradorNombre,
         activoPrestamo: 0,
         abonoPrestamo: 0,
         saldoPrestamo: 0,
@@ -79,87 +135,110 @@ export async function GET(req) {
 
     const roundToTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
-    // --- Procesar Préstamos ---
+    // --- Procesar Préstamos Clientes ---
     prestamos.forEach((p) => {
-      if (!p.clienteId || !clientesMap.has(p.clienteId)) return;
-      const data = clientesMap.get(p.clienteId);
-
+      if (!p.clienteId || !finalMap.has(`cliente-${p.clienteId}`)) return;
+      const data = finalMap.get(`cliente-${p.clienteId}`);
       const capital = Number(p.monto || 0);
-
-      // Filtrar movimientos DENTRO del rango para el reporte de "Abonos del periodo"
-      // PERO para el "Saldo", necesitamos el historial completo.
-      // El reporte parece mostrar columnas: "Activo" (Monto + Interes), "Abono", "Saldo".
-      // "Activo" suele ser la deuda total generada.
-      // "Abono" lo pagado.
-      // "Saldo" lo pendiente real.
-
-      // Calcular totales históricos para el saldo real
       const totalCargoInt = p.movimientos_prestamo
         .filter((m) =>
           ["Int-Cargo", "CARGO_INTERES"].includes(m.tipo_movimiento),
         )
         .reduce((sum, m) => sum + Number(m.monto || 0), 0);
-
       const totalAbonos = p.movimientos_prestamo
         .filter((m) => ["ABONO", "PAGO_INTERES"].includes(m.tipo_movimiento))
         .reduce((sum, m) => sum + Number(m.monto || 0), 0);
-
-      // Calcular montos específicos del periodo para mostrar en columnas de actividad (si se requiere)
-      // O si el reporte es un "Estado de Cuenta Actual", mostrar acumulados.
-      // Asumiremos Estado de Cuenta Actual (Saldos Reales).
-
       data.activoPrestamo += roundToTwo(capital + totalCargoInt);
       data.abonoPrestamo += roundToTwo(totalAbonos);
-      // Saldo se calcula al final o incrementalmente
     });
 
-    // --- Procesar Anticipos ---
+    // --- Procesar Anticipos Clientes ---
     anticipos.forEach((a) => {
-      if (!a.clienteId || !clientesMap.has(a.clienteId)) return;
-      const data = clientesMap.get(a.clienteId);
-
+      if (!a.clienteId || !finalMap.has(`cliente-${a.clienteId}`)) return;
+      const data = finalMap.get(`cliente-${a.clienteId}`);
       const capital = Number(a.monto || 0);
-
-      const totalCargoInt = a.movimientos_anticipos.filter(
-        (m) =>
-          ["CARGO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo_movimiento) &&
-          m.tipo_movimiento !== "INTERES_ANTICIPO",
-      ); // Ojo: INTERES_ANTICIPO es un PAGO en la lógica de anticipos?
-      // Revisando `anticipos/movimiento/route.js`:
-      // CARGO_ANTICIPO -> Suma a la deuda (Interes Pendiente)
-      // INTERES_ANTICIPO -> PAGO de intereses (Resta a Interes Pendiente)
-      // ABONO_ANTICIPO -> PAGO de capital
-      // ENTONCES: "Activo" debe sumar Capital + CARGOS. "Abono" debe sumar ABONOS + PAGOS DE INTERES.
-
       const cargosReales = a.movimientos_anticipos
         .filter((m) => m.tipo_movimiento === "CARGO_ANTICIPO")
         .reduce((sum, m) => sum + Number(m.monto || 0), 0);
-
       const pagosReales = a.movimientos_anticipos
         .filter((m) =>
           ["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo_movimiento),
         )
         .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+      data.activoAnticipo += roundToTwo(capital + cargosReales);
+      data.abonoAnticipo += roundToTwo(pagosReales);
+    });
 
+    // --- Procesar Préstamos Compradores ---
+    prestamosCompradores.forEach((p) => {
+      if (!p.compradorId || !finalMap.has(`comprador-${p.compradorId}`)) return;
+      const data = finalMap.get(`comprador-${p.compradorId}`);
+      const capital = Number(p.monto || 0);
+      const totalCargoInt = p.movimientos_prestamo
+        .filter(
+          (m) =>
+            ["Int-Cargo", "CARGO_INTERES", "PRESTAMO"].includes(
+              m.tipo_movimiento,
+            ) && m.tipo_movimiento !== "PRESTAMO",
+        )
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+      // Nota: En compradores, el movimiento "PRESTAMO" es el inicial o adicional?
+      // En `cargarDatos` se vio que `PRESTAMO` es una deuda.
+
+      const cargosAdicionales = p.movimientos_prestamo
+        .filter((m) => ["PRESTAMO", "Int-Cargo"].includes(m.tipo_movimiento))
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+      const totalAbonos = p.movimientos_prestamo
+        .filter((m) =>
+          ["ABONO", "PAGO_INTERES", "ABONO_INTERES"].includes(
+            m.tipo_movimiento,
+          ),
+        )
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+      data.activoPrestamo += roundToTwo(capital + cargosAdicionales);
+      data.abonoPrestamo += roundToTwo(totalAbonos);
+    });
+
+    // --- Procesar Anticipos Compradores ---
+    anticiposCompradores.forEach((a) => {
+      if (!a.compradorId || !finalMap.has(`comprador-${a.compradorId}`)) return;
+      const data = finalMap.get(`comprador-${a.compradorId}`);
+      const capital = Number(a.monto || 0);
+      const cargosReales = a.movimientos_anticipos
+        .filter((m) =>
+          ["ANTICIPO", "CARGO_ANTICIPO"].includes(m.tipo_movimiento),
+        )
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+      const pagosReales = a.movimientos_anticipos
+        .filter((m) =>
+          ["ABONO_ANTICIPO", "INTERES_ANTICIPO"].includes(m.tipo_movimiento),
+        )
+        .reduce((sum, m) => sum + Number(m.monto || 0), 0);
       data.activoAnticipo += roundToTwo(capital + cargosReales);
       data.abonoAnticipo += roundToTwo(pagosReales);
     });
 
     // Calcular saldos finales y filtrar
-    const resultados = Array.from(clientesMap.values())
-      .map((c) => {
-        c.saldoPrestamo = roundToTwo(c.activoPrestamo - c.abonoPrestamo);
-        c.saldoAnticipo = roundToTwo(c.activoAnticipo - c.abonoAnticipo);
-        return c;
+    const resultados = Array.from(finalMap.values())
+      .map((item) => {
+        item.saldoPrestamo = roundToTwo(
+          item.activoPrestamo - item.abonoPrestamo,
+        );
+        item.saldoAnticipo = roundToTwo(
+          item.activoAnticipo - item.abonoAnticipo,
+        );
+        return item;
       })
       .filter(
-        (c) =>
-          c.activoPrestamo > 0 ||
-          c.abonoPrestamo > 0 ||
-          c.saldoPrestamo !== 0 ||
-          c.activoAnticipo > 0 ||
-          c.abonoAnticipo > 0 ||
-          c.saldoAnticipo !== 0,
+        (item) =>
+          item.activoPrestamo > 0 ||
+          item.abonoPrestamo > 0 ||
+          item.saldoPrestamo !== 0 ||
+          item.activoAnticipo > 0 ||
+          item.abonoAnticipo > 0 ||
+          item.saldoAnticipo !== 0,
       );
 
     return Response.json({ ok: true, clientes: resultados });
