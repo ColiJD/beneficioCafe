@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Table, Card, Typography, Divider, message } from "antd";
+import { Table, Card, Typography, Divider, message, Tag } from "antd";
 import dayjs from "dayjs";
 
 import ProtectedPage from "@/components/ProtectedPage";
@@ -75,13 +75,19 @@ export default function ReporteClientes() {
   // Columnas Desktop
   const columnasDesktop = [
     {
-      title: "ID Cliente",
-      dataIndex: "clienteID",
-
+      title: "ID",
+      dataIndex: "id",
+      width: 80,
       render: (v) => <Text strong>{v}</Text>,
     },
     {
-      title: "Nombre Cliente",
+      title: "Tipo",
+      dataIndex: "tipo",
+      width: 120,
+      render: (v) => <Tag color={v === "CLIENTE" ? "blue" : "purple"}>{v}</Tag>,
+    },
+    {
+      title: "Nombre",
       dataIndex: "nombre",
       render: (v) => <Text style={{ color: "#1677ff" }}>{v}</Text>,
     },
@@ -135,7 +141,8 @@ export default function ReporteClientes() {
 
   // Columnas PDF
   const columnasPDF = [
-    { header: "ID", key: "clienteID" },
+    { header: "ID", key: "id" },
+    { header: "Tipo", key: "tipo" },
     { header: "Nombre", key: "nombre" },
     {
       header: "Prest. Activos",
@@ -290,7 +297,7 @@ export default function ReporteClientes() {
           <Table
             columns={columnasDesktop}
             dataSource={datosFiltrados}
-            rowKey="clienteID"
+            rowKey="id"
             loading={loading}
             pagination={false}
             scroll={{ x: "max-content" }}
@@ -299,7 +306,7 @@ export default function ReporteClientes() {
               <TablaTotales
                 columns={columnasDesktop}
                 data={datosFiltrados}
-                offset={2} // las primeras 2 columnas son ID y nombre
+                offset={3} // las primeras 3 columnas son ID, Tipo y Nombre
                 formatNumber={formatNumber}
               />
             )}

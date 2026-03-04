@@ -37,8 +37,6 @@ export const DetalleDrawer = ({
     }
   }, [detalle, campos, form]);
 
-  if (!detalle && !loading) return;
-
   const handleChange = (key, value) => {
     setEditValues((prev) => ({ ...prev, [key]: value }));
     form.setFieldValue(key, value);
@@ -50,9 +48,12 @@ export const DetalleDrawer = ({
       width={isDesktop ? 600 : 350}
       onClose={onClose}
       open={visible}
+      forceRender
       footer={null}
     >
-      {loading ? (
+      {!detalle && !loading ? (
+        <Text type="secondary">Seleccione un registro para editar</Text>
+      ) : loading ? (
         <Spin tip="Cargando Registro..." />
       ) : (
         <Form

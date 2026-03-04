@@ -146,6 +146,95 @@ export const columnasPorTipo = {
   ],
 };
 
+// 🔸 Columnas de préstamos y anticipos para compradores
+export const columnsPrestamos = [
+  {
+    title: "ID",
+    render: (r) => r.prestamoId || r.anticipoId || "-",
+  },
+  {
+    title: "Fecha",
+    dataIndex: "fecha",
+    sorter: (a, b) => dayjs(a.fecha).unix() - dayjs(b.fecha).unix(),
+    render: (v) => dayjs(v).format("DD/MM/YYYY"),
+  },
+  {
+    title: "Monto",
+    dataIndex: "monto",
+    align: "center",
+    render: (v) => "L. " + formatNumber(v, 2),
+  },
+  {
+    title: "Abonado",
+    dataIndex: "abonado",
+    align: "center",
+    render: (v) => "L. " + formatNumber(v, 2),
+  },
+  {
+    title: "Restante",
+    dataIndex: "total",
+    align: "center",
+    render: (v) => "L. " + formatNumber(v, 2),
+  },
+  {
+    title: "Estado",
+    dataIndex: "estado",
+    filters: [
+      { text: "ACTIVO", value: "ACTIVO" },
+      { text: "COMPLETADO", value: "COMPLETADO" },
+    ],
+    onFilter: (value, record) => record.estado === value,
+    render: (v) => <Tag color={v === "ACTIVO" ? "orange" : "green"}>{v}</Tag>,
+  },
+];
+
+export const getPrestamosMoviColumns = (tipoRegistro) => {
+  let filtros = [];
+
+  if (tipoRegistro === "PRESTAMO") {
+    filtros = [
+      { text: "PRESTAMO", value: "PRESTAMO" },
+      { text: "ABONO", value: "ABONO" },
+      { text: "Int-Cargo", value: "Int-Cargo" },
+      { text: "PAGO_INTERES", value: "PAGO_INTERES" },
+      { text: "ABONO_INTERES", value: "ABONO_INTERES" },
+    ];
+  } else if (tipoRegistro === "ANTICIPO") {
+    filtros = [
+      { text: "ANTICIPO", value: "ANTICIPO" },
+      { text: "ABONO_ANTICIPO", value: "ABONO_ANTICIPO" },
+      { text: "INTERES_ANTICIPO", value: "INTERES_ANTICIPO" },
+      { text: "CARGO_ANTICIPO", value: "CARGO_ANTICIPO" },
+    ];
+  }
+
+  return [
+    {
+      title: "Fecha",
+      dataIndex: "fecha",
+      sorter: (a, b) => dayjs(a.fecha).unix() - dayjs(b.fecha).unix(),
+      render: (v) => dayjs(v).format("DD/MM/YYYY"),
+    },
+    {
+      title: "Tipo Movimiento",
+      dataIndex: "tipo",
+      filters: filtros,
+      onFilter: (value, record) => record.tipo === value,
+    },
+    {
+      title: "Monto",
+      dataIndex: "monto",
+      align: "center",
+      render: (v) => "L. " + formatNumber(v, 2),
+      sorter: (a, b) => a.monto - b.monto,
+    },
+    {
+      title: "Descripción",
+      dataIndex: "descripcion",
+    },
+  ];
+};
+
 export const columns = [
   {
     title: "Tipo",

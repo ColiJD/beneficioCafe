@@ -176,9 +176,22 @@ export const menuItems = [
   },
   {
     id: 7,
-    name: "Prestamo",
-    href: RutaTransaccion + "/prestamos",
+    name: "Prestamos y Anticipos",
     image: Contrato,
+    subItems: [
+      {
+        id: 701,
+        name: "Clientes",
+        href: RutaTransaccion + "/prestamos",
+        image: cliente,
+      },
+      {
+        id: 702,
+        name: "Compradores",
+        href: RutaTransaccion + "/prestamosCompradores",
+        image: producto,
+      },
+    ],
   },
 
   {
@@ -195,7 +208,7 @@ const iconMap = {
   Salidas: <MinusCircleOutlined />,
   Inventario: <AppstoreOutlined />,
   Informe: <FileTextOutlined />,
-  Prestamo: <FileTextOutlined />,
+  "Prestamos y Anticipos": <FileTextOutlined />,
   Registros: <SettingOutlined />,
   Listado: <UserOutlined />,
 };
