@@ -1,25 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Table, Button, Row, Col, message, Grid } from "antd";
+import { useEffect, useState, useMemo } from "react";
+import { 
+  Table, Button, Row, Col, message, Grid, 
+  Card, Typography, Space, Tag, Divider, 
+  Statistic, Breadcrumb, Avatar
+} from "antd";
 import { useParams, useRouter } from "next/navigation";
+import { 
+  ArrowLeftOutlined, FilePdfOutlined, ReloadOutlined,
+  DropboxOutlined, RiseOutlined, FallOutlined,
+  SwapOutlined, HistoryOutlined
+} from "@ant-design/icons";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
-import Filtros from "@/components/Filtros";
 import { FiltrosTarjetas } from "@/lib/FiltrosTarjetas";
 import TarjetaMobile from "@/components/TarjetaMobile";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import ProtectedPage from "@/components/ProtectedPage";
+
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
-import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
 
+const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
 
 export default function DetalleCafePage() {
-  const { id } = useParams(); // productoID
+  const { id } = useParams();
   const router = useRouter();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -27,14 +37,11 @@ export default function DetalleCafePage() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [nombreCafe, setNombreCafe] = useState("");
 
-  const [rangoFecha, setRangoFecha] = useState([
-    dayjs().startOf("year"),
-    dayjs(),
-  ]);
-  const [movimientoFiltro, setMovimientoFiltro] = useState(""); // Entrada / Salida / Todos
+  const [rangoFecha, setRangoFecha] = useState([dayjs().startOf("year"), dayjs()]);
+  const [movimientoFiltro, setMovimientoFiltro] = useState("");
 
-  // 🔹 Cargar movimientos del café
   const cargarMovimientos = async () => {
     setLoading(true);
     try {
@@ -43,6 +50,7 @@ export default function DetalleCafePage() {
       const json = await res.json();
       setData(json);
       setFilteredData(json);
+      if (json.length > 0) setNombreCafe(json[0].tipoCafe);
     } catch (error) {
       console.error(error);
       message.error(error.message);
@@ -51,225 +59,195 @@ export default function DetalleCafePage() {
     }
   };
 
-  const [nombreCafe, setNombreCafe] = useState("");
-
-  useEffect(() => {
-    if (data.length > 0) {
-      // Tomamos el tipo de café del primer registro
-      setNombreCafe(data[0].tipoCafe);
-    }
-  }, [data]);
-
   useEffect(() => {
     cargarMovimientos();
   }, [id]);
 
-  // 🔹 Aplicar filtros
-  const aplicarFiltros = () => {
+  useEffect(() => {
     const filtros = { tipoMovimiento: movimientoFiltro };
     const filtrados = FiltrosTarjetas(data, filtros, rangoFecha, "fecha");
     setFilteredData(filtrados);
-  };
-
-  useEffect(() => {
-    aplicarFiltros();
   }, [movimientoFiltro, rangoFecha, data]);
 
-  // 🔹 Exportar PDF
-  const exportarPDF = async () => {
-    if (filteredData.length === 0) return;
+  const stats = useMemo(() => {
+    const entradas = data.filter(m => m.tipoMovimiento === "Entrada").reduce((acc, c) => acc + (parseFloat(c.cantidadQQ) || 0), 0);
+    const salidas = data.filter(m => m.tipoMovimiento === "Salida").reduce((acc, c) => acc + (parseFloat(c.cantidadQQ) || 0), 0);
+    return {
+      totalEntradas: entradas,
+      totalSalidas: salidas,
+      balance: entradas - salidas
+    };
+  }, [data]);
 
-    const { default: jsPDF } = await import("jspdf");
-    const doc = new jsPDF();
-    const margin = 14;
-    const lineHeight = 6;
-    const pageHeight = 280;
-    let y = 20;
+  const handleExport = () => {
+    if (!filteredData.length) return message.warning("No hay datos para exportar");
 
-    doc.setFontSize(14);
-    doc.text(`Reporte de movimientos - Café #${nombreCafe}`, margin, y);
-    y += 10;
-
-    const headers = [
-      "Fecha",
-      "Movimiento",
-      "Cantidad (QQ)",
-      "Cliente",
-      "Referencia",
+    const columnsPDF = [
+      { header: "Fecha", key: "fecha" },
+      { header: "Movimiento", key: "tipoMovimiento" },
+      { header: "Entradas (QQ)", key: "entrada", format: "numero" },
+      { header: "Salidas (QQ)", key: "salida", format: "numero" },
+      { header: "Sujeto / Ref", key: "referenciaTipo" },
     ];
-    const colWidth = [25, 30, 30, 50, 40];
 
-    doc.setFontSize(9);
-    let x = margin;
-    headers.forEach((h, i) => {
-      doc.text(h, x, y);
-      x += colWidth[i];
-    });
+    const dataPDF = filteredData.map(m => ({
+      ...m,
+      fecha: dayjs(m.fecha).format("DD/MM/YYYY"),
+      entrada: m.tipoMovimiento === "Entrada" ? m.cantidadQQ : 0,
+      salida: m.tipoMovimiento === "Salida" ? m.cantidadQQ : 0,
+      referenciaTipo: `${m.clienteNombre} ${m.clienteApellido} (${m.referenciaTipo || 'N/A'})`
+    }));
 
-    y += 2;
-    doc.line(margin, y, margin + colWidth.reduce((a, b) => a + b, 0), y);
-    y += 4;
-
-    let totalQQ = 0;
-
-    filteredData.forEach((item) => {
-      x = margin;
-      const row = [
-        new Date(item.fecha).toLocaleDateString("es-HN"),
-        item.tipoMovimiento,
-        truncarDosDecimalesSinRedondear(item.cantidadQQ),
-        `${item.clienteNombre} ${item.clienteApellido}`,
-        item.referenciaTipo,
-      ];
-
-      row.forEach((val, i) => {
-        doc.text(String(val ?? ""), x, y);
-        x += colWidth[i];
-      });
-
-      totalQQ +=
-        item.tipoMovimiento === "Entrada"
-          ? parseFloat(item.cantidadQQ || 0)
-          : -parseFloat(item.cantidadQQ || 0);
-
-      y += lineHeight;
-
-      if (y > pageHeight) {
-        doc.addPage();
-        y = 20;
-        x = margin;
-        headers.forEach((h, i) => {
-          doc.text(h, x, y);
-          x += colWidth[i];
-        });
-        y += 6;
+    const { generarReportePDF } = require("@/Doc/Reportes/FormatoDoc");
+    
+    generarReportePDF(
+      dataPDF,
+      { nombreFiltro: nombreCafe },
+      columnsPDF,
+      {
+        title: `Kardex Detallado: ${nombreCafe}`,
+        orientation: "portrait",
       }
-    });
-
-    y += 2;
-    doc.line(margin, y, margin + colWidth.reduce((a, b) => a + b, 0), y);
-    y += lineHeight;
-    doc.setFontSize(10);
-    doc.text(
-      `TOTAL QQ: ${truncarDosDecimalesSinRedondear(totalQQ)}`,
-      margin,
-      y,
     );
-
-    doc.save(`Movimientos_Cafe_${nombreCafe}.pdf`);
   };
 
-  // 🔹 Columnas para tabla de escritorio
   const columns = [
     {
-      title: "Fecha",
+      title: "FECHA",
       dataIndex: "fecha",
       key: "fecha",
-      render: (val) => new Date(val).toLocaleDateString(),
+      render: (val) => <Text style={{ fontSize: "13px" }}>{dayjs(val).format("DD/MM/YYYY")}</Text>,
+      sorter: (a, b) => dayjs(a.fecha).unix() - dayjs(b.fecha).unix(),
     },
     {
-      title: "Tipo Movimiento",
+      title: "MOVIMIENTO",
       dataIndex: "tipoMovimiento",
       key: "tipoMovimiento",
+      render: (tipo) => (
+        <Tag 
+          color={tipo === "Entrada" ? "success" : "volcano"} 
+          icon={tipo === "Entrada" ? <RiseOutlined /> : <FallOutlined />}
+          style={{ borderRadius: "10px", border: "none", fontWeight: 700 }}
+        >
+          {tipo.toUpperCase()}
+        </Tag>
+      )
     },
     {
-      title: "Cantidad (QQ)",
+      title: "PRODUCTOR / CLIENTE",
+      key: "cliente",
+      render: (_, r) => (
+        <Space size="small">
+          <Avatar size="small" style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}>{r.clienteNombre?.[0]}</Avatar>
+          <Text strong style={{ fontSize: "13px" }}>{r.clienteNombre} {r.clienteApellido}</Text>
+        </Space>
+      )
+    },
+    {
+      title: "REFERENCIA",
+      dataIndex: "referenciaTipo",
+      key: "referenciaTipo",
+      render: (t) => <Text type="secondary" style={{ fontSize: "12px" }}>{t || "Ajuste Directo"}</Text>
+    },
+    {
+      title: "CANTIDAD (QQ)",
       dataIndex: "cantidadQQ",
       key: "cantidadQQ",
-      render: truncarDosDecimalesSinRedondear,
-    },
-    {
-      title: "Cliente",
-      dataIndex: "clienteNombre",
-      key: "clienteNombre",
-      render: (_, record) =>
-        `${record.clienteNombre} ${record.clienteApellido}`,
-    },
-    { title: "Referencia", dataIndex: "referenciaTipo", key: "referenciaTipo" },
+      align: "right",
+      render: (val, r) => (
+        <Text strong style={{ fontSize: "15px", color: r.tipoMovimiento === "Entrada" ? "#10b981" : "#ef4444" }}>
+          {r.tipoMovimiento === "Entrada" ? "+" : "-"} {truncarDosDecimalesSinRedondear(val)}
+        </Text>
+      )
+    }
   ];
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
-      <div>
-        <h2>{`Detalles de: ${nombreCafe || "Cargando..."}`}</h2>
-
-        {/* Filtros */}
-        <Filtros
-          fields={[
-            {
-              type: "select",
-              value: movimientoFiltro || undefined,
-              setter: setMovimientoFiltro,
-              allowClear: true,
-              placeholder: "Movimiento",
-              options: [
-                { value: "Entrada", label: "Entrada" },
-                { value: "Salida", label: "Salida" },
-              ],
-            },
-            { type: "date", value: rangoFecha, setter: setRangoFecha },
-          ]}
-        />
-
-        <Row style={{ marginBottom: 16 }} gutter={16}>
-          <Col xs={12} sm={6} md={4}>
-            <Button onClick={cargarMovimientos} block>
-              Refrescar
-            </Button>
+      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
+        
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <Breadcrumb items={[
+              { title: <a onClick={() => router.push("/private/page/inventario")}>Inventario</a> },
+              { title: nombreCafe || "Cargando..." }
+            ]} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
+              <Space>
+                <Button icon={<ArrowLeftOutlined />} onClick={() => router.push("/private/page/inventario")} shape="circle" />
+                <Title level={3} style={{ margin: 0, fontWeight: 900 }}>Kardex de Producto: {nombreCafe}</Title>
+              </Space>
+              <Button 
+                icon={<FilePdfOutlined />} 
+                type="primary" 
+                onClick={handleExport}
+                style={{ background: "#4f46e5" }}
+              >
+                Exportar PDF
+              </Button>
+            </div>
           </Col>
 
-          <Col xs={12} sm={6} md={4}>
-            <Button onClick={exportarPDF} block type="default">
-              Exportar PDF
-            </Button>
+          {/* Estadsticas de este caf */}
+          <Col span={24}>
+            <Row gutter={[12, 12]}>
+              <Col xs={12} sm={8}>
+                <Card size="small" style={{ borderRadius: "12px", border: "none" }}>
+                  <Statistic title="TOTAL ENTRADAS" value={stats.totalEntradas} suffix="QQ" precision={2} valueStyle={{ color: "#10b981" }} prefix={<RiseOutlined />} />
+                </Card>
+              </Col>
+              <Col xs={12} sm={8}>
+                <Card size="small" style={{ borderRadius: "12px", border: "none" }}>
+                  <Statistic title="TOTAL SALIDAS" value={stats.totalSalidas} suffix="QQ" precision={2} valueStyle={{ color: "#ef4444" }} prefix={<FallOutlined />} />
+                </Card>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#1e1b4b" }}>
+                  <Statistic 
+                    title={<span style={{ color: "#94a3b8" }}>SALDO ACTUAL EN BODEGA</span>} 
+                    value={stats.balance} 
+                    suffix="QQ" 
+                    precision={2} 
+                    valueStyle={{ color: "#fff", fontWeight: 900 }} 
+                    prefix={<DropboxOutlined />}
+                  />
+                </Card>
+              </Col>
+            </Row>
           </Col>
 
-          <Col xs={12} sm={6} md={4}>
-            <Button
-              onClick={() => router.push("/page/inventario")}
-              block
-              danger
+          <Col span={24}>
+            <Card 
+              size="small" 
+              title={<span style={{ fontWeight: 800 }}><HistoryOutlined /> Historial de Movimientos</span>}
+              extra={<Button icon={<ReloadOutlined />} onClick={cargarMovimientos} type="text" />}
+              style={{ borderRadius: "12px", border: "none" }}
+              styles={{ body: { padding: 0 } }}
             >
-              Volver al Inventario
-            </Button>
+              {isMobile ? (
+                <div style={{ padding: "12px" }}>
+                   <TarjetaMobile 
+                    data={filteredData} 
+                    loading={loading} 
+                    columns={[
+                      { label: "Fecha", key: "fecha", render: v => dayjs(v).format("DD/MM/YYYY") },
+                      { label: "Tipo", key: "tipoMovimiento" },
+                      { label: "Cant.", key: "cantidadQQ", render: v => <b>{v} QQ</b> }
+                    ]}
+                   />
+                </div>
+              ) : (
+                <Table 
+                  dataSource={filteredData} 
+                  columns={columns} 
+                  rowKey="movimientoID" 
+                  loading={loading} 
+                  pagination={{ pageSize: 15 }}
+                />
+              )}
+            </Card>
           </Col>
         </Row>
-
-        {/* Tabla o Tarjetas mobile */}
-        {isMobile ? (
-          <TarjetaMobile
-            data={filteredData}
-            loading={loading}
-            columns={[
-              {
-                label: "Fecha",
-                key: "fecha",
-                render: (val) => new Date(val).toLocaleDateString(),
-              },
-              { label: "Movimiento", key: "tipoMovimiento" },
-              {
-                label: "Cantidad (QQ)",
-                key: "cantidadQQ",
-                render: truncarDosDecimalesSinRedondear,
-              },
-              {
-                label: "Cliente",
-                key: (_, rec) => `${rec.clienteNombre} ${rec.clienteApellido}`,
-              },
-              { label: "Referencia", key: "referenciaTipo" },
-            ]}
-            detailsKey="detalles"
-            detailsColumns={[]} // no hay sub-detalles por movimiento
-          />
-        ) : (
-          <Table
-            dataSource={filteredData}
-            columns={columns}
-            rowKey="movimientoID"
-            loading={loading}
-            bordered
-          />
-        )}
       </div>
     </ProtectedPage>
   );

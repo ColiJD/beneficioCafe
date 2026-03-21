@@ -1,36 +1,67 @@
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 
 export async function GET(req, { params }) {
-  const sessionOrResponse = await checkRole(req, [
-    "ADMIN",
-    "GERENCIA",
-    "COLABORADORES",
-    "AUDITORES",
-  ]);
-  if (sessionOrResponse instanceof Response) return sessionOrResponse;
-  const { id } = params; // productoID dinámico
-
   try {
-    // Obtenemos todos los movimientos del café (entradas y salidas)
-    const movimientos = await prisma.$queryRaw`
-      SELECT *
-      FROM vw_movimientos_inventario
-      WHERE productoID = ${id}
-      ORDER BY fecha ASC
-    `;
+    const sessionOrResponse = await checkRole(req, [
+      "ADMIN",
+      "GERENCIA",
+      "COLABORADORES",
+      "AUDITORES",
+    ]);
+    if (sessionOrResponse instanceof Response) return sessionOrResponse;
+    
+    // En Next.js 15, params debe ser esperado antes de usarse
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
-    const data = movimientos.map((item) => ({
-      ...item,
-      cantidadQQ: parseFloat(item.cantidadQQ),
-      fecha: item.fecha instanceof Date ? item.fecha.toISOString() : item.fecha,
+    if (!id) {
+      return NextResponse.json({ error: "Parmetro ID faltante" }, { status: 400 });
+    }
+
+    const productoID = Number(id);
+    if (isNaN(productoID)) {
+      return NextResponse.json({ error: "ID de producto no es un número" }, { status: 400 });
+    }
+
+    // 🔹 Buscamos el inventario asociado al producto
+    const inventario = await prisma.inventariocliente.findUnique({
+      where: { productoID },
+      include: {
+        producto: true,
+        movimientoinventario: {
+          orderBy: { fecha: "asc" },
+        },
+      },
+    });
+
+    if (!inventario) {
+      return NextResponse.json([]);
+    }
+
+    // 🔹 Formateamos los movimientos para el frontend
+    // Nota: Como la vista vw_movimientos_inventario est fallando en DB (Error 1356),
+    // consultamos directamente las tablas. El nombre del cliente se puede inferir
+    // o dejar como referencia al documento original para no impactar rendimiento.
+    const formattedData = inventario.movimientoinventario.map((m) => ({
+      movimientoID: m.movimientoID,
+      tipoMovimiento: m.tipoMovimiento,
+      cantidadQQ: parseFloat(m.cantidadQQ.toString()),
+      fecha: m.fecha.toISOString(),
+      referenciaTipo: m.referenciaTipo,
+      // Temporales mientras se restaura la vista en DB
+      clienteNombre: m.referenciaTipo?.split("#")[0] || "Movimiento",
+      clienteApellido: m.referenciaID ? `Ref #${m.referenciaID}` : "",
+      tipoCafe: inventario.producto?.productName || "Caf",
     }));
 
-    return new Response(JSON.stringify(data), { status: 200 });
+    return NextResponse.json(formattedData);
   } catch (error) {
-    console.error(error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-    });
+    console.error("❌ ERROR API MOVIMIENTOS:", error.message);
+    return NextResponse.json({ 
+      error: "Error al cargar movimientos desde tablas directas",
+      debug: error.message 
+    }, { status: 500 });
   }
 }
