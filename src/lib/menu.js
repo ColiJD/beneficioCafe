@@ -217,6 +217,12 @@ export const menuItems = [
         href: Ruta + "/secadora",
         image: producto,
       },
+      {
+        id: 803,
+        name: "Reporte de Secado",
+        href: Ruta + "/secado/reporte",
+        image: Reportes,
+      },
     ],
   },
 ];

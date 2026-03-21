@@ -241,7 +241,7 @@ export default function PageSecado() {
       render: (_, record) => {
         // SEGURIDAD: Solo mostrar botones si se está realizando una búsqueda por ID específica
         if (searchText.trim() === "") {
-          return <Text type="secondary" style={{ fontSize: "10px" }} italic italic>Busque ID para operar</Text>;
+          return <Text type="secondary" style={{ fontSize: "10px" }} italic>Busque ID para operar</Text>;
         }
         
         return (
