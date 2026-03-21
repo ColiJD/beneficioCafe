@@ -200,6 +200,25 @@ export const menuItems = [
     image: producto,
     href: Ruta + "/inventario",
   },
+  {
+    id: 8,
+    name: "Secado",
+    image: Depo,
+    subItems: [
+      {
+        id: 801,
+        name: "Control de Secado",
+        href: Ruta + "/secado",
+        image: Reportes,
+      },
+      {
+        id: 802,
+        name: "Secadoras",
+        href: Ruta + "/secadora",
+        image: producto,
+      },
+    ],
+  },
 ];
 
 // 🧠 Mapa de iconos por categoría principal (puedes ajustar a gusto)
@@ -211,6 +230,7 @@ const iconMap = {
   "Prestamos y Anticipos": <FileTextOutlined />,
   Registros: <SettingOutlined />,
   Listado: <UserOutlined />,
+  Secado: <AppstoreOutlined />,
 };
 
 // 🔁 Función para transformar menuItems → menuItem

@@ -40,13 +40,13 @@ model password_resets {
 }
 
 model compradores {
-  compradorId        Int              @id @default(autoincrement())
-  compradorNombre    String           @db.VarChar(255)
-  compradorRTN       String?          @unique(map: "compradorRTN") @db.VarChar(50)
-  compradorDireccion String?          @db.VarChar(300)
-  compradorTelefono  String           @db.VarChar(50)
-  compradorEmail     String           @db.VarChar(255)
-  createdAt          DateTime         @default(now()) @db.DateTime(0)
+  compradorId        Int                     @id @default(autoincrement())
+  compradorNombre    String                  @db.VarChar(255)
+  compradorRTN       String?                 @unique(map: "compradorRTN") @db.VarChar(50)
+  compradorDireccion String?                 @db.VarChar(300)
+  compradorTelefono  String                  @db.VarChar(50)
+  compradorEmail     String                  @db.VarChar(255)
+  createdAt          DateTime                @default(now()) @db.DateTime(0)
   compra             compra[]
   contratoSalida     contratoSalida[]
   liqsalida          liqsalida[]
@@ -56,15 +56,15 @@ model compradores {
 }
 
 model anticipo_compradores {
-  anticipoId            Int                     @id @default(autoincrement())
+  anticipoId            Int                                 @id @default(autoincrement())
   compradorId           Int?
-  fecha                 DateTime?               @db.DateTime(0)
-  monto                 Decimal?                @db.Decimal(12, 2)
-  tasa_interes          Decimal?                @db.Decimal(5, 2)
-  tipo                  String?                 @default("ANTICIPO") @db.VarChar(25)
-  estado                String?                 @default("ACTIVO") @db.VarChar(25)
-  observacion           String?                 @db.Text
-  comprador             compradores?            @relation(fields: [compradorId], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "anticipo_compradores_ibfk_1")
+  fecha                 DateTime?                           @db.DateTime(0)
+  monto                 Decimal?                            @db.Decimal(12, 2)
+  tasa_interes          Decimal?                            @db.Decimal(5, 2)
+  tipo                  String?                             @default("ANTICIPO") @db.VarChar(25)
+  estado                String?                             @default("ACTIVO") @db.VarChar(25)
+  observacion           String?                             @db.Text
+  comprador             compradores?                        @relation(fields: [compradorId], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "anticipo_compradores_ibfk_1")
   movimientos_anticipos movimientos_anticipos_compradores[]
 
   @@index([compradorId], map: "compradorId_anticipo_idx")
@@ -73,13 +73,13 @@ model anticipo_compradores {
 }
 
 model movimientos_anticipos_compradores {
-  MovimientoId    Int       @id @default(autoincrement())
+  MovimientoId    Int                   @id @default(autoincrement())
   anticipoId      Int?
-  fecha           DateTime? @db.DateTime(0)
-  tipo_movimiento String?   @db.VarChar(25)
-  monto           Decimal?  @db.Decimal(12, 2)
-  descripcion     String?   @db.Text
-  interes         Decimal?  @db.Decimal(5, 2)
+  fecha           DateTime?             @db.DateTime(0)
+  tipo_movimiento String?               @db.VarChar(25)
+  monto           Decimal?              @db.Decimal(12, 2)
+  descripcion     String?               @db.Text
+  interes         Decimal?              @db.Decimal(5, 2)
   dias            Int?
   anticipo        anticipo_compradores? @relation(fields: [anticipoId], references: [anticipoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_anticipos_compradores_ibfk_1")
 
@@ -87,7 +87,6 @@ model movimientos_anticipos_compradores {
   @@index([anticipoId, fecha, tipo_movimiento])
   @@index([tipo_movimiento])
 }
-
 
 model cierrecontrato {
   cierreID         Int       @id @default(autoincrement())
@@ -286,6 +285,8 @@ model producto {
   liqdeposito       liqdeposito[]
   liqsalida         liqsalida[]
   salida            salida[]
+  secadosEntrada    secado[]           @relation("ProductoEntrada")
+  secadosSalida     secado[]           @relation("ProductoSalida")
 }
 
 model movimientos_prestamo {
@@ -469,17 +470,51 @@ model prestamos_compradores {
 }
 
 model movimientos_prestamo_compradores {
-  MovimientoId    Int                   @id @default(autoincrement())
+  MovimientoId    Int                    @id @default(autoincrement())
   prestamo_id     Int?
-  fecha           DateTime?             @db.DateTime(0)
-  tipo_movimiento String?               @db.VarChar(25)
-  monto           Decimal?              @db.Decimal(12, 2)
-  descripcion     String?               @db.Text
-  interes         Decimal?              @db.Decimal(5, 2)
+  fecha           DateTime?              @db.DateTime(0)
+  tipo_movimiento String?                @db.VarChar(25)
+  monto           Decimal?               @db.Decimal(12, 2)
+  descripcion     String?                @db.Text
+  interes         Decimal?               @db.Decimal(5, 2)
   dias            Int?
   prestamos       prestamos_compradores? @relation(fields: [prestamo_id], references: [prestamoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_prestamo_compradores_ibfk_1")
 
   @@index([prestamo_id], map: "prestamoComprador_id_idx")
   @@index([prestamo_id, fecha, tipo_movimiento])
   @@index([tipo_movimiento])
+}
+
+model secadora {
+  secadoraId Int      @id @default(autoincrement())
+  nombre     String   @unique @db.VarChar(100)
+  capacidad  Decimal? @db.Decimal(15, 2)
+  tipo       String?  @db.VarChar(50)
+  estado     String   @default("Disponible") @db.VarChar(20)
+  createdAt  DateTime @default(now()) @db.DateTime(0)
+  secados    secado[]
+}
+
+model secado {
+  secadoId          Int       @id @default(autoincrement())
+  secadoraId        Int
+  productoId        Int       // Producto que entra (ej: Pergamino Mojado)
+  productoIdDestino Int?      // Producto que sale (ej: Pergamino Seco)
+  cantidadEntradaQQ Decimal   @db.Decimal(15, 2)
+  humedadInicial    Decimal?  @db.Decimal(5, 2)
+  fechaInicio       DateTime  @default(now()) @db.DateTime(0)
+  fechaFin          DateTime? @db.DateTime(0)
+  humedadFinal      Decimal?  @db.Decimal(5, 2)
+  cantidadSalidaQQ  Decimal?  @db.Decimal(15, 2)
+  estado            String    @default("En Proceso") @db.VarChar(20)
+  observaciones     String?   @db.Text
+  createdAt         DateTime  @default(now()) @db.DateTime(0)
+  
+  secadora          secadora  @relation(fields: [secadoraId], references: [secadoraId], onDelete: NoAction, onUpdate: NoAction)
+  producto          producto  @relation("ProductoEntrada", fields: [productoId], references: [productID], onDelete: NoAction, onUpdate: NoAction)
+  productoDestino   producto? @relation("ProductoSalida", fields: [productoIdDestino], references: [productID], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([secadoraId])
+  @@index([productoId])
+  @@index([productoIdDestino])
 }
