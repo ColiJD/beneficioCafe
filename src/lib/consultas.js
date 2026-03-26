@@ -44,7 +44,7 @@ export async function obtenerProductosSelect(messageApi) {
     const productosData = await res.json();
     return productosData.map((p) => ({
       value: p.productID,
-      label: p.productName,
+      label: `${p.productName} (Dispo: ${p.inventariocliente?.cantidadQQ || 0} QQ)`,
       data: p,
     }));
   } catch (err) {
@@ -399,5 +399,33 @@ export async function verificarContratosSalidaPendientes(compradorID) {
   } catch (err) {
     console.error(err);
     return ["Error verificando contratos de salida pendientes."];
+  }
+}
+
+export async function obtenerSecadorasSelect(messageApi) {
+  try {
+    const res = await fetch("/api/secadoras");
+    if (!res.ok) throw new Error("Error en la respuesta del servidor");
+    const data = await res.json();
+    return data.map((s) => ({
+      value: s.secadoraId,
+      label: `${s.nombre} (${s.estado})`,
+      data: s,
+    }));
+  } catch (err) {
+    console.error("Error al cargar secadoras:", err);
+    if (messageApi) messageApi.error("No se pudieron cargar las secadoras.");
+    return [];
+  }
+}
+
+export async function obtenerSecados() {
+  try {
+    const res = await fetch("/api/secado");
+    if (!res.ok) throw new Error("Error en la respuesta del servidor");
+    return await res.json();
+  } catch (err) {
+    console.error("Error al cargar registros de secado:", err);
+    return [];
   }
 }

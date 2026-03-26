@@ -11,7 +11,9 @@ export async function GET(req) {
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
-    const productos = await prisma.producto.findMany();
+    const productos = await prisma.producto.findMany({
+      include: { inventariocliente: true }
+    });
     return new Response(JSON.stringify(productos), { status: 200 });
   } catch (error) {
     return new Response(

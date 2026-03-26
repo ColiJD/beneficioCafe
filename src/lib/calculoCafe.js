@@ -62,3 +62,26 @@ export function calcularPesoBrutoDesdeOro(
 
   return { pesoBruto: Math.round(pesoBrutoNecesario * 100) / 100};
 }
+
+/**
+ * Calcula el peso final de una cantidad de café basada en el cambio de humedad.
+ * 
+ * @param {number|string} pesoInicial - El peso inicial en QQ.
+ * @param {number|string} humedadInicial - Porcentaje de humedad inicial (ej: 45).
+ * @param {number|string} humedadFinal - Porcentaje de humedad objetivo/final (ej: 12).
+ * @returns {string} - El peso final sugerido tras el secado como string con 2 decimales.
+ */
+export function calcularPesoSecado(pesoInicial, humedadInicial, humedadFinal) {
+  const peso = parseFloat(pesoInicial);
+  const hInicial = parseFloat(humedadInicial);
+  const hFinal = parseFloat(humedadFinal);
+
+  if (isNaN(peso) || isNaN(hInicial) || isNaN(hFinal) || hFinal >= 100) {
+    return "0.00";
+  }
+
+  // Fórmula termodinámica: PesoFinal = PesoInicial * ((100 - HI) / (100 - HF))
+  const pesoFinal = peso * ((100 - hInicial) / (100 - hFinal));
+
+  return truncarDosDecimalesSinRedondear(pesoFinal).toFixed(2);
+}
