@@ -3,7 +3,6 @@ import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
 import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
-import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
 import {
   numeroALetras,
@@ -33,7 +32,6 @@ export const exportEntregaContratoSalida = async (formState) => {
   const fondoGray = await processImageToGray(fondoImg.src, 0.15);
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const frijolimg = await getLogoScaled(frijol.src, 80 * scale, 80 * scale);
-  const selloimg = await getLogoScaled(sello.src, 50 * scale, 50 * scale);
 
   const cliente =
     formState?.cliente?.label || formState?.comprador?.label || "Comprador";
@@ -245,19 +243,6 @@ export const exportEntregaContratoSalida = async (formState) => {
     doc.setTextColor(255, 0, 0);
     doc.text(`El Paraíso ${fechaCorta}`, pageWidth / 2 + 120, firmaY - 6);
     doc.setTextColor(0, 0, 0);
-
-    // Sello ajustado (on Entregado Por side, since Henola is delivering)
-    const selloFactor = 0.85;
-    const selloW = selloimg.width * selloFactor;
-    const selloH = selloimg.height * selloFactor;
-    doc.addImage(
-      selloimg.src,
-      "PNG",
-      leftMargin + firmaWidth / 2 - selloW / 2,
-      firmaY - selloH - 1,
-      selloW,
-      selloH,
-    );
   };
 
   // Doble comprobante (arriba y abajo)

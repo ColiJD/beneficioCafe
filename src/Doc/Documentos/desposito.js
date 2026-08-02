@@ -2,7 +2,6 @@ import JsPDF from "jspdf";
 import { formatNumber } from "@/components/Formulario";
 import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
-import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
 import autoTable from "jspdf-autotable";
 import {
@@ -42,7 +41,6 @@ export const exportDeposito = async (formState) => {
   // Escalar imágenes
   const logo = await getLogoScaled(tasa.src, 80, 80);
   const frijolimg = await getLogoScaled(frijol.src, 80, 80);
-  const selloimg = await getLogoScaled(sello.src, 60, 60);
 
   // Datos
   const cliente = formState?.cliente?.label || "Cliente";
@@ -200,16 +198,6 @@ export const exportDeposito = async (formState) => {
     const firmaWidth = 180;
     doc.line(leftMargin, startY, leftMargin + firmaWidth, startY);
     doc.text("FIRMA", leftMargin + 70, startY + 15);
-
-    // Sello
-    doc.addImage(
-      selloimg.src,
-      "PNG",
-      leftMargin + firmaWidth / 2 - selloimg.width / 2,
-      startY - selloimg.height + 3,
-      selloimg.width,
-      selloimg.height,
-    );
 
     // Lugar y Fecha
     doc.line(

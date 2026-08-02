@@ -3,7 +3,6 @@ import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
 import fondoImg from "@/img/belagos.png";
 import frijol from "@/img/imagenfrijoles.png";
-import sello from "@/img/logo_transparente.png";
 import tasa from "@/img/tasa.png";
 import {
   numeroALetras,
@@ -39,7 +38,6 @@ export const exportContratoCafe = async (formState) => {
   const scale = 1.1;
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const frijolimg = await getLogoScaled(frijol.src, 80 * scale, 80 * scale);
-  const selloimg = await getLogoScaled(sello.src, 50 * scale, 50 * scale);
 
   const cliente = formState?.cliente?.label || "Cliente";
   const producto = formState?.producto?.label || "Producto";
@@ -219,16 +217,6 @@ export const exportContratoCafe = async (formState) => {
   doc.text(`El Paraíso ${fechaCorta}`, rightX + 20, firmaY - 5);
   doc.setTextColor(0, 0, 0);
   doc.setFont("times", "normal");
-
-  // Sello centrado en la firma izquierda
-  doc.addImage(
-    selloimg.src,
-    "PNG",
-    leftX + firmaWidth / 2 - selloimg.width / 2,
-    firmaY - selloimg.height - 5,
-    selloimg.width,
-    selloimg.height,
-  );
 
   // Footer
   doc.setFontSize(8 * scale);
