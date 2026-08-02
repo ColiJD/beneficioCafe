@@ -28,12 +28,15 @@ export default function DrawerPrestamo({
   onClose,
   onFinish,
   clienteSeleccionado,
+  compradorSeleccionado,
   formRef,
   tipoPersona = "cliente",
 }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tipoMovimiento, setTipoMovimiento] = useState("PRESTAMO");
+  const personaSeleccionada =
+    tipoPersona === "comprador" ? compradorSeleccionado : clienteSeleccionado;
 
   // Pasamos el form al padre
   useEffect(() => {
@@ -59,16 +62,20 @@ export default function DrawerPrestamo({
       const payload = {
         ...values,
         tipo: tipoMovimiento,
+        tipo_movimiento: tipoMovimiento,
       };
 
       // Manejar dinámicamente según el tipo de persona
       if (tipoPersona === "comprador") {
-        payload.compradorID = clienteSeleccionado?.compradorId;
+        payload.compradorID = personaSeleccionada?.compradorId;
       } else {
-        payload.clienteID = clienteSeleccionado?.clienteID;
+        payload.clienteID = personaSeleccionada?.clienteID;
       }
 
       await onFinish(payload);
+
+      form.resetFields();
+      setTipoMovimiento("PRESTAMO");
     } catch (err) {
       console.error("Error al guardar:", err);
     } finally {
@@ -184,9 +191,9 @@ export default function DrawerPrestamo({
     <Drawer
       title={`Nuevo Registro - ${
         tipoPersona === "comprador"
-          ? clienteSeleccionado?.compradorNombre || ""
-          : `${clienteSeleccionado?.clienteNombre || ""} ${
-              clienteSeleccionado?.clienteApellido || ""
+          ? personaSeleccionada?.compradorNombre || ""
+          : `${personaSeleccionada?.clienteNombre || ""} ${
+              personaSeleccionada?.clienteApellido || ""
             }`
       }`}
       width={400}

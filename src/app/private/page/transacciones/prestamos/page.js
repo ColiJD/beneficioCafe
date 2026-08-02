@@ -383,6 +383,7 @@ export default function PrestamosGeneral() {
       } else {
         const err = await res.json();
         messageApi.error(err.error || "Error");
+        throw new Error(err.error || "Error");
       }
     } finally {
       setLoading(false);

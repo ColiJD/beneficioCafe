@@ -339,7 +339,7 @@ export default function PrestamosCompradores() {
       else if (["ABONO", "PAGO_INTERES", "Int-Cargo"].includes(v.tipo)) url = "/api/prestamosCompradores/movimiento";
       else if (["ABONO_ANTICIPO", "INTERES_ANTICIPO", "CARGO_ANTICIPO"].includes(v.tipo)) url = "/api/anticiposCompradores/movimiento";
 
-      const body = { compradorID: compradorSeleccionado.compradorId, ...v, tipo_movimiento: v.tipo };
+      const body = { ...v, compradorID: compradorSeleccionado.compradorId, tipo_movimiento: v.tipo };
       const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (res.ok) {
         messageApi.success("Guardado correctamente");
@@ -348,6 +348,7 @@ export default function PrestamosCompradores() {
       } else {
         const d = await res.json();
         messageApi.error(d.error || "Error");
+        throw new Error(d.error || "Error");
       }
     } finally {
       setLoading(false);

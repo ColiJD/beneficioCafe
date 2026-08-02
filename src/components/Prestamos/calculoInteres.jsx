@@ -20,12 +20,15 @@ export default function DrawerInteres({
   onClose,
   onSubmit,
   clienteSeleccionado,
+  compradorSeleccionado,
   tipoPersona = "cliente",
 }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [dias, setDias] = useState(0);
   const [totalInteres, setTotalInteres] = useState(0);
+  const personaSeleccionada =
+    tipoPersona === "comprador" ? compradorSeleccionado : clienteSeleccionado;
 
   // Calcular días entre fechas
   const calcularDias = () => {
@@ -72,7 +75,7 @@ export default function DrawerInteres({
     try {
       const payload = {
         tipo: values.tipoMovimiento,
-        tipo_movimiento: "Int-Cargo",
+        tipo_movimiento: values.tipoMovimiento,
         monto: values.totalInteres,
         fecha: new Date(),
         descripcion: values.observacion,
@@ -81,9 +84,9 @@ export default function DrawerInteres({
       };
 
       if (tipoPersona === "comprador") {
-        payload.compradorID = clienteSeleccionado?.compradorId;
+        payload.compradorID = personaSeleccionada?.compradorId;
       } else {
-        payload.clienteID = clienteSeleccionado?.clienteID;
+        payload.clienteID = personaSeleccionada?.clienteID;
       }
 
       await onSubmit(payload);
@@ -105,9 +108,9 @@ export default function DrawerInteres({
     <Drawer
       title={`Cálculo de Interés - ${
         tipoPersona === "comprador"
-          ? clienteSeleccionado?.compradorNombre || ""
-          : `${clienteSeleccionado?.clienteNombre || ""} ${
-              clienteSeleccionado?.clienteApellido || ""
+          ? personaSeleccionada?.compradorNombre || ""
+          : `${personaSeleccionada?.clienteNombre || ""} ${
+              personaSeleccionada?.clienteApellido || ""
             }`
       }`}
       width={400}
