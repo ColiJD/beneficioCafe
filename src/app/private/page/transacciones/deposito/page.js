@@ -138,7 +138,7 @@ export default function FormDeposito() {
       depositoTipoCafe: producto.value,
       depositoCantidadQQ: parseFloat(depositoCantidadQQ),
       depositoTotalSacos:
-        producto?.label === "Cafe Lata"
+        producto?.data?.productName === "Cafe Lata"
           ? 1
           : depositoTotalSacos
             ? parseInt(depositoTotalSacos, 10)
@@ -234,7 +234,7 @@ export default function FormDeposito() {
     },
     {
       label:
-        producto?.label === "Cafe Lata"
+        producto?.data?.productName === "Cafe Lata"
           ? "Cantidad de Latas"
           : "Peso Bruto (lbs)",
       value: pesoBruto,
@@ -243,7 +243,7 @@ export default function FormDeposito() {
       required: true,
       error:
         errors[
-          producto?.label === "Cafe Lata"
+          producto?.data?.productName === "Cafe Lata"
             ? "Cantidad de Latas"
             : "Peso Bruto (lbs)"
         ],
@@ -251,15 +251,15 @@ export default function FormDeposito() {
     },
     {
       label: "Total Sacos",
-      value: producto?.label === "Cafe Lata" ? 0 : depositoTotalSacos,
+      value: producto?.data?.productName === "Cafe Lata" ? 0 : depositoTotalSacos,
       setter:
-        producto?.label === "Cafe Lata" ? () => {} : setDepositoTotalSacos,
+        producto?.data?.productName === "Cafe Lata" ? () => {} : setDepositoTotalSacos,
       type: "integer",
-      required: producto?.label === "Cafe Lata" ? false : true,
+      required: producto?.data?.productName === "Cafe Lata" ? false : true,
       error: errors["Total Sacos"],
-      readOnly: producto?.label === "Cafe Lata",
+      readOnly: producto?.data?.productName === "Cafe Lata",
       validator: (v) => {
-        if (producto?.label === "Cafe Lata") return null;
+        if (producto?.data?.productName === "Cafe Lata") return null;
         if (v === "" || v === null || v === undefined)
           return "Ingrese total de sacos";
         return validarEnteroPositivo(v) ? null : "Total sacos debe ser > 0";

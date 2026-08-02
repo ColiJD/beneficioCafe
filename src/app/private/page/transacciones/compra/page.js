@@ -181,7 +181,7 @@ export default function CompraForm({ compraId }) {
       compraTipoDocumento,
       compraCantidadQQ: parseFloat(compraOro),
       compraTotalSacos:
-        producto?.label === "Cafe Lata"
+        producto?.data?.productName === "Cafe Lata"
           ? 1
           : compraTotalSacos
             ? parseInt(compraTotalSacos, 10)
@@ -302,7 +302,7 @@ export default function CompraForm({ compraId }) {
 
     {
       label:
-        producto?.label === "Cafe Lata"
+        producto?.data?.productName === "Cafe Lata"
           ? "Cantidad de Latas"
           : "Peso Bruto (lbs)",
       value: compraCantidadQQ,
@@ -314,14 +314,14 @@ export default function CompraForm({ compraId }) {
     },
     {
       label: "Total Sacos",
-      value: producto?.label === "Cafe Lata" ? 0 : compraTotalSacos,
-      setter: producto?.label === "Cafe Lata" ? () => {} : setCompraTotalSacos,
+      value: producto?.data?.productName === "Cafe Lata" ? 0 : compraTotalSacos,
+      setter: producto?.data?.productName === "Cafe Lata" ? () => {} : setCompraTotalSacos,
       type: "integer",
-      required: producto?.label === "Cafe Lata" ? false : true,
+      required: producto?.data?.productName === "Cafe Lata" ? false : true,
       error: errors["Total Sacos"],
-      readOnly: producto?.label === "Cafe Lata",
+      readOnly: producto?.data?.productName === "Cafe Lata",
       validator: (v) => {
-        if (producto?.label === "Cafe Lata") return null;
+        if (producto?.data?.productName === "Cafe Lata") return null;
         if (v === "" || v === null || v === undefined)
           return "Ingrese total de sacos";
         return validarEnteroNoNegativo(v) ? null : "Total sacos debe ser >= 0";
@@ -530,7 +530,7 @@ export default function CompraForm({ compraId }) {
               fields={fields.map((f) => ({
                 label: f.label,
                 value:
-                  f.label === "Total Sacos" && producto?.label === "Cafe Lata"
+                  f.label === "Total Sacos" && producto?.data?.productName === "Cafe Lata"
                     ? 0
                     : f.type === "select"
                       ? f.options?.find((o) => o.value === f.value?.value)

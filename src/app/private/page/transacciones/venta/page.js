@@ -78,7 +78,7 @@ export default function VentaForm({ compraId }) {
     },
     {
       label:
-        producto?.label === "Cafe Lata"
+        producto?.data?.productName === "Cafe Lata"
           ? "Cantidad de Latas"
           : "Peso Bruto (lbs)",
       value: ventaCantidadQQ,
@@ -453,7 +453,7 @@ export default function VentaForm({ compraId }) {
               fields={fields.map((f) => ({
                 label: f.label,
                 value:
-                  f.label === "Total Sacos" && producto?.label === "Cafe Lata"
+                  f.label === "Total Sacos" && producto?.data?.productName === "Cafe Lata"
                     ? 0
                     : f.type === "select"
                       ? f.options?.find((o) => o.value === f.value?.value)
