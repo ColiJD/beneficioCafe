@@ -172,6 +172,12 @@ export const menuItems = [
         href: Ruta + "/cliente/Registros",
         image: Reportes,
       },
+      {
+        id: 506,
+        name: "Central de registros",
+        href: Ruta + "/registros",
+        image: Reportes,
+      },
     ],
   },
   {
