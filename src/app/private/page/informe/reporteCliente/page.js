@@ -38,8 +38,8 @@ export function calcularTotalesCliente(cliente = {}) {
 
   return { totalQQ, totalLps, promedio, depositoPendienteQQ };
 }
-const inicioAnio = dayjs().subtract(1, "year").startOf("year");
-const finAnio = dayjs().endOf("year");
+const inicioAnio = dayjs("2026-06-15");
+const finAnio = dayjs("2027-12-31");
 
 export const rangoInicial = [inicioAnio, finAnio];
 export default function ReporteClientesEntradas() {

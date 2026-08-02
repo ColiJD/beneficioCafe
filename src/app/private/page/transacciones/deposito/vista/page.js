@@ -9,6 +9,7 @@ import TarjetaMobile from "@/components/TarjetaMobile";
 import dayjs from "dayjs";
 import ProtectedPage from "@/components/ProtectedPage";
 import { formatNumber } from "@/components/Formulario";
+import { rangoInicial } from "@/app/private/page/informe/reporteCliente/page";
 
 // Plugins para filtros de fechas
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -28,10 +29,7 @@ export default function TablaSaldoDepositos() {
 
   const [nombreFiltro, setNombreFiltro] = useState("");
   const [tipoCafeFiltro, setTipoCafeFiltro] = useState("");
-  const [rangoFecha, setRangoFecha] = useState([
-    dayjs().subtract(1, "year").startOf("year"),
-    dayjs().endOf("year"),
-  ]);
+  const [rangoFecha, setRangoFecha] = useState(rangoInicial);
 
   const [estadoFiltro, setEstadoFiltro] = useState("Pendiente");
 
