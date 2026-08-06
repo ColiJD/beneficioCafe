@@ -187,10 +187,10 @@ export default function ClienteForm() {
       label: "RTN",
       type: "text",
       required: false,
-      maxLength: 17,
-      placeholder: "0000-0000-0000000",
+      maxLength: 16,
+      placeholder: "0000-0000-000000",
       validator: (v) =>
-        v && !validarRTN(v) ? "RTN inválido, formato: 0000-0000-0000000" : null,
+        v && !validarRTN(v) ? "RTN inválido, formato: 0000-0000-000000" : null,
     },
   ];
 

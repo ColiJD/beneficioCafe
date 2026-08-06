@@ -16,13 +16,13 @@ export function validarCedula(value) {
     : "La cédula no tiene el formato válido (0000-0000-00000)";
 }
 
-// Validar RTN (ej. 0703-2001-0079812)
+// Validar RTN (ej. 0703-2001-007981)
 export function validarRTN(value) {
   if (!value) return null; // RTN puede ser opcional
-  const regex = /^\d{4}-\d{4}-\d{7}$/;
+  const regex = /^\d{4}-\d{4}-\d{6}$/;
   return regex.test(value)
     ? null
-    : "El RTN no tiene el formato válido (0000-0000-0000000)";
+    : "El RTN no tiene el formato válido (0000-0000-000000)";
 }
 
 // Validar teléfono (solo números, mínimo 8 dígitos)

@@ -104,9 +104,9 @@ export default function CompradorForm() {
       type: "text",
       required: false,
       maxLength: 50,
-      placeholder: "0000-0000-0000000",
+      placeholder: "0000-0000-000000",
       validator: (v) =>
-        v && !validarRTN(v) ? "RTN inválido, formato: 0000-0000-0000000" : null,
+        v && !validarRTN(v) ? "RTN inválido, formato: 0000-0000-000000" : null,
     },
 
     {
