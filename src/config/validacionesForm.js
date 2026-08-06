@@ -19,9 +19,9 @@ export function validarEmail(value) {
 }
 
 
-// Valida RTN con formato 0703-2001-0079812 (2 números extra)
+// Valida RTN con formato 0703-2001-007981
 export function validarRTN(value) {
-  const regex = /^\d{4}-\d{4}-\d{7}$/;
+  const regex = /^\d{4}-\d{4}-\d{6}$/;
   return regex.test(value);
 }
 // Valida Teléfono (solo números)
