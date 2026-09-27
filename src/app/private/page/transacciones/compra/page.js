@@ -30,6 +30,10 @@ import {
   validarFloatPositivo,
 } from "@/config/validacionesForm";
 
+// Rebaja fija por quintal oro para Café Uva y sus variaciones
+const REBAJA_UVA_POR_QQ = 100;
+const esCafeUva = (producto) => /uva/i.test(producto?.data?.productName || "");
+
 export default function CompraForm({ compraId }) {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -51,6 +55,7 @@ export default function CompraForm({ compraId }) {
   const [compraDescripcion, setCompraDescripcion] = useState("");
   const [compraOro, setCompraOro] = useState("0.00");
   const [compraPorcDano, setCompraPorcDano] = useState(0); // nuevo campo
+  const [compraRebajaUva, setCompraRebajaUva] = useState(0);
 
   const router = useRouter();
 
@@ -140,9 +145,15 @@ export default function CompraForm({ compraId }) {
 
     const retencion = oroConDano * 0.96;
 
-    // ⬅️ 3. Guardar redondeado
+    // ⬅️ 3. Rebaja de L. 100 por quintal oro (solo Café Uva)
+    const rebajaUva = esCafeUva(producto)
+      ? Number((oroConDano * REBAJA_UVA_POR_QQ).toFixed(2))
+      : 0;
+
+    // ⬅️ 4. Guardar redondeado
     setCompraOro(oroConDano);
-    setCompraTotal(oroConDano * compraPrecioQQ);
+    setCompraRebajaUva(rebajaUva);
+    setCompraTotal(oroConDano * compraPrecioQQ - rebajaUva);
     setCompraRetencio(retencion);
   }, [
     compraCantidadQQ,
@@ -236,7 +247,15 @@ export default function CompraForm({ compraId }) {
             },
           ],
           total: compraTotal,
-          observaciones: compraDescripcion,
+          observaciones:
+            compraRebajaUva > 0
+              ? [
+                  compraDescripcion,
+                  `Rebaja Café Uva: L. ${compraRebajaUva.toFixed(2)} (L. ${REBAJA_UVA_POR_QQ} x ${parseFloat(compraOro).toFixed(2)} QQ oro)`,
+                ]
+                  .filter(Boolean)
+                  .join(" | ")
+              : compraDescripcion,
           comprobanteID: result.compraId,
         });
 
@@ -363,6 +382,18 @@ export default function CompraForm({ compraId }) {
       readOnly: true,
       error: errors["Quintales Oro"],
     },
+    ...(esCafeUva(producto)
+      ? [
+          {
+            label: "Rebaja Café Uva (Lps)",
+            value: compraRebajaUva,
+            setter: setCompraRebajaUva,
+            type: "Float",
+            readOnly: true,
+            tooltip: `Se rebajan L. ${REBAJA_UVA_POR_QQ} por cada quintal oro del total.`,
+          },
+        ]
+      : []),
     {
       label: "Total (Lps)",
       value: compraTotal,
