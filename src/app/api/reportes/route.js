@@ -215,6 +215,23 @@ export async function GET(req) {
       _sum: { cantidadQQ: true },
     });
 
+    // Secado: el café sale del inventario al iniciar y vuelve (con merma) al finalizar.
+    // Sin estas dos líneas, Entradas - Salidas no cuadra con el inventario disponible.
+    const secadoEnProceso = await prisma.secado.aggregate({
+      _sum: { cantidadEntradaQQ: true },
+      where: { estado: "En Proceso" },
+    });
+    const secadoFinalizado = await prisma.secado.aggregate({
+      _sum: { cantidadEntradaQQ: true, cantidadSalidaQQ: true },
+      where: { estado: "Finalizado" },
+    });
+    const secado = {
+      enProcesoQQ: Number(secadoEnProceso._sum.cantidadEntradaQQ ?? 0),
+      mermaQQ:
+        Number(secadoFinalizado._sum.cantidadEntradaQQ ?? 0) -
+        Number(secadoFinalizado._sum.cantidadSalidaQQ ?? 0),
+    };
+
     // 1️⃣ Total de salidas válidas
     const totalSalidasRaw = await prisma.salida.aggregate({
       _sum: { salidaCantidadQQ: true },
@@ -248,6 +265,7 @@ export async function GET(req) {
         inventario: {
           disponibleQQ: Number(inventario._sum.cantidadQQ ?? 0),
         },
+        secado,
         totalSalidas,
         totalLiquidado,
         pendiente,

@@ -23,6 +23,16 @@ export const percentFormatter = {
   parser: (value) => value.replace("%", ""),
 };
 
+import usePermisos from "@/components/usePermisos";
+import { puedeEnModulo } from "@/lib/modulos";
+
+// tipo de movimiento → módulo que lo autoriza (préstamos y anticipos son independientes)
+const TIPOS = [
+  ["PRESTAMO", "Préstamo", "p"], ["ANTICIPO", "Anticipo", "a"],
+  ["ABONO", "Abono a Capital", "p"], ["PAGO_INTERES", "Pago de Interés", "p"],
+  ["ABONO_ANTICIPO", "Abono a Anticipo", "a"], ["INTERES_ANTICIPO", "Interes de Anticipo", "a"],
+];
+
 export default function DrawerPrestamo({
   open,
   onClose,
@@ -33,6 +43,11 @@ export default function DrawerPrestamo({
   tipoPersona = "cliente",
 }) {
   const [form] = Form.useForm();
+  const acc = usePermisos();
+  const mod = tipoPersona === "comprador"
+    ? { p: "prestamosCompradores", a: "anticiposCompradores" }
+    : { p: "prestamos", a: "anticipos" };
+  const permitidos = TIPOS.filter(([, , k]) => puedeEnModulo(acc, mod[k], "crear"));
   const [loading, setLoading] = useState(false);
   const [tipoMovimiento, setTipoMovimiento] = useState("PRESTAMO");
   const personaSeleccionada =
@@ -42,6 +57,14 @@ export default function DrawerPrestamo({
   useEffect(() => {
     if (formRef) formRef.current = form;
   }, [form, formRef]);
+  useEffect(() => {
+    const t = form.getFieldValue("tipo");
+    if (permitidos.length && !permitidos.some(([v]) => v === t)) {
+      setTipoMovimiento(permitidos[0][0]);
+      form.setFieldsValue({ tipo: permitidos[0][0] });
+    }
+  }, [open, acc]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Inicializamos el tipo de movimiento al abrir el Drawer
   useEffect(() => {
     if (open) {
@@ -227,16 +250,9 @@ export default function DrawerPrestamo({
               }
             }}
           >
-            <Select.Option value="PRESTAMO">Préstamo</Select.Option>
-            <Select.Option value="ANTICIPO">Anticipo</Select.Option>
-            <Select.Option value="ABONO">Abono a Capital</Select.Option>
-            <Select.Option value="PAGO_INTERES">Pago de Interés</Select.Option>
-            <Select.Option value="ABONO_ANTICIPO">
-              Abono a Anticipo
-            </Select.Option>
-            <Select.Option value="INTERES_ANTICIPO">
-              Interes de Anticipo
-            </Select.Option>
+            {permitidos.map(([v, l]) => (
+              <Select.Option key={v} value={v}>{l}</Select.Option>
+            ))}
           </Select>
         </Form.Item>
 

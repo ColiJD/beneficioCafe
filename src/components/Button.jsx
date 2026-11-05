@@ -3,6 +3,8 @@
 import { Button } from "antd";
 import { UnorderedListOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnRuta } from "@/lib/modulos";
 
 export default function GenericButton({
   onClick,
@@ -31,6 +33,8 @@ const FloatingButton = ({
   right = 20,
 }) => {
   const router = useRouter();
+  const acc = usePermisos();
+  if (!puedeEnRuta(acc, route)) return null; // sin permiso para esa pantalla, no se ofrece
 
   const handleClick = () => {
     router.push(route);

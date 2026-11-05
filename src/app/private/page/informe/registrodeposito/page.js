@@ -336,9 +336,7 @@ export default function ReporteRegistroDeposito() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton
-            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-          >
+          <ProtectedButton accion="editar">
             <Button
               size="small"
               type="default"
@@ -346,7 +344,7 @@ export default function ReporteRegistroDeposito() {
               onClick={() => cargarDetalle(record.id)}
             />
           </ProtectedButton>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar">
             <Popconfirm
               title="¿Seguro que deseas eliminar este depósito?"
               onConfirm={() => eliminarDeposito(record.id)}
@@ -557,9 +555,7 @@ export default function ReporteRegistroDeposito() {
                 ...item,
                 acciones: (
                   <div style={{ display: "flex", gap: 6 }}>
-                    <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-                    >
+                    <ProtectedButton accion="editar">
                       <Button
                         size="small"
                         type="default"
@@ -617,7 +613,7 @@ export default function ReporteRegistroDeposito() {
                       />
                     </Popconfirm>
 
-                    <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+                    <ProtectedButton accion="eliminar">
                       <Popconfirm
                         title="¿Seguro que deseas eliminar este depósito?"
                         onConfirm={() => eliminarDeposito(item.id)}

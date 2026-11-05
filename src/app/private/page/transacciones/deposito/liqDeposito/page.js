@@ -395,7 +395,8 @@ export default function DepositoForm() {
                 router.push(
                   "/private/page/transacciones/deposito/lipdedeposito",
                 ),
-            },
+                route: "/private/page/transacciones/deposito/lipdedeposito",
+              },
           ]}
         />
 
@@ -405,7 +406,7 @@ export default function DepositoForm() {
           fields={fields}
           onSubmit={handleRegistrarClick}
           submitting={submitting}
-          button={{
+          button={{ accion: "crear",
             text: "Registrar Liquidación",
             onClick: handleRegistrarClick,
             type: "primary",

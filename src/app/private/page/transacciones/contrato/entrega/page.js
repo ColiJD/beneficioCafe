@@ -542,7 +542,8 @@ export default function LiquidacionContratoForm() {
                 router.push(
                   "/private/page/transacciones/contrato/detallecontrato",
                 ),
-            },
+                route: "/private/page/transacciones/contrato/detallecontrato",
+              },
           ]}
         />
 
@@ -552,7 +553,7 @@ export default function LiquidacionContratoForm() {
           fields={fields}
           onSubmit={handleRegistrarClick}
           submitting={submitting}
-          button={{
+          button={{ accion: "crear",
             text: "Registrar Entrega",
             onClick: handleRegistrarClick,
             type: "primary",

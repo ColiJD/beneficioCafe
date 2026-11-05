@@ -52,7 +52,7 @@ export default function ReporteLiqSalida() {
         compradorNombre: item.compradores?.compradorNombre || "—",
         acciones: (
           <div style={{ display: "flex", gap: 5 }}>
-            <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+            <ProtectedButton accion="eliminar">
               <Popconfirm
                 title="¿Seguro que deseas eliminar este contrato?"
                 onConfirm={() =>
@@ -202,7 +202,7 @@ export default function ReporteLiqSalida() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar">
             <Popconfirm
               title="¿Seguro que deseas eliminar este contrato?"
               onConfirm={() =>

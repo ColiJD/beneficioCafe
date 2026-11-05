@@ -311,7 +311,8 @@ export default function FormDeposito() {
               icon: <SolutionOutlined />,
               onClick: () =>
                 router.push("/private/page/informe/registrodeposito"),
-            },
+                route: "/private/page/informe/registrodeposito",
+              },
           ]}
         />
 
@@ -320,7 +321,7 @@ export default function FormDeposito() {
           fields={fields}
           onSubmit={handleRegistrarClick}
           submitting={submitting}
-          button={{
+          button={{ accion: "crear",
             text: "Registrar Depósito",
             onClick: handleRegistrarClick,
             type: "primary",

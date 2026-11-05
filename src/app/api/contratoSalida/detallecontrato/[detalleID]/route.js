@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
+import { ErrorNegocio, esAnulado, noAnulado, respuestaError } from "@/lib/inventarioMov";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
@@ -27,11 +28,12 @@ export async function DELETE(req, { params }) {
     }
 
     await prisma.$transaction(async (tx) => {
-      // 1️⃣ Actualizar estado del registro a "Anulado"
-      await tx.detalleContratoSalida.update({
-        where: { detalleID },
+      // 1️⃣ Anular de forma atómica: si ya estaba anulada no se devuelve stock otra vez
+      const anulada = await tx.detalleContratoSalida.updateMany({
+        where: { detalleID, ...noAnulado("tipoMovimiento") },
         data: { tipoMovimiento: "Anulado" },
       });
+      if (anulada.count === 0) throw new ErrorNegocio("La entrega ya está anulada");
 
       // 🔹 REVERSIÓN DE INVENTARIO (ANULACIÓN GLOBAL)
       // Devolver la cantidad al inventario global del producto del contrato.
@@ -96,11 +98,7 @@ export async function DELETE(req, { params }) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("❌ Error al anular registro:", error);
-    return new Response(
-      JSON.stringify({ error: "Error interno al anular el registro" }),
-      { status: 500 },
-    );
+    return respuestaError(error, "Error interno al anular el registro");
   }
 }
 
@@ -211,6 +209,13 @@ export async function PUT(request, { params }) {
       );
     }
 
+    if (esAnulado(entregaOriginal.tipoMovimiento)) {
+      return Response.json(
+        { error: "No se puede modificar una entrega anulada" },
+        { status: 400 },
+      );
+    }
+
     // 2️⃣ Obtener contrato
     const contrato = await prisma.contratoSalida.findUnique({
       where: { contratoID: Number(contratoID) },
@@ -251,16 +256,15 @@ export async function PUT(request, { params }) {
     const cantidadNueva = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
     const saldoVisible = truncarDosDecimalesSinRedondear(saldoDisponible);
 
-    // Nota: saldoDisponible incluye la cantidad "liberada" de esta entrega porque la excluímos en el where
-    // Comentado para permitir edición flexible si hay inventario
-    /* if (cantidadNueva > saldoVisible) {
+    // El saldo ya excluye esta entrega (se filtra en el where), así que incluye lo que se "libera" al editarla
+    if (cantidadNueva > saldoVisible) {
       return Response.json(
         {
           error: `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoVisible}).`,
         },
-        { status: 400 }
+        { status: 400 },
       );
-    } */
+    }
 
     // 🔹 Nueva Validación: Verificar Si hay Inventario Físico suficiente para el INCREMENTO
     const cantidadAnterior = Number(entregaOriginal.cantidadQQ);

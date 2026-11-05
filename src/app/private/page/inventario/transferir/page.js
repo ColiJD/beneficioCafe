@@ -192,7 +192,7 @@ export default function ConvertirCafe() {
               fields={fields}
               onSubmit={handleRegistrarClick}
               submitting={submitting}
-              button={{
+              button={{ accion: "crear",
                 text: "Realizar Conversión",
                 onClick: handleRegistrarClick,
                 type: "primary",

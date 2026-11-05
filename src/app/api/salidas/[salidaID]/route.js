@@ -131,6 +131,13 @@ export async function PUT(request, { params }) {
       );
     }
 
+    if (String(salidaOriginal.salidaMovimiento ?? "").toUpperCase() === "ANULADO") {
+      return new Response(
+        JSON.stringify({ error: "No se puede modificar una salida anulada" }),
+        { status: 400 },
+      );
+    }
+
     // 🔹 Verificar liquidaciones activas asociadas a la salida
     const liquidacionesAsociadas = await prisma.detalleliqsalida.findMany({
       where: {

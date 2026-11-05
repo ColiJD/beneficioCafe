@@ -243,9 +243,7 @@ export default function Reportedetallecontrato() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton
-            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-          >
+          <ProtectedButton accion="editar">
             <Button
               size="small"
               type="default"
@@ -253,7 +251,7 @@ export default function Reportedetallecontrato() {
               onClick={() => cargarDetalle(record.detalleID)}
             />
           </ProtectedButton>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar">
             <Popconfirm
               title="¿Seguro que deseas eliminar este contrato?"
               onConfirm={() =>
@@ -508,7 +506,7 @@ export default function Reportedetallecontrato() {
                 ...item,
                 acciones: (
                   <div style={{ display: "flex", gap: 6 }}>
-                    <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+                    <ProtectedButton accion="eliminar">
                       <Popconfirm
                         title="¿Seguro que deseas EXPORTAR esta compra?"
                         onConfirm={async () => {

@@ -1,10 +1,13 @@
+"use client";
 // 📂 app/page/menu/page.js
 import Link from "next/link";
 import Image from "next/image";
-import { menuItems } from "@/lib/menu";
+import useMenuItems from "@/components/useMenuItems";
 import "@/style/menu.css";
 
 export default function Menu() {
+  const menuItems = useMenuItems();
+  if (!menuItems) return null;
   return (
     <main className="menu-container">
       {menuItems.map(({ id, name, image }) => (

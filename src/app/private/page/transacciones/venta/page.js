@@ -312,7 +312,7 @@ export default function VentaForm({ compraId }) {
 
       // 🔹 Redirigir a la lista de compras
       if (compraId) {
-        router.push("/private/page/transacciones/compra/vista"); // Ajusta según tu ruta real de lista
+        router.push("/private/page/transacciones/venta/vista"); // Ajusta según tu ruta real de lista
         return; // evita limpiar formulario si solo actualizas
       }
 
@@ -401,8 +401,9 @@ export default function VentaForm({ compraId }) {
               tooltip: "Ir a Salidas",
               icon: <FileTextOutlined />,
               onClick: () =>
-                router.push("/private/page/transacciones/compra/vista"),
-            },
+                router.push("/private/page/transacciones/venta/vista"),
+                route: "/private/page/transacciones/venta/vista",
+              },
             {
               tooltip: "Ir a Contratos",
               icon: <FileSearchOutlined />,
@@ -410,12 +411,14 @@ export default function VentaForm({ compraId }) {
                 router.push(
                   "/private/page/transacciones/contratoSalida/registrocontrato",
                 ),
-            },
+                route: "/private/page/transacciones/contratoSalida/registrocontrato",
+              },
             {
               tooltip: "Ir a Confirmacion",
               icon: <FileTextOutlined />,
               onClick: () => router.push("/private/page/transacciones/salidas"),
-            },
+                route: "/private/page/transacciones/salidas",
+              },
           ]}
         />
         {loadingDatos || loadingCompra ? (
@@ -438,7 +441,7 @@ export default function VentaForm({ compraId }) {
               fields={fields}
               onSubmit={handleRegistrarClick}
               submitting={submitting}
-              button={{
+              button={{ accion: compraId ? "editar" : "crear",
                 text: compraId ? "Actualizar Venta" : "Registrar Venta",
                 onClick: handleRegistrarClick,
                 type: "primary",

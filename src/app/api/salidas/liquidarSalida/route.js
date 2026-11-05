@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { calcularPendientes, crearDetallesFIFO, redondear } from "@/lib/pendientesSalida";
 export async function POST(req) {
+  const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA", "COLABORADORES"]);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const body = await req.json();
     const { compradorID, productoID, cantidadLiquidar, descripcion } = body;
@@ -22,7 +25,7 @@ export async function POST(req) {
       );
     }
 
-    const roundToTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
+    const roundToTwo = redondear;
 
     const resultado = await prisma.$transaction(async (tx) => {
       let cantidad = roundToTwo(cantidadSolicitada);
@@ -49,44 +52,17 @@ export async function POST(req) {
       // ----------------------------
       // ✔ Obtener salidas válidas (NO ANULADAS) para el producto específico
       // ----------------------------
-      const salidas = await tx.salida.findMany({
-        where: {
-          compradorID: compradorIdNum,
-          productoID: productoIdNum,
-          salidaMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] },
-        },
-        orderBy: { salidaFecha: "asc" },
-        include: {
-          detalleliqsalida: {
-            select: { cantidadQQ: true, movimiento: true },
-          },
-        },
-      });
-
-      // ----------------------------
-      // ✔ Calcular pendientes
-      // ----------------------------
-      const pendientes = salidas
-        .map((s) => {
-          const totalLiquidado = s.detalleliqsalida
-            .filter(
-              (d) =>
-                d.movimiento === null ||
-                !["ANULADO", "Anulado", "anulado"].includes(d.movimiento),
-            )
-            .reduce((acc, d) => acc + Number(d.cantidadQQ || 0), 0);
-
-          const totalLiquidadoRounded = roundToTwo(totalLiquidado);
-          const pendiente = roundToTwo(
-            Number(s.salidaCantidadQQ) - totalLiquidadoRounded,
-          );
-
-          return { salidaID: s.salidaID, pendiente };
-        })
-        .filter((s) => s.pendiente > 0);
+      const pendientes = await calcularPendientes(tx, compradorIdNum, productoIdNum);
 
       if (pendientes.length === 0) {
         throw new Error("NO_PENDIENTES");
+      }
+
+      const totalPendiente = roundToTwo(pendientes.reduce((a, s) => a + s.pendiente, 0));
+      if (cantidad > totalPendiente) {
+        throw new Error(
+          `Cantidad excede lo pendiente de liquidar. Pendiente: ${totalPendiente.toFixed(2)} QQ, Solicitado: ${cantidad.toFixed(2)} QQ`,
+        );
       }
 
       // ----------------------------
@@ -106,32 +82,21 @@ export async function POST(req) {
       // ----------------------------
       // ✔ FIFO automático para detalles de liquidación
       // ----------------------------
-      for (const s of pendientes) {
-        if (cantidad <= 0) break;
-
-        const descontar = roundToTwo(Math.min(s.pendiente, cantidad));
-
-        await tx.detalleliqsalida.create({
-          data: {
-            liqSalidaID: liqSalida.liqSalidaID,
-            salidaID: s.salidaID,
-            cantidadQQ: descontar,
-            movimiento: "Salida",
-          },
-        });
-
-        cantidad = roundToTwo(cantidad - descontar);
-      }
+      await crearDetallesFIFO(tx, liqSalida.liqSalidaID, pendientes, cantidad);
 
       // ----------------------------
-      // ✔ Reducir inventario específico
+      // ✔ Reducir inventario específico (condicionado al saldo, por si otro proceso lo bajó)
       // ----------------------------
-      await tx.inventariocliente.update({
-        where: { inventarioClienteID: inventarioExistente.inventarioClienteID },
-        data: {
-          cantidadQQ: { decrement: cantidadSolicitada },
+      const bajado = await tx.inventariocliente.updateMany({
+        where: {
+          inventarioClienteID: inventarioExistente.inventarioClienteID,
+          cantidadQQ: { gte: cantidad },
         },
+        data: { cantidadQQ: { decrement: cantidad } },
       });
+      if (bajado.count === 0) {
+        throw new Error("Inventario insuficiente para el producto.");
+      }
 
       // Registrar movimiento
       await tx.movimientoinventario.create({
@@ -140,7 +105,7 @@ export async function POST(req) {
           tipoMovimiento: "Salida",
           referenciaTipo: "Liquidación Salida",
           referenciaID: liqSalida.liqSalidaID,
-          cantidadQQ: cantidadSolicitada,
+          cantidadQQ: cantidad,
           nota: `Liquidación de salida #${liqSalida.liqSalidaID} - Comprador ID: ${compradorIdNum}`,
         },
       });
@@ -165,7 +130,11 @@ export async function POST(req) {
       );
     }
 
-    if (error.message && error.message.includes("Inventario insuficiente")) {
+    if (
+      error.message &&
+      (error.message.includes("Inventario insuficiente") ||
+        error.message.includes("Cantidad excede"))
+    ) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 

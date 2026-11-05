@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { menuItem } from "@/lib/menu";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnRuta } from "@/lib/modulos";
 import { Layout, Menu, Button, theme, Grid, Drawer } from "antd";
 import "@/style/menu.css";
 import ProtectedPage from "@/components/ProtectedPage";
@@ -13,6 +15,7 @@ const { useBreakpoint } = Grid;
 
 export default function DashboardLayout({ children }) {
   const screens = useBreakpoint();
+  const acc = usePermisos();
   const [mounted, setMounted] = useState(false); // 🔹 Para evitar SSR mobile flash
   const [collapsed, setCollapsed] = useState(false); // desktop
   const [drawerVisible, setDrawerVisible] = useState(false); // mobile
@@ -59,12 +62,22 @@ export default function DashboardLayout({ children }) {
       };
     });
 
+  // 🔹 Ocultar entradas sin permiso (grupos que quedan vacíos también)
+  const menuFiltrado = menuItem
+    .map((i) =>
+      i.children
+        ? { ...i, children: i.children.filter((c) => puedeEnRuta(acc, c.route)) }
+        : i,
+    )
+    .filter((i) => !i.children || i.children.length)
+    .filter((i) => !i.route || i.key === "logout" || puedeEnRuta(acc, i.route));
+
   const menu = (
     <Menu
       theme="dark"
       mode="inline"
       defaultSelectedKeys={["inicio"]}
-      items={generateMenuItems(menuItem)}
+      items={generateMenuItems(menuFiltrado)}
       style={{ height: "100%", borderRight: 0 }}
     />
   );

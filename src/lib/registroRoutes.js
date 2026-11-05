@@ -11,6 +11,14 @@ export const registroRoutes = [
     ],
   },
   {
+    key: "ventas",
+    grupo: "Salidas",
+    titulo: "Registro de Ventas",
+    descripcion: "Listado de ventas directas por comprador y sus revisiones.",
+    route: "/private/page/transacciones/venta/vista",
+    origenes: ["src/app/private/page/transacciones/venta/page.js"],
+  },
+  {
     key: "depositos",
     grupo: "Entradas",
     titulo: "Registro de Depositos",

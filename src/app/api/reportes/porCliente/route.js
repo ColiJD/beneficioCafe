@@ -1,6 +1,9 @@
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function GET(req) {
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const { searchParams } = new URL(req.url);
     const clienteID = searchParams.get("clienteID");

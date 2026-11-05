@@ -82,6 +82,12 @@ export const menuItems = [
         href: Ruta + "/informe/reportePrestamo",
         image: contrato,
       },
+      {
+        id: 803,
+        name: "Reporte de Secado",
+        href: Ruta + "/secado/reporte",
+        image: Reportes,
+      },
     ],
   },
   {
@@ -165,7 +171,6 @@ export const menuItems = [
         href: Ruta + "/compradores",
         image: prestamo,
       },
-      { id: 504, name: "Usuarios", href: Ruta + "/user", image: eventos },
       {
         id: 505,
         name: "Registros de clientes",
@@ -223,12 +228,15 @@ export const menuItems = [
         href: Ruta + "/secadora",
         image: producto,
       },
-      {
-        id: 803,
-        name: "Reporte de Secado",
-        href: Ruta + "/secado/reporte",
-        image: Reportes,
-      },
+    ],
+  },
+  {
+    id: 9,
+    name: "Administración",
+    image: eventos,
+    subItems: [
+      { id: 504, name: "Usuarios", href: Ruta + "/user", image: eventos },
+      { id: 507, name: "Roles y permisos", href: Ruta + "/roles", image: eventos },
     ],
   },
 ];
@@ -241,6 +249,7 @@ const iconMap = {
   Informe: <FileTextOutlined />,
   "Prestamos y Anticipos": <FileTextOutlined />,
   Registros: <SettingOutlined />,
+  Administración: <UserOutlined />,
   Listado: <UserOutlined />,
   Secado: <AppstoreOutlined />,
 };

@@ -16,6 +16,7 @@ import { obtenerSecadorasSelect, obtenerProductosSelect, obtenerSecados } from "
 import { validarFloatPositivo } from "@/config/validacionesForm";
 import { calcularPesoSecado } from "@/lib/calculoCafe";
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -264,16 +265,16 @@ export default function PageSecado() {
         return (
           <Space size="small">
             {record.estado === "En Proceso" && (
-              <Button
+              <ProtectedButton accion="editar"><Button
                 type="primary"
                 size="small"
                 onClick={() => handleOpenFinalizar(record)}
                 style={{ borderRadius: "6px", fontWeight: 600, fontSize: "12px", background: "#10b981", border: "none" }}
               >
                 FINALIZAR
-              </Button>
+              </Button></ProtectedButton>
             )}
-            <Popconfirm
+            <ProtectedButton accion="eliminar"><Popconfirm
               title="¿Confirma anulación?"
               onConfirm={async () => {
                 const res = await fetch(`/api/secado/${record.secadoId}`, { method: "DELETE" });
@@ -287,7 +288,7 @@ export default function PageSecado() {
               <Tooltip title="Anular Registro">
                 <Button type="text" danger icon={<StopOutlined />} style={{ borderRadius: "6px", fontSize: "12px" }} />
               </Tooltip>
-            </Popconfirm>
+            </Popconfirm></ProtectedButton>
           </Space>
         );
       }
@@ -350,7 +351,7 @@ export default function PageSecado() {
                 fields={fields}
                 onSubmit={handleIniciarSecado}
                 submitting={submitting}
-                button={{ text: "INICIAR PROCESO", onClick: handleIniciarSecado, style: { height: "40px", borderRadius: "8px", width: "100%", fontWeight: 700, fontSize: "14px", background: "#4f46e5" } }}
+                button={{ accion: "crear", text: "INICIAR PROCESO", onClick: handleIniciarSecado, style: { height: "40px", borderRadius: "8px", width: "100%", fontWeight: 700, fontSize: "14px", background: "#4f46e5" } }}
               />
             </Card>
           </Col>

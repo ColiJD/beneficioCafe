@@ -231,9 +231,7 @@ export default function ReporteRegistroSalida() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton
-            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-          >
+          <ProtectedButton accion="editar">
             <Button
               size="small"
               type="default"
@@ -242,7 +240,7 @@ export default function ReporteRegistroSalida() {
             />
           </ProtectedButton>
 
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar">
             <Popconfirm
               title="¿Seguro que deseas eliminar este contrato?"
               onConfirm={() =>
@@ -592,9 +590,7 @@ export default function ReporteRegistroSalida() {
                 acciones: (
                   <div style={{ display: "flex", gap: 6 }}>
                     {/* Botón Editar */}
-                    <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-                    >
+                    <ProtectedButton accion="editar">
                       <Button
                         size="small"
                         type="default"
@@ -665,7 +661,7 @@ export default function ReporteRegistroSalida() {
                     </Popconfirm>
 
                     {/* Botón Eliminar */}
-                    <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+                    <ProtectedButton accion="eliminar">
                       <Popconfirm
                         title="¿Seguro que deseas eliminar esta salida?"
                         onConfirm={() =>
