@@ -9,8 +9,49 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3 {
-  font-weight: 700;
+:root {
+  --tinta: #2A1A10;
+  --papel: #F7F1E3;
+  --campo: #FFFCF5;
+  --fondo: #E4D9BF;
+  --linea: #CDBB94;
+  --suave: #6A5640;
+  --cereza: #A6232B;
+  --hoja: #2F5A3B;
+  --lomo: #33200F;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--font-cuerpo), Arial, Helvetica, sans-serif;
+}
+
+/* Títulos con la tipografía del cuaderno (solo tiene peso normal: sin negrita simulada) */
+h1, h2, h3, h4 {
+  font-family: var(--font-titulo), Georgia, serif;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+::selection {
+  background: var(--cereza);
+  color: #FFF8EC;
+}
+
+* {
+  scrollbar-color: var(--linea) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cereza);
+  outline-offset: 2px;
+}
+
+/* Cantidades alineadas en columnas */
+.ant-table-tbody td,
+.ant-statistic-content {
+  font-variant-numeric: tabular-nums;
 }
 
 * {

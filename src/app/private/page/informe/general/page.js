@@ -127,11 +127,11 @@ export default function ResumenMovimientos() {
           <span style={{ fontWeight: "bold" }}>{formatNumber(v)}</span>
         ),
         onCell: () => ({
-          style: { backgroundColor: "#e6f7ff", fontWeight: "bold" }, // celdas azul claro y negrita
+          style: { backgroundColor: "#F1E7CF", fontWeight: "bold" }, // celdas azul claro y negrita
         }),
         onHeaderCell: () => ({
           style: {
-            backgroundColor: "#1890ff",
+            backgroundColor: "#4A2E16",
             color: "#fff",
             fontWeight: "bold",
             textAlign: "center",
@@ -140,7 +140,7 @@ export default function ResumenMovimientos() {
       })),
       onHeaderCell: () => ({
         style: {
-          backgroundColor: "#1890ff",
+          backgroundColor: "#4A2E16",
           color: "#fff",
           fontWeight: "bold",
           textAlign: "center",
@@ -199,7 +199,7 @@ export default function ResumenMovimientos() {
               return formatNumber(valor);
             },
             onCell: () => ({
-              style: { backgroundColor: "#fff0f6", fontWeight: "bold" }, // color diferente
+              style: { backgroundColor: "#F6E3E0", fontWeight: "bold" }, // color diferente
             }),
             onHeaderCell: () => ({
               style: { textAlign: "center" },
@@ -229,7 +229,7 @@ export default function ResumenMovimientos() {
       ],
       onHeaderCell: () => ({
         style: {
-          backgroundColor: "#1890ff",
+          backgroundColor: "#4A2E16",
           color: "#fff",
           fontWeight: "bold",
           textAlign: "center",
@@ -331,12 +331,12 @@ export default function ResumenMovimientos() {
         align: "left",
         render: (v) => `L. ${formatNumber(v)}`,
         onCell: () => ({
-          style: { backgroundColor: "#e6f7ff", fontWeight: "bold" }, // celdas azul claro y negrita
+          style: { backgroundColor: "#F1E7CF", fontWeight: "bold" }, // celdas azul claro y negrita
         }),
       })),
       onHeaderCell: () => ({
         style: {
-          backgroundColor: "#1890ff",
+          backgroundColor: "#4A2E16",
           color: "#fff",
           fontWeight: "bold",
           align: "left",
@@ -365,7 +365,7 @@ export default function ResumenMovimientos() {
       ),
       onHeaderCell: () => ({
         style: {
-          backgroundColor: "#1890ff",
+          backgroundColor: "#4A2E16",
           color: "#fff",
           fontWeight: "bold",
         },
@@ -487,7 +487,7 @@ export default function ResumenMovimientos() {
       <div
         style={{
           padding: isDesktop ? 24 : 12,
-          background: "#f5f5f5",
+          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -607,7 +607,7 @@ export default function ResumenMovimientos() {
             size="small"
             scroll={{ x: "max-content" }}
             onRow={(record) => ({
-              style: { backgroundColor: "#fffbe6" },
+              style: { backgroundColor: "#F7ECCB" },
             })}
           />
         </Card>
@@ -632,7 +632,7 @@ export default function ResumenMovimientos() {
             size="small"
             scroll={{ x: "max-content" }}
             onRow={(record) => ({
-              style: { backgroundColor: "#fffbe6" },
+              style: { backgroundColor: "#F7ECCB" },
             })}
           />
         </Card>

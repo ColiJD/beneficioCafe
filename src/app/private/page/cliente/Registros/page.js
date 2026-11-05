@@ -60,7 +60,7 @@ export default function ReporteClientes() {
     {
       title: "Nombre",
       render: (_, r) => (
-        <Text style={{ color: "#1890ff" }}>
+        <Text style={{ color: "#4A2E16" }}>
           {r.clienteNombre} {r.clienteApellido}
         </Text>
       ),
@@ -112,7 +112,7 @@ export default function ReporteClientes() {
       <div
         style={{
           padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
+          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -163,8 +163,8 @@ export default function ReporteClientes() {
                   {
                     titulo: "Clientes",
                     valor: estadisticas.totalClientes,
-                    icon: <UserOutlined style={{ color: "#1890ff" }} />,
-                    color: "#1890ff",
+                    icon: <UserOutlined style={{ color: "#4A2E16" }} />,
+                    color: "#4A2E16",
                   },
                 ]}
               />

@@ -202,11 +202,11 @@ export default function PrestamosCompradores() {
       dataIndex: "descripcion",
       width: 250,
       render: (t, r) => {
-        if (r.tipo === "TOTAL") return <Text strong style={{ color: "#1e1b4b" }}>{t}</Text>;
+        if (r.tipo === "TOTAL") return <Text strong style={{ color: "#33200F" }}>{t}</Text>;
         const esInicial = r.tipo?.includes("INICIAL");
         return (
           <Space direction="vertical" size={0}>
-            <Text strong={esInicial} style={{ fontSize: "13px", color: esInicial ? "#4f46e5" : "inherit" }}>{t}</Text>
+            <Text strong={esInicial} style={{ fontSize: "13px", color: esInicial ? "#A6232B" : "inherit" }}>{t}</Text>
             {r.dias && <Text type="secondary" style={{ fontSize: "11px" }}><Badge status="warning" /> {r.dias} das acumulados</Text>}
           </Space>
         );
@@ -224,7 +224,7 @@ export default function PrestamosCompradores() {
   const renderColumnMoney = (val, r) => {
     if (!val) return "";
     return (
-      <Text strong={r.esTotal} style={{ color: r.esTotal ? "inherit" : (r.intCargo ? "#ef4444" : (r.abono ? "#10b981" : "#111827")) }}>
+      <Text strong={r.esTotal} style={{ color: r.esTotal ? "inherit" : (r.intCargo ? "#A6232B" : (r.abono ? "#2F5A3B" : "#2A1A10")) }}>
         {val.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
       </Text>
     );
@@ -260,8 +260,8 @@ export default function PrestamosCompradores() {
       width: 140,
       fixed: isDesktop ? "right" : false,
       render: (v, r) => (
-        <div style={{ padding: "4px 8px", background: r.esTotal ? "#1e1b4b" : "transparent", borderRadius: "6px" }}>
-          <Text strong style={{ fontSize: r.esTotal ? "16px" : "14px", color: r.esTotal ? "#fff" : (v > 0 ? "#ef4444" : "#111827") }}>
+        <div style={{ padding: "4px 8px", background: r.esTotal ? "#33200F" : "transparent", borderRadius: "6px" }}>
+          <Text strong style={{ fontSize: r.esTotal ? "16px" : "14px", color: r.esTotal ? "#fff" : (v > 0 ? "#A6232B" : "#2A1A10") }}>
             L {v?.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
           </Text>
         </div>
@@ -362,25 +362,25 @@ export default function PrestamosCompradores() {
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
-      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ padding: "16px", background: "#F7F1E3", minHeight: "100vh" }}>
         {contextHolder}
         
         <Row gutter={[16, 16]}>
           <Col span={24}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <Title level={2} style={{ margin: 0, fontWeight: 900, color: "#1e1b4b" }}>
+              <Title level={2} style={{ margin: 0, fontWeight: 900, color: "#33200F" }}>
                 <ShopOutlined style={{ marginRight: "8px" }} /> Prstamos Compradores
               </Title>
               <Space>
                 <ProtectedButton accion="crear"><Button icon={<CalculatorOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawerInteres(true)}>CALCULAR INTERES</Button></ProtectedButton>
-                <ProtectedButton accion="crear"><Button type="primary" icon={<PlusOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawer(true)} style={{ background: "#4f46e5" }}>NUEVO MOVIMIENTO</Button></ProtectedButton>
+                <ProtectedButton accion="crear"><Button type="primary" icon={<PlusOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawer(true)} style={{ background: "#A6232B" }}>NUEVO MOVIMIENTO</Button></ProtectedButton>
               </Space>
             </div>
           </Col>
 
           {/* Buscador de Comprador */}
           <Col span={24}>
-            <Card size="small" style={{ borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+            <Card size="small" style={{ borderRadius: "12px", border: "1px solid #E0D3B4" }}>
               <Row gutter={16} align="middle">
                 <Col xs={24} md={12}>
                   <Text strong style={{ display: "block", marginBottom: "4px" }}>Seleccione un Comprador:</Text>
@@ -395,8 +395,8 @@ export default function PrestamosCompradores() {
                 </Col>
                 <Col xs={24} md={12}>
                    {compradorSeleccionado && (
-                     <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px", background: "#f1f5f9", borderRadius: "10px" }}>
-                       <Avatar icon={<UserOutlined />} style={{ background: "#1e1b4b" }} />
+                     <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px", background: "#F1E7CF", borderRadius: "10px" }}>
+                       <Avatar icon={<UserOutlined />} style={{ background: "#33200F" }} />
                        <div>
                          <Text strong style={{ fontSize: "15px" }}>{compradorSeleccionado.compradorNombre}</Text>
                          <Text type="secondary" style={{ display: "block", fontSize: "11px" }}>Auditora de cuenta activa</Text>
@@ -415,17 +415,17 @@ export default function PrestamosCompradores() {
                 <Row gutter={[12, 12]}>
                   <Col xs={24} sm={8}>
                     <Card size="small" style={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                      <Statistic title="DEUDA PRSTAMOS" value={totals.prestamos} prefix="L" precision={2} valueStyle={{ color: "#ef4444", fontWeight: 800 }} />
+                      <Statistic title="DEUDA PRSTAMOS" value={totals.prestamos} prefix="L" precision={2} valueStyle={{ color: "#A6232B", fontWeight: 800 }} />
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Card size="small" style={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                      <Statistic title="DEUDA ANTICIPOS" value={totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#f59e0b", fontWeight: 800 }} />
+                      <Statistic title="DEUDA ANTICIPOS" value={totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#B8801F", fontWeight: 800 }} />
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
-                    <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#1e1b4b" }}>
-                      <Statistic title={<span style={{ color: "#94a3b8" }}>SALDO CONSOLIDADO</span>} value={totals.prestamos + totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#fff", fontWeight: 900 }} />
+                    <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#33200F" }}>
+                      <Statistic title={<span style={{ color: "#8A7760" }}>SALDO CONSOLIDADO</span>} value={totals.prestamos + totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#fff", fontWeight: 900 }} />
                     </Card>
                   </Col>
                 </Row>

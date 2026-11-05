@@ -344,22 +344,22 @@ export default function CajaChicaPage() {
     {
       titulo: "Saldo Inicial",
       valor: formatNumber(totales.saldoInicialView),
-      color: "#1677ff",
+      color: "#4A2E16",
     },
     {
       titulo: "Entradas",
       valor: formatNumber(totales.entradas),
-      color: "#52c41a",
+      color: "#2F5A3B",
     },
     {
       titulo: "Salidas",
       valor: formatNumber(totales.salidas),
-      color: "#ff4d4f",
+      color: "#A6232B",
     },
     {
       titulo: "Balance Actual",
       valor: formatNumber(totales.balance),
-      color: totales.balance >= 0 ? "#52c41a" : "#ff4d4f",
+      color: totales.balance >= 0 ? "#2F5A3B" : "#A6232B",
     },
   ];
 

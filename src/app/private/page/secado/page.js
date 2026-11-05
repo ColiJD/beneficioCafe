@@ -198,7 +198,7 @@ export default function PageSecado() {
       key: "id",
       width: "80px",
       align: "center",
-      render: (id) => <Text strong style={{ color: "#1e1b4b" }}>{id}</Text>
+      render: (id) => <Text strong style={{ color: "#33200F" }}>{id}</Text>
     },
     {
       title: "EQUIPO / PRODUCTO",
@@ -206,11 +206,11 @@ export default function PageSecado() {
       width: "25%",
       render: (_, r) => (
         <Space size="middle">
-          <div style={{ padding: "6px", background: r.estado === "En Proceso" ? "#fef3c7" : "#f1f5f9", borderRadius: "8px" }}>
-            <FireOutlined style={{ fontSize: "16px", color: r.estado === "En Proceso" ? "#f59e0b" : "#64748b" }} />
+          <div style={{ padding: "6px", background: r.estado === "En Proceso" ? "#fef3c7" : "#F1E7CF", borderRadius: "8px" }}>
+            <FireOutlined style={{ fontSize: "16px", color: r.estado === "En Proceso" ? "#B8801F" : "#6A5640" }} />
           </div>
           <div>
-            <Text strong style={{ fontSize: "14px", color: "#111827", display: "block" }}>{r.secadora?.nombre || "—"}</Text>
+            <Text strong style={{ fontSize: "14px", color: "#2A1A10", display: "block" }}>{r.secadora?.nombre || "—"}</Text>
             <Text type="secondary" style={{ fontSize: "11px" }}>{r.producto?.productName || "—"}</Text>
           </div>
         </Space>
@@ -222,7 +222,7 @@ export default function PageSecado() {
       align: "center",
       render: (_, r) => (
         <div>
-          <Text strong style={{ fontSize: "15px", color: "#4f46e5", display: "block" }}>{r.cantidadEntradaQQ} QQ</Text>
+          <Text strong style={{ fontSize: "15px", color: "#A6232B", display: "block" }}>{r.cantidadEntradaQQ} QQ</Text>
           <Tag color="cyan" style={{ border: "none", borderRadius: "8px", fontSize: "10px", lineHeight: "1.5" }}>{r.humedadInicial || "—"}% HUM</Tag>
         </div>
       )
@@ -246,7 +246,7 @@ export default function PageSecado() {
       align: "center",
       render: (_, r) => r.cantidadSalidaQQ ? (
         <div>
-          <Text strong style={{ fontSize: "15px", color: "#16a34a", display: "block" }}>{r.cantidadSalidaQQ} QQ</Text>
+          <Text strong style={{ fontSize: "15px", color: "#2F5A3B", display: "block" }}>{r.cantidadSalidaQQ} QQ</Text>
           <Tag color="green" style={{ border: "none", borderRadius: "8px", fontSize: "10px", lineHeight: "1.5" }}>{r.humedadFinal}% HUM</Tag>
         </div>
       ) : (
@@ -269,7 +269,7 @@ export default function PageSecado() {
                 type="primary"
                 size="small"
                 onClick={() => handleOpenFinalizar(record)}
-                style={{ borderRadius: "6px", fontWeight: 600, fontSize: "12px", background: "#10b981", border: "none" }}
+                style={{ borderRadius: "6px", fontWeight: 600, fontSize: "12px", background: "#2F5A3B", border: "none" }}
               >
                 FINALIZAR
               </Button></ProtectedButton>
@@ -313,12 +313,12 @@ export default function PageSecado() {
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
-      <div style={{ padding: "16px", maxWidth: "1600px", margin: "0 auto", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ padding: "16px", maxWidth: "1600px", margin: "0 auto", background: "#F7F1E3", minHeight: "100vh" }}>
         {contextHolder}
 
         <Row gutter={[16, 16]}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, fontWeight: 900, letterSpacing: "-1px", color: "#1e1b4b" }}>Control de Secado</Title>
+            <Title level={2} style={{ margin: 0, fontWeight: 900, letterSpacing: "-1px", color: "#33200F" }}>Control de Secado</Title>
           </Col>
 
           {/* ALERTA INFORMATIVA */}
@@ -345,30 +345,30 @@ export default function PageSecado() {
               size="small"
               title={<span style={{ fontWeight: 800, fontSize: "14px" }}><PlayCircleOutlined /> REGISTRAR INICIO DE SECADO</span>}
               bordered={false}
-              style={{ borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", border: "1px solid #e5e7eb" }}
+              style={{ borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", border: "1px solid #E0D3B4" }}
             >
               <Formulario
                 fields={fields}
                 onSubmit={handleIniciarSecado}
                 submitting={submitting}
-                button={{ accion: "crear", text: "INICIAR PROCESO", onClick: handleIniciarSecado, style: { height: "40px", borderRadius: "8px", width: "100%", fontWeight: 700, fontSize: "14px", background: "#4f46e5" } }}
+                button={{ accion: "crear", text: "INICIAR PROCESO", onClick: handleIniciarSecado, style: { height: "40px", borderRadius: "8px", width: "100%", fontWeight: 700, fontSize: "14px", background: "#A6232B" } }}
               />
             </Card>
           </Col>
 
           {/* BUSCADOR POR ID */}
           <Col span={24}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", background: "white", padding: "10px 16px", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", background: "white", padding: "10px 16px", borderRadius: "12px", border: "1px solid #E0D3B4" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ fontWeight: 800, fontSize: "15px", color: "#4b5563" }}><NumberOutlined /> PROCESOS ACTIVOS</span>
-                <Badge count={enProceso} overflowCount={99} color="#f59e0b" size="small" />
+                <Badge count={enProceso} overflowCount={99} color="#B8801F" size="small" />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <Text type="secondary" style={{ fontSize: "12px" }}>Para finalizar o anular un registro:</Text>
                 <Input 
                   placeholder="Introduzca ID..." 
-                  prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
-                  style={{ width: "250px", height: "36px", borderRadius: "8px", border: "1px solid #4f46e5" }}
+                  prefix={<SearchOutlined style={{ color: "#8A7760" }} />}
+                  style={{ width: "250px", height: "36px", borderRadius: "8px", border: "1px solid #A6232B" }}
                   value={searchText}
                   onChange={e => setSearchText(e.target.value)}
                   allowClear
@@ -417,13 +417,13 @@ export default function PageSecado() {
           width={620}
           centered
           okText="Finalizar y Liberar Máquina"
-          okButtonProps={{ style: { height: "40px", borderRadius: "8px", fontWeight: 700, background: "#10b981" } }}
+          okButtonProps={{ style: { height: "40px", borderRadius: "8px", fontWeight: 700, background: "#2F5A3B" } }}
           bodyStyle={{ padding: "16px" }}
         >
           {selectedSecado && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Info del registro */}
-              <div style={{ padding: "8px 16px", background: "#f3f4f6", borderRadius: "8px" }}>
+              <div style={{ padding: "8px 16px", background: "#EFE6D0", borderRadius: "8px" }}>
                 <Text type="secondary">ID de Registro: </Text>
                 <Text strong>#{selectedSecado.secadoId}</Text>
                 <span style={{ margin: "0 12px", color: "#d1d5db" }}>|</span>
@@ -434,17 +434,17 @@ export default function PageSecado() {
               {/* Datos de entrada */}
               <Row gutter={12}>
                 <Col span={12}>
-                  <Card size="small" style={{ background: "#f8fafc", borderRadius: "8px" }}>
+                  <Card size="small" style={{ background: "#F7F1E3", borderRadius: "8px" }}>
                     <Statistic
                       title="QQ Oro Entrada"
                       value={selectedSecado.cantidadEntradaQQ}
                       suffix="QQ"
-                      valueStyle={{ fontSize: "20px", color: "#4f46e5", fontWeight: 900 }}
+                      valueStyle={{ fontSize: "20px", color: "#A6232B", fontWeight: 900 }}
                     />
                   </Card>
                 </Col>
                 <Col span={12}>
-                  <Card size="small" style={{ background: "#f8fafc", borderRadius: "8px" }}>
+                  <Card size="small" style={{ background: "#F7F1E3", borderRadius: "8px" }}>
                     <Statistic
                       title="Humedad Inicial"
                       value={selectedSecado.humedadInicial || 0}
@@ -470,7 +470,7 @@ export default function PageSecado() {
               />
 
               {/* Humedad final + sugerido */}
-              <div style={{ padding: "16px", background: "white", border: "1px solid #f1f5f9", borderRadius: "12px" }}>
+              <div style={{ padding: "16px", background: "white", border: "1px solid #F1E7CF", borderRadius: "12px" }}>
                 <Row gutter={16} align="middle">
                   <Col span={12}>
                     <Text strong style={{ display: "block", marginBottom: "4px", fontSize: "13px" }}>HUMEDAD FINAL (%)</Text>
@@ -487,7 +487,7 @@ export default function PageSecado() {
                       value={calculadoSugerido}
                       precision={2}
                       suffix="QQ Oro"
-                      valueStyle={{ color: "#4f46e5", fontWeight: 900, fontSize: "20px" }}
+                      valueStyle={{ color: "#A6232B", fontWeight: 900, fontSize: "20px" }}
                     />
                   </Col>
                 </Row>

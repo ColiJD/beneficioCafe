@@ -138,7 +138,7 @@ export default function DetalleCafePage() {
       key: "cliente",
       render: (_, r) => (
         <Space size="small">
-          <Avatar size="small" style={{ backgroundColor: "#f1f5f9", color: "#64748b" }}>{r.clienteNombre?.[0]}</Avatar>
+          <Avatar size="small" style={{ backgroundColor: "#F1E7CF", color: "#6A5640" }}>{r.clienteNombre?.[0]}</Avatar>
           <Text strong style={{ fontSize: "13px" }}>{r.clienteNombre} {r.clienteApellido}</Text>
         </Space>
       )
@@ -155,7 +155,7 @@ export default function DetalleCafePage() {
       key: "cantidadQQ",
       align: "right",
       render: (val, r) => (
-        <Text strong style={{ fontSize: "15px", color: r.tipoMovimiento === "Entrada" ? "#10b981" : "#ef4444" }}>
+        <Text strong style={{ fontSize: "15px", color: r.tipoMovimiento === "Entrada" ? "#2F5A3B" : "#A6232B" }}>
           {r.tipoMovimiento === "Entrada" ? "+" : "-"} {truncarDosDecimalesSinRedondear(val)}
         </Text>
       )
@@ -164,7 +164,7 @@ export default function DetalleCafePage() {
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
-      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ padding: "16px", background: "#F7F1E3", minHeight: "100vh" }}>
         
         <Row gutter={[16, 16]}>
           <Col span={24}>
@@ -181,7 +181,7 @@ export default function DetalleCafePage() {
                 icon={<FilePdfOutlined />} 
                 type="primary" 
                 onClick={handleExport}
-                style={{ background: "#4f46e5" }}
+                style={{ background: "#A6232B" }}
               >
                 Exportar PDF
               </Button>
@@ -193,18 +193,18 @@ export default function DetalleCafePage() {
             <Row gutter={[12, 12]}>
               <Col xs={12} sm={8}>
                 <Card size="small" style={{ borderRadius: "12px", border: "none" }}>
-                  <Statistic title="TOTAL ENTRADAS" value={stats.totalEntradas} suffix="QQ" precision={2} valueStyle={{ color: "#10b981" }} prefix={<RiseOutlined />} />
+                  <Statistic title="TOTAL ENTRADAS" value={stats.totalEntradas} suffix="QQ" precision={2} valueStyle={{ color: "#2F5A3B" }} prefix={<RiseOutlined />} />
                 </Card>
               </Col>
               <Col xs={12} sm={8}>
                 <Card size="small" style={{ borderRadius: "12px", border: "none" }}>
-                  <Statistic title="TOTAL SALIDAS" value={stats.totalSalidas} suffix="QQ" precision={2} valueStyle={{ color: "#ef4444" }} prefix={<FallOutlined />} />
+                  <Statistic title="TOTAL SALIDAS" value={stats.totalSalidas} suffix="QQ" precision={2} valueStyle={{ color: "#A6232B" }} prefix={<FallOutlined />} />
                 </Card>
               </Col>
               <Col xs={24} sm={8}>
-                <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#1e1b4b" }}>
+                <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#33200F" }}>
                   <Statistic 
-                    title={<span style={{ color: "#94a3b8" }}>SALDO ACTUAL EN BODEGA</span>} 
+                    title={<span style={{ color: "#8A7760" }}>SALDO ACTUAL EN BODEGA</span>} 
                     value={stats.balance} 
                     suffix="QQ" 
                     precision={2} 

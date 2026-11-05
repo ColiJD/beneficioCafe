@@ -167,7 +167,7 @@ export default function DashboardLayout({ children }) {
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "12px 16px",
-                background: "#001529",
+                background: "#33200F",
               }}
             >
               <h1
@@ -195,7 +195,7 @@ export default function DashboardLayout({ children }) {
               style={{
                 alignItems: "center",
 
-                background: "#001529",
+                background: "#33200F",
               }}
             >
               <CajaChicaBalanceWidget collapsed={false} />

@@ -119,7 +119,7 @@ export default function ReporteLiqSalida() {
       title: "Comprador",
       dataIndex: ["compradores", "compradorNombre"],
       width: 200,
-      render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+      render: (text) => <Text style={{ color: "#4A2E16" }}>{text}</Text>,
     },
     {
       title: "Producto",
@@ -254,7 +254,7 @@ export default function ReporteLiqSalida() {
       <div
         style={{
           padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
+          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -309,13 +309,13 @@ export default function ReporteLiqSalida() {
                   {
                     titulo: "Registros",
                     valor: estadisticas.totalRegistros,
-                    icon: <UserOutlined style={{ color: "#1890ff" }} />,
-                    color: "#1890ff",
+                    icon: <UserOutlined style={{ color: "#4A2E16" }} />,
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#fa8c16",
+                    color: "#B8801F",
                   },
                 ]}
               />

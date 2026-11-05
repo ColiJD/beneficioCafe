@@ -43,7 +43,7 @@ export default function NotificationDrawer({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <BellOutlined
               style={{
-                color: "#1677ff",
+                color: "#4A2E16",
                 fontSize: 22,
                 background: "#e6f4ff",
                 padding: 6,
@@ -55,7 +55,7 @@ export default function NotificationDrawer({
                 style={{
                   fontWeight: 700,
                   fontSize: 16,
-                  color: "#1677ff",
+                  color: "#4A2E16",
                   lineHeight: "18px",
                 }}
               >
@@ -70,7 +70,7 @@ export default function NotificationDrawer({
           <Badge
             count={totalCount}
             size="default"
-            style={{ backgroundColor: "#52c41a" }}
+            style={{ backgroundColor: "#2F5A3B" }}
           />
         </div>
       }
@@ -113,7 +113,7 @@ export default function NotificationDrawer({
             padding: "2rem 0",
           }}
         >
-          <BellOutlined style={{ fontSize: 40, color: "#d9d9d9" }} />
+          <BellOutlined style={{ fontSize: 40, color: "#CDBB94" }} />
           <p style={{ marginTop: 10 }}>No hay notificaciones pendientes</p>
         </div>
       ) : isGrouped ? (
@@ -121,7 +121,7 @@ export default function NotificationDrawer({
           <div key={index} style={{ marginBottom: 16 }}>
             <h4
               style={{
-                color: "#1677ff",
+                color: "#4A2E16",
                 fontWeight: 600,
                 marginBottom: 8,
               }}
@@ -144,7 +144,7 @@ export default function NotificationDrawer({
                   <List.Item.Meta
                     avatar={
                       <BellOutlined
-                        style={{ color: "#1677ff", fontSize: 18, marginTop: 4 }}
+                        style={{ color: "#4A2E16", fontSize: 18, marginTop: 4 }}
                       />
                     }
                     title={<span style={{ fontWeight: 500 }}>{item}</span>}
@@ -171,7 +171,7 @@ export default function NotificationDrawer({
               <List.Item.Meta
                 avatar={
                   <BellOutlined
-                    style={{ color: "#1677ff", fontSize: 18, marginTop: 4 }}
+                    style={{ color: "#4A2E16", fontSize: 18, marginTop: 4 }}
                   />
                 }
                 title={<span style={{ fontWeight: 500 }}>{item}</span>}

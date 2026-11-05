@@ -1,6 +1,6 @@
 .eventos-container {
   padding: 1rem;
-  font-family: "Montserrat", sans-serif;
+  font-family: var(--font-cuerpo), sans-serif;
 }
 
 .eventos-title {
@@ -24,19 +24,19 @@
 .eventos-table th,
 .eventos-table td {
   padding: 0.6rem 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #CDBB94;
   text-align: left;
   vertical-align: middle;
   font-size: 0.875rem;
 }
 
 .eventos-table th {
-  background-color: #f5f5f5;
+  background-color: #EFE6D0;
   font-weight: 600;
 }
 
 .eventos-table tbody tr:nth-child(even) {
-  background-color: #fafafa;
+  background-color: #FBF7EC;
 }
 
 .eventos-right {
@@ -88,7 +88,7 @@
     justify-content: space-between;
     padding: 0.5rem 0;
     border: none;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #E0D3B4;
     font-size: 0.9rem;
   }
 

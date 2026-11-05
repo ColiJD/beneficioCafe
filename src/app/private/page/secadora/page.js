@@ -139,11 +139,11 @@ export default function PageSecadoras() {
       width: "30%",
       render: (_, r) => (
         <Space size="small">
-          <div style={{ padding: "6px", background: "#f3f4f6", borderRadius: "8px" }}>
-            <BuildOutlined style={{ fontSize: "16px", color: "#6366f1" }} />
+          <div style={{ padding: "6px", background: "#EFE6D0", borderRadius: "8px" }}>
+            <BuildOutlined style={{ fontSize: "16px", color: "#C2543A" }} />
           </div>
           <div>
-            <Text strong style={{ fontSize: "14px", color: "#111827", display: "block" }}>{r.data.nombre}</Text>
+            <Text strong style={{ fontSize: "14px", color: "#2A1A10", display: "block" }}>{r.data.nombre}</Text>
             <Text type="secondary" style={{ fontSize: "11px" }}>{r.data.tipo || "Sin tipo"}</Text>
           </div>
         </Space>
@@ -156,7 +156,7 @@ export default function PageSecadoras() {
       align: "center",
       render: (v) => (
         <div>
-          <Text strong style={{ fontSize: "15px", color: "#4f46e5" }}>{v}</Text>
+          <Text strong style={{ fontSize: "15px", color: "#A6232B" }}>{v}</Text>
           <Text type="secondary" style={{ marginLeft: "4px", fontSize: "12px" }}>QQ</Text>
         </div>
       )
@@ -189,7 +189,7 @@ export default function PageSecadoras() {
             <Button
               type="text"
               size="small"
-              icon={<EditOutlined style={{ color: "#4f46e5" }} />}
+              icon={<EditOutlined style={{ color: "#A6232B" }} />}
               onClick={() => handleEdit(record)}
               style={{ borderRadius: "6px" }}
             />
@@ -211,17 +211,17 @@ export default function PageSecadoras() {
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA"]}>
-      <div style={{ padding: "16px", maxWidth: "1400px", margin: "0 auto", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ padding: "16px", maxWidth: "1400px", margin: "0 auto", background: "#F7F1E3", minHeight: "100vh" }}>
         {contextHolder}
 
         <Row gutter={[16, 16]}>
           <Col span={24}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
               <div>
-                <Title level={2} style={{ margin: 0, fontWeight: 900, letterSpacing: "-1px", color: "#1e1b4b" }}>Secadoras</Title>
+                <Title level={2} style={{ margin: 0, fontWeight: 900, letterSpacing: "-1px", color: "#33200F" }}>Secadoras</Title>
               </div>
-              <Badge count={secadoras.length} color="#6366f1" size="small">
-                <div style={{ padding: "6px 16px", background: "white", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
+              <Badge count={secadoras.length} color="#C2543A" size="small">
+                <div style={{ padding: "6px 16px", background: "white", borderRadius: "10px", border: "1px solid #E0D3B4" }}>
                   <Text strong style={{ fontSize: "12px" }}>Total de Equipos</Text>
                 </div>
               </Badge>
@@ -235,7 +235,7 @@ export default function PageSecadoras() {
               title={<span style={{ fontWeight: 800, fontSize: "15px" }}>{selectedSecadora ? "MODIFICAR SECADORA" : "REGISTRAR NUEVA SECADORA"}</span>}
               bordered={false}
               extra={selectedSecadora && <Button type="link" size="small" danger onClick={resetForm}>Cancelar</Button>}
-              style={{ borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", border: selectedSecadora ? "2px solid #6366f1" : "1px solid #e5e7eb" }}
+              style={{ borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", border: selectedSecadora ? "2px solid #C2543A" : "1px solid #E0D3B4" }}
             >
               <Formulario
                 fields={fields}

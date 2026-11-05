@@ -70,7 +70,7 @@ export default function CajaChicaBalanceWidget({ collapsed }) {
         }}
         title="Caja Chica"
       >
-        <WalletOutlined style={{ fontSize: "20px", color: "#52c41a" }} />
+        <WalletOutlined style={{ fontSize: "20px", color: "#E8C98B" }} />
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function CajaChicaBalanceWidget({ collapsed }) {
             value={balance}
             precision={2}
             valueStyle={{
-              color: "#52c41a",
+              color: "#E8C98B",
               fontSize: "18px",
               fontWeight: "bold",
             }}

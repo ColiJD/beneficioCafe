@@ -20,7 +20,7 @@ const leer = (archivo) => new Promise((ok, mal) => {
 function Imagen({ titulo, actual, nuevo, onElegir }) {
   return (
     <Card size="small" title={titulo}>
-      <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, background: "#fafafa" }}>
+      <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, background: "#FBF7EC" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={nuevo || actual} alt={titulo} style={{ maxHeight: 110, maxWidth: "100%" }} />
       </div>

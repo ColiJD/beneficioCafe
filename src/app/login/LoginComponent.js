@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
-import { Form, Input, Button, Card, message, Modal, Row, Col } from "antd";
+import { Form, Input, Button, message, Modal } from "antd";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import useEmpresa from "@/components/useEmpresa";
+import EscenaGranos from "./EscenaGranos";
+import "@/style/login.css";
 
 export default function LoginComponent() {
   const empresa = useEmpresa();
@@ -52,103 +54,84 @@ export default function LoginComponent() {
     }
   };
 
+  const lugar = [empresa.ciudad, empresa.pais].filter(Boolean).join(", ");
+  const contacto = [lugar, empresa.telefono].filter(Boolean).join(" · ");
+  const cosecha = empresa.cosecha?.nombre;
+
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        backgroundColor: "#f3f4f6",
-        padding: 16,
-      }}
-    >
+    <div className="lg-raiz">
       {contextHolder}
-      <Row justify="center" style={{ width: "100%" }}>
-        <Col xs={24} sm={20} md={16} lg={12} xl={8}>
-          <Card
-            style={{
-              width: "100%",
-              padding: 24,
-              textAlign: "center",
-              borderRadius: 16,
-              boxShadow: "0px 6px 18px rgba(0,0,0,0.1)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: 16,
-              }}
+      <section className="lg-escena">
+        <EscenaGranos />
+        <div className="lg-vineta" aria-hidden="true" />
+        {cosecha && (
+          <svg className="lg-sello" aria-hidden="true" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" strokeWidth="3" />
+            <circle cx="60" cy="60" r="48" fill="none" stroke="currentColor" strokeWidth="1" />
+            <path id="lg-arco" d="M60,60 m-39,0 a39,39 0 1,1 78,0 a39,39 0 1,1 -78,0" fill="none" />
+            <text fontFamily="monospace" fontSize="9.5" letterSpacing="2.2" fill="currentColor">
+              <textPath href="#lg-arco">{`COSECHA · ${cosecha.slice(0, 12).toUpperCase()} ·`}</textPath>
+            </text>
+            <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <ellipse cx="60" cy="60" rx="11" ry="17" transform="rotate(35 60 60)" />
+              <path d="M53 50c6 3 9 9 14 20" />
+            </g>
+          </svg>
+        )}
+        <div className="lg-marca">
+          <h1>{empresa.nombre}</h1>
+          <p>Del cafetal a la taza.</p>
+          {contacto && <small>{contacto}</small>}
+        </div>
+      </section>
+
+      <section className="lg-form">
+        <div className="lg-tarjeta">
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+            <Image
+              src={empresa.logo}
+              unoptimized
+              alt={`Logo ${empresa.nombre}`}
+              width={160}
+              height={96}
+              style={{ objectFit: "contain" }}
+            />
+          </div>
+
+          <h2>Iniciar Sesión</h2>
+
+          <Form layout="vertical" onFinish={onFinish}>
+            <Form.Item
+              label="Correo"
+              name="email"
+              rules={[
+                { required: true, message: "Ingrese su correo" },
+                { type: "email", message: "Ingrese un correo válido" },
+              ]}
             >
-              <Image
-                src={empresa.logo}
-                unoptimized
-                alt={`Logo ${empresa.nombre}`}
-                width={200}
-                height={120}
-                style={{
-                
-                  boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
-                  objectFit: "cover",
-                }}
-              />
-            </div>
+              <Input placeholder="ejemplo@correo.com" size="large" />
+            </Form.Item>
 
-            <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
-              Iniciar Sesión
-            </h2>
-
-            <Form layout="vertical" onFinish={onFinish}>
-              <Form.Item
-                label="Correo"
-                name="email"
-                rules={[
-                  { required: true, message: "Ingrese su correo" },
-                  { type: "email", message: "Ingrese un correo válido" },
-                ]}
-              >
-                <Input placeholder="ejemplo@correo.com" />
-              </Form.Item>
-
-              <Form.Item
-                label="Contraseña"
-                name="password"
-                rules={[{ required: true, message: "Ingrese su contraseña" }]}
-              >
-                <Input.Password placeholder="********" />
-              </Form.Item>
-
-              <Form.Item>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  block
-                  style={{ borderRadius: 8 }}
-                >
-                  Ingresar
-                </Button>
-              </Form.Item>
-            </Form>
-
-            <button
-              onClick={() => setIsModalOpen(true)}
-              style={{
-                marginTop: 8,
-                fontSize: 14,
-                color: "#1677ff",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-              }}
+            <Form.Item
+              label="Contraseña"
+              name="password"
+              rules={[{ required: true, message: "Ingrese su contraseña" }]}
             >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </Card>
-        </Col>
-      </Row>
+              <Input.Password placeholder="********" size="large" />
+            </Form.Item>
+
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={loading} block size="large">
+                Ingresar
+              </Button>
+            </Form.Item>
+          </Form>
+
+          <button className="lg-olvido" onClick={() => setIsModalOpen(true)}>
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+      </section>
 
       {/* Modal recuperación */}
       <Modal

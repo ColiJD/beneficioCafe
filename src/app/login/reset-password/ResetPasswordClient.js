@@ -62,7 +62,7 @@ export default function ResetPassword({ token }) {
           justifyContent: "center",
           alignItems: "center",
           minHeight: "100vh",
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "#EFE6D0",
         }}
       >
         <Spin spinning={true} tip="Verificando enlace..." size="large">
@@ -88,7 +88,7 @@ export default function ResetPassword({ token }) {
           justifyContent: "center",
           alignItems: "center",
           minHeight: "100vh",
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "#EFE6D0",
           padding: 16,
         }}
       >
@@ -115,7 +115,7 @@ export default function ResetPassword({ token }) {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundColor: "#f3f4f6",
+        backgroundColor: "#EFE6D0",
       }}
     >
       {contextHolder}

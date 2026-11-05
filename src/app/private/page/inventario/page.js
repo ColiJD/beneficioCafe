@@ -99,7 +99,7 @@ export default function InventarioActualPage() {
             shape="square" 
             size="large" 
             icon={<DropboxOutlined />} 
-            style={{ backgroundColor: "#f1f5f9", color: "#4f46e5" }}
+            style={{ backgroundColor: "#F1E7CF", color: "#A6232B" }}
           />
           <div>
             <Text strong style={{ fontSize: "14px", display: "block" }}>{record.productName}</Text>
@@ -116,7 +116,7 @@ export default function InventarioActualPage() {
       sorter: (a, b) => a.cantidadQQ - b.cantidadQQ,
       render: (val) => (
         <div style={{ textAlign: "right" }}>
-          <Text strong style={{ fontSize: "16px", color: val > 0 ? "#1e1b4b" : "#94a3b8" }}>
+          <Text strong style={{ fontSize: "16px", color: val > 0 ? "#33200F" : "#8A7760" }}>
             {val.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
           </Text>
           <Text type="secondary" style={{ display: "block", fontSize: "10px" }}>QUINTALES ORO</Text>
@@ -143,7 +143,7 @@ export default function InventarioActualPage() {
             type="text" 
             icon={<ArrowRightOutlined />} 
             onClick={() => router.push(`/private/page/inventario/${record.productoID}`)}
-            style={{ color: "#4f46e5" }}
+            style={{ color: "#A6232B" }}
           />
         </Tooltip>
       )
@@ -160,13 +160,13 @@ export default function InventarioActualPage() {
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}>
-      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ padding: "16px", background: "#F7F1E3", minHeight: "100vh" }}>
         {contextHolder}
 
         <Row gutter={[16, 16]}>
           <Col span={24}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <Title level={2} style={{ margin: 0, fontWeight: 900, color: "#1e1b4b" }}>
+              <Title level={2} style={{ margin: 0, fontWeight: 900, color: "#33200F" }}>
                 <AppstoreOutlined style={{ marginRight: "8px" }} /> Inventario General
               </Title>
               <Space>
@@ -176,7 +176,7 @@ export default function InventarioActualPage() {
                   type="primary" 
                   icon={<HistoryOutlined />} 
                   onClick={() => router.push("/private/page/inventario/transferir")}
-                  style={{ background: "#4f46e5" }}
+                  style={{ background: "#A6232B" }}
                 >
                   TRANSFERENCIAS
                 </Button>
@@ -189,7 +189,7 @@ export default function InventarioActualPage() {
             <Row gutter={[12, 12]}>
               <Col xs={12} sm={8}>
                 <Card size="small" style={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                  <Statistic title="PRODUCTOS ACTIVOS" value={stats.activeProducts} prefix={<DropboxOutlined />} valueStyle={{ color: "#4f46e5", fontWeight: 800 }} />
+                  <Statistic title="PRODUCTOS ACTIVOS" value={stats.activeProducts} prefix={<DropboxOutlined />} valueStyle={{ color: "#A6232B", fontWeight: 800 }} />
                 </Card>
               </Col>
               <Col xs={12} sm={8}>
@@ -198,9 +198,9 @@ export default function InventarioActualPage() {
                 </Card>
               </Col>
               <Col xs={24} sm={8}>
-                <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#1e1b4b" }}>
+                <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#33200F" }}>
                   <Statistic 
-                    title={<span style={{ color: "#94a3b8" }}>CARGA TOTAL DISPONIBLE</span>} 
+                    title={<span style={{ color: "#8A7760" }}>CARGA TOTAL DISPONIBLE</span>} 
                     value={stats.totalWeight} 
                     suffix="QQ" 
                     precision={2} 
@@ -218,7 +218,7 @@ export default function InventarioActualPage() {
               title={
                 <Input
                   placeholder="Buscar producto por nombre o ID..."
-                  prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+                  prefix={<SearchOutlined style={{ color: "#8A7760" }} />}
                   onChange={(e) => setSearchText(e.target.value)}
                   style={{ width: "100%", maxWidth: "400px", borderRadius: "8px", margin: "8px 0" }}
                   allowClear

@@ -168,7 +168,7 @@ export default function Reportedetallecontrato() {
       title: "Comprador",
       dataIndex: "nombreCliente",
       width: 200,
-      render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+      render: (text) => <Text style={{ color: "#4A2E16" }}>{text}</Text>,
     },
     { title: "Tipo de Café", dataIndex: "tipoCafe", width: 150 },
     {
@@ -378,7 +378,7 @@ export default function Reportedetallecontrato() {
       <div
         style={{
           padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
+          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -457,17 +457,17 @@ export default function Reportedetallecontrato() {
                   {
                     titulo: "Registros",
                     valor: estadisticas.totalRegistros,
-                    color: "#1890ff",
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#fa8c16",
+                    color: "#B8801F",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps,
-                    color: "#52c41a",
+                    color: "#2F5A3B",
                   },
                 ]}
               />

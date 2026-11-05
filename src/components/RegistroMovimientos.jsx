@@ -423,7 +423,7 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
         <div
           style={{
             padding: isDesktop ? "24px" : "12px",
-            background: "#f5f5f5",
+            background: "#EFE6D0",
             minHeight: "100vh",
           }}
         >
