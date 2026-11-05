@@ -72,6 +72,8 @@ test("respuestaError: error de negocio → 400 con mensaje; otro → 500 genéri
   console.error = errorOriginal;
   assert.equal(r2.status, 500);
   assert.deepEqual(await r2.json(), { error: "Error al anular" }); // no expone el detalle interno
+  const r3 = respuestaError(Object.assign(new Error("deadlock"), { code: "P2034" }), "x");
+  assert.equal(r3.status, 409);
 });
 
 test("calcularPendientes descuenta lo liquidado, ignora anulados y la liquidación excluida", async () => {

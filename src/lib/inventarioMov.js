@@ -59,6 +59,10 @@ export function respuestaError(error, mensaje) {
   if (error instanceof ErrorNegocio) {
     return Response.json({ error: error.message }, { status: error.status });
   }
+  if (error?.code === "P2034") {
+    // Conflicto o deadlock entre transacciones simultáneas: no se guardó nada, se puede reintentar.
+    return Response.json({ error: "Otra operación se registró al mismo tiempo. Intente de nuevo." }, { status: 409 });
+  }
   console.error(mensaje, error);
   return Response.json({ error: mensaje }, { status: 500 });
 }

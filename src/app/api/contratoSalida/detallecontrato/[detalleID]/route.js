@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
-import { ErrorNegocio, esAnulado, noAnulado, respuestaError } from "@/lib/inventarioMov";
+import { ErrorNegocio, esAnulado, noAnulado, moverInventario, respuestaError } from "@/lib/inventarioMov";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
@@ -299,17 +299,8 @@ export async function PUT(request, { params }) {
 
       if (diferencia !== 0) {
         // Obtenemos o creamos el registro de inventario para este producto
-        const inventario = await tx.inventariocliente.upsert({
-          where: { productoID: contrato.contratoTipoCafe },
-          update: {
-            cantidadQQ: { decrement: diferencia }, // prisma maneja incremento negativo como decremento, pero usamos decrement por claridad
-          },
-          create: {
-            productoID: contrato.contratoTipoCafe,
-            cantidadQQ: -diferencia,
-            cantidadSacos: 0,
-          },
-        });
+        // Más entrega = resta (solo si el saldo alcanza); menos entrega = devuelve
+        const inventario = await moverInventario(tx, contrato.contratoTipoCafe, -diferencia);
 
         await tx.movimientoinventario.create({
           data: {
@@ -362,10 +353,6 @@ export async function PUT(request, { params }) {
 
     return Response.json(resultado, { status: 200 });
   } catch (error) {
-    console.error("Error en PUT /api/contratos/entregar:", error);
-    return Response.json(
-      { error: error?.message || "Error al actualizar entrega" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al actualizar entrega");
   }
 }

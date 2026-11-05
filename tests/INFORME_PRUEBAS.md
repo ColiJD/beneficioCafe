@@ -71,13 +71,18 @@ TEST_URL=http://localhost:3001 npm run test:e2e
    - **Bajo:** no había mínimo de contraseña. Ahora son 8 caracteres, en el API y en el formulario.
    - **Bajo:** cuerpos inválidos (sin JSON, objetos en lugar de texto) daban 500. Ahora dan 400.
 
-**Total después de las correcciones: 68 de 68 pruebas pasan** (26 unitarias, 13 de integración y 29 por HTTP).
+7. **Medio, inventario:** el mismo problema de la venta directa estaba en otras tres transacciones: entregar un contrato de salida, editar esa entrega y empezar un secado. Validaban el saldo y después restaban sin condición. Ahora las tres descuentan con `moverInventario`. Con esto, todas las transacciones que restan inventario usan el descuento protegido.
+   - **Inicio de secado:** dos secados a la vez en la misma secadora producían un deadlock de MySQL y respondían 500. Ahora la secadora se bloquea primero y el segundo espera su turno.
+   - **Respuestas de error:** cualquier conflicto entre transacciones simultáneas (Prisma `P2034`) responde 409, "intente de nuevo". Estas rutas ya no devuelven al usuario mensajes internos de la base: el saldo insuficiente da 400 con su mensaje, y cualquier otro error da 500 con un texto genérico.
+
+**Total después de las correcciones: 71 pruebas** (26 unitarias, 13 de integración y 32 por HTTP). En la última corrida pasaron todas menos una vez la de rendimiento: `/api/reportes` tiene un p95 de 3.3 a 4.0 s, justo en el límite de 4 s. Al repetirla pasó con 3.9 s. Es el endpoint a optimizar si el informe general se siente lento.
 
 ## Observaciones sin corregir
 
 - **Envío real del correo: verificado el 2026-11-05.** Con las credenciales SMTP en el `.env`, el correo llegó a `jdsoportesys@gmail.com`, el enlace abrió el formulario y la contraseña nueva permitió iniciar sesión.
 - **Usuario de prueba.** `jdsoportesys@gmail.com` (userId 40, "Soporte pruebas") existe en desarrollo con el rol `PRUEBAS`, que no tiene permisos. Su contraseña es aleatoria: se define con la recuperación.
 - **Enlace del correo.** Se arma con `NEXT_PUBLIC_URL` (`http://localhost:3000` en el `.env`). Si el servidor de desarrollo corre en otro puerto, el enlace apunta al puerto equivocado. Si `NEXT_PUBLIC_URL` faltara, se usa el `Host` de la petición, que el cliente puede falsear: en producción debe estar definido.
+- **Saldo del contrato de salida.** Se valida fuera de la transacción: dos entregas simultáneas del mismo contrato podrían pasar juntas el saldo del contrato. El inventario sí queda protegido.
 - **El límite de intentos vive en la memoria del proceso.** Se reinicia al reiniciar el servidor y no se comparte si hay varias instancias.
 - **Tokens de refresco y de recuperación comparten la tabla `password_resets`.** Al iniciar sesión se borran los enlaces de recuperación pendientes del usuario. Separarlos requiere un cambio de esquema.
 
