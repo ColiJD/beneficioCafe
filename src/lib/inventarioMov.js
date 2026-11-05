@@ -7,6 +7,9 @@ export class ErrorNegocio extends Error {
   }
 }
 
+// Transacciones que bloquean una fila (contrato, secadora) pueden esperar a otra: más margen que los 5 s de Prisma.
+export const TX_ESPERA = { maxWait: 10_000, timeout: 20_000 };
+
 export const redondear = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 export const esAnulado = (v) => String(v ?? "").toUpperCase() === "ANULADO";
@@ -47,6 +50,29 @@ export async function moverInventario(tx, productoID, dQQ, dSacos = 0) {
   });
 }
 
+/**
+ * Bloquea el contrato (SELECT ... FOR UPDATE) hasta que termine la transacción y devuelve lo entregado.
+ * Dos entregas o ediciones simultáneas del mismo contrato se atienden una tras otra, así la segunda
+ * ve lo que ya entregó la primera y no se pasa de lo pactado.
+ * `tabla` = "contratoSalida" | "contrato"; `excluirDetalleID` = la entrega que se está editando.
+ */
+export async function bloquearContrato(tx, tabla, contratoID, excluirDetalleID) {
+  const id = Number(contratoID);
+  if (tabla === "contratoSalida") await tx.$queryRaw`SELECT contratoID FROM contratoSalida WHERE contratoID = ${id} FOR UPDATE`;
+  else await tx.$queryRaw`SELECT contratoID FROM contrato WHERE contratoID = ${id} FOR UPDATE`;
+  const modelo = tabla === "contratoSalida" ? tx.detalleContratoSalida : tx.detallecontrato;
+  const r = await modelo.aggregate({
+    _sum: { cantidadQQ: true },
+    where: {
+      contratoID: id,
+      // tipoMovimiento admite NULL solo en detalleContratoSalida
+      ...(tabla === "contratoSalida" ? noAnulado("tipoMovimiento") : { tipoMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] } }),
+      ...(excluirDetalleID ? { detalleID: { not: Number(excluirDetalleID) } } : {}),
+    },
+  });
+  return Number(r._sum.cantidadQQ ?? 0);
+}
+
 /** Movimiento original (Entrada/Salida) de una transacción, buscando la referencia exacta ("#3" no coincide con "#30"). */
 export function movimientoOriginal(tx, referencias) {
   return tx.movimientoinventario.findFirst({
@@ -59,8 +85,8 @@ export function respuestaError(error, mensaje) {
   if (error instanceof ErrorNegocio) {
     return Response.json({ error: error.message }, { status: error.status });
   }
-  if (error?.code === "P2034") {
-    // Conflicto o deadlock entre transacciones simultáneas: no se guardó nada, se puede reintentar.
+  // P2034: conflicto o deadlock; P2028: la transacción esperó demasiado. En ambos casos no se guardó nada.
+  if (error?.code === "P2034" || error?.code === "P2028") {
     return Response.json({ error: "Otra operación se registró al mismo tiempo. Intente de nuevo." }, { status: 409 });
   }
   console.error(mensaje, error);

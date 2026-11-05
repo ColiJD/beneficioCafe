@@ -3,13 +3,12 @@ import { checkRole } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
 import {
   ErrorNegocio,
+  bloquearContrato,
   esAnulado,
   moverInventario,
   movimientoOriginal,
-  noAnulado,
   redondear,
-  respuestaError,
-} from "@/lib/inventarioMov";
+  respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
@@ -59,7 +58,7 @@ export async function DELETE(req, { params }) {
       if (contrato && contrato.estado === "Liquidado") {
         const agregado = await tx.detallecontrato.aggregate({
           _sum: { cantidadQQ: true },
-          where: { contratoID: registro.contratoID, ...noAnulado("tipoMovimiento") },
+          where: { contratoID: registro.contratoID, tipoMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] } }, // campo sin NULL: noAnulado no aplica
         });
         if (Number(agregado._sum.cantidadQQ ?? 0) < Number(contrato.contratoCantidadQQ)) {
           await tx.contrato.update({ where: { contratoID: registro.contratoID }, data: { estado: "Pendiente" } });
@@ -166,29 +165,27 @@ export async function PUT(request, { params }) {
       return Response.json({ error: "Faltan datos obligatorios" }, { status: 400 });
     }
 
+    // El contrato es el de la entrega, no el que mande el cliente.
+    const leida = await prisma.detallecontrato.findUnique({ where: { detalleID }, select: { contratoID: true } });
+    if (!leida) return Response.json({ error: "No se encontró la entrega a modificar" }, { status: 404 });
+    const idContrato = leida.contratoID;
+
     const resultado = await prisma.$transaction(async (tx) => {
+      // Lo primero es bloquear el contrato: dos ediciones o entregas simultáneas se atienden una tras otra.
+      // Cualquier lectura previa dentro de la transacción fijaría una foto vieja de los datos (REPEATABLE READ).
+      const totalEntregado = await bloquearContrato(tx, "contrato", idContrato, detalleID);
       const entregaOriginal = await tx.detallecontrato.findUnique({ where: { detalleID } });
-      if (!entregaOriginal) throw new ErrorNegocio("No se encontró la entrega a modificar", 404);
       if (esAnulado(entregaOriginal.tipoMovimiento)) {
         throw new ErrorNegocio("No se puede modificar una entrega anulada");
       }
 
-      const contrato = await tx.contrato.findUnique({ where: { contratoID: Number(contratoID) } });
+      const contrato = await tx.contrato.findUnique({ where: { contratoID: idContrato } });
       if (!contrato) throw new ErrorNegocio("No se encontró el contrato asociado");
       if (esAnulado(contrato.estado) || esAnulado(contrato.contratoMovimiento)) {
         throw new ErrorNegocio("El contrato está ANULADO y no se pueden modificar entregas.", 403);
       }
 
       // Saldo disponible del contrato (sin contar esta entrega)
-      const detalle = await tx.detallecontrato.aggregate({
-        _sum: { cantidadQQ: true },
-        where: {
-          contratoID: Number(contratoID),
-          detalleID: { not: detalleID },
-          ...noAnulado("tipoMovimiento"),
-        },
-      });
-      const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
       const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
       const saldoDisponible = contratoCantidadQQ - totalEntregado;
 
@@ -223,7 +220,7 @@ export async function PUT(request, { params }) {
       // Liquidado si se completó el contrato; Pendiente si al bajar la cantidad vuelve a tener saldo
       const estadoContrato = nuevoTotalEntregado >= contratoCantidadQQ ? "Liquidado" : "Pendiente";
       await tx.contrato.update({
-        where: { contratoID: Number(contratoID) },
+        where: { contratoID: idContrato },
         data: { estado: estadoContrato },
       });
 
@@ -233,7 +230,7 @@ export async function PUT(request, { params }) {
         estadoContrato,
         saldoRestante: contratoCantidadQQ - nuevoTotalEntregado,
       };
-    });
+    }, TX_ESPERA);
 
     return Response.json(resultado);
   } catch (error) {

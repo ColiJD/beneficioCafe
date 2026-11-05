@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
-import { ErrorNegocio, esAnulado, noAnulado, moverInventario, respuestaError } from "@/lib/inventarioMov";
+import { ErrorNegocio, bloquearContrato, esAnulado, noAnulado, moverInventario, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
@@ -216,9 +216,10 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // 2️⃣ Obtener contrato
+    // 2️⃣ Obtener contrato: el de la entrega, no el que mande el cliente
+    const idContrato = entregaOriginal.contratoID;
     const contrato = await prisma.contratoSalida.findUnique({
-      where: { contratoID: Number(contratoID) },
+      where: { contratoID: idContrato },
     });
     if (!contrato) {
       return Response.json(
@@ -239,67 +240,30 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // 3️⃣ Calcular Saldo y Validar
-    // (Omitimos logica redundante de saldo si confiamos en la validacion de abajo, pero por seguridad la dejamos)
-    const detalle = await prisma.detalleContratoSalida.aggregate({
-      _sum: { cantidadQQ: true },
-      where: {
-        contratoID: Number(contratoID),
-        detalleID: { not: detalleID },
-        tipoMovimiento: { notIn: ["ANULADO", "anulado", "Anulado"] },
-      },
-    });
-    const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
     const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
-    const saldoDisponible = contratoCantidadQQ - totalEntregado;
-
     const cantidadNueva = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
-    const saldoVisible = truncarDosDecimalesSinRedondear(saldoDisponible);
 
-    // El saldo ya excluye esta entrega (se filtra en el where), así que incluye lo que se "libera" al editarla
-    if (cantidadNueva > saldoVisible) {
-      return Response.json(
-        {
-          error: `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoVisible}).`,
-        },
-        { status: 400 },
-      );
-    }
-
-    // 🔹 Nueva Validación: Verificar Si hay Inventario Físico suficiente para el INCREMENTO
-    const cantidadAnterior = Number(entregaOriginal.cantidadQQ);
-    const diferencia = truncarDosDecimalesSinRedondear(
-      cantidadNueva - cantidadAnterior,
-    );
-
-    if (diferencia > 0) {
-      const stockActualResult = await prisma.inventariocliente.findUnique({
-        where: { productoID: contrato.contratoTipoCafe },
-      });
-      const stockActual = Number(stockActualResult?.cantidadQQ || 0);
-
-      if (diferencia > stockActual) {
-        return Response.json(
-          {
-            error: `Inventario insuficiente para el producto #${
-              contrato.contratoTipoCafe
-            }. Incremento: ${diferencia}, Stock Actual: ${truncarDosDecimalesSinRedondear(
-              stockActual,
-            )}`,
-          },
-          { status: 400 },
-        );
-      }
-    }
-
-    // 4️⃣ Transacción para actualizar entrega e inventario
+    // 3️⃣ Transacción. Con el contrato bloqueado se recalcula todo: dos ediciones o entregas simultáneas
+    // del mismo contrato se atienden una tras otra y la segunda ve lo que ya hizo la primera.
     const resultado = await prisma.$transaction(async (tx) => {
-      const cantidadAnterior = Number(entregaOriginal.cantidadQQ);
-      const diferencia = cantidadNueva - cantidadAnterior;
+      const totalEntregado = await bloquearContrato(tx, "contratoSalida", idContrato, detalleID);
+
+      // Se vuelve a leer la entrega: otra edición pudo cambiarla o anularla mientras tanto.
+      const entrega = await tx.detalleContratoSalida.findUnique({ where: { detalleID } });
+      if (esAnulado(entrega.tipoMovimiento))
+        throw new ErrorNegocio("No se puede modificar una entrega anulada");
+
+      // El saldo excluye esta entrega, así que incluye lo que se "libera" al editarla
+      const saldoVisible = truncarDosDecimalesSinRedondear(contratoCantidadQQ - totalEntregado);
+      if (cantidadNueva > saldoVisible)
+        throw new ErrorNegocio(
+          `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoVisible}).`,
+        );
+
+      const diferencia = truncarDosDecimalesSinRedondear(cantidadNueva - Number(entrega.cantidadQQ));
 
       if (diferencia !== 0) {
-        // Obtenemos o creamos el registro de inventario para este producto
-        // Más entrega = resta (solo si el saldo alcanza); menos entrega = devuelve
+        // Más entrega = resta (solo si el inventario alcanza); menos entrega = devuelve
         const inventario = await moverInventario(tx, contrato.contratoTipoCafe, -diferencia);
 
         await tx.movimientoinventario.create({
@@ -309,7 +273,7 @@ export async function PUT(request, { params }) {
             referenciaTipo: `Edición Entrega Contrato (${
               diferencia > 0 ? "Inc" : "Dec"
             })`,
-            referenciaID: Number(contratoID),
+            referenciaID: idContrato,
             cantidadQQ: Math.abs(diferencia),
             nota: `Ajuste por edición de entrega #${detalleID} (Producto: ${contrato.contratoTipoCafe})`,
           },
@@ -332,13 +296,13 @@ export async function PUT(request, { params }) {
       if (nuevoTotalEntregado >= contratoCantidadQQ) {
         estadoContrato = "Liquidado";
         await tx.contratoSalida.update({
-          where: { contratoID },
+          where: { contratoID: idContrato },
           data: { estado: "Liquidado" },
         });
       } else {
         // Asegurar que si bajó la cantidad, se quite "Liquidado" si estaba
         await tx.contratoSalida.update({
-          where: { contratoID },
+          where: { contratoID: idContrato },
           data: { estado: "Pendiente" },
         });
       }
@@ -349,7 +313,7 @@ export async function PUT(request, { params }) {
         estadoContrato,
         saldoRestante: contratoCantidadQQ - nuevoTotalEntregado,
       };
-    });
+    }, TX_ESPERA);
 
     return Response.json(resultado, { status: 200 });
   } catch (error) {

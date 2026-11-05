@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
-import { moverInventario, respuestaError } from "@/lib/inventarioMov";
+import { moverInventario, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
@@ -80,7 +80,7 @@ export async function POST(req) {
       });
 
       return nuevoSecado;
-    });
+    }, TX_ESPERA);
 
     return new Response(JSON.stringify(result), { status: 201 });
   } catch (error) {

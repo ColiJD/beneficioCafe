@@ -96,8 +96,9 @@ test("SEGURIDAD: entradas maliciosas no rompen ni filtran datos", async () => {
 });
 
 test("RENDIMIENTO: las consultas principales responden rápido (p95)", async () => {
-  // Umbrales para el servidor de desarrollo (sin compilar para producción, base remota).
-  const rutas = [["/api/compras", 3000], ["/api/reportes", 4000], ["/api/auth/permisos", 2000]];
+  // Umbrales para el servidor de desarrollo (sin compilar para producción, base remota), con ~2× de margen
+  // sobre lo medido el 2026-11-05 tras paralelizar el informe y cargar permisos en una consulta.
+  const rutas = [["/api/compras", 2000], ["/api/reportes", 2500], ["/api/auth/permisos", 1500]];
   for (const [ruta] of rutas) await lector.pedir(ruta); // calentar (compilación en dev)
   for (const [ruta, limite] of rutas) {
     const tiempos = [];

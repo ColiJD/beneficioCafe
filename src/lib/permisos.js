@@ -10,19 +10,24 @@ export { MODULOS };
  * Devuelve { admin, roles, permisos: { modulo: { ver, editar, origen: [] } } }
  */
 export async function getPermisos(userId) {
-  const user = await prisma.users.findUnique({
-    where: { userId: Number(userId) },
-    include: {
-      roles: { include: { role_permissions: true } },
-      user_roles: { include: { roles: { include: { role_permissions: true } } } },
-      user_permissions: true,
-    },
-  });
-  if (!user) return null;
+  const id = Number(userId);
+  // Una sola consulta (se ejecuta en cada petición a la API): permisos de cada rol del usuario
+  // (principal + extras; un rol sin permisos viene con modulo NULL) y sus permisos directos.
+  const filas = await prisma.$queryRaw`
+    SELECT 'rol' AS tipo, r.roleName AS nombre, rp.modulo, rp.puedeVer, rp.puedeCrear, rp.puedeEditar, rp.puedeEliminar
+    FROM roles r
+    LEFT JOIN role_permissions rp ON rp.roleId = r.roleId
+    WHERE r.roleId IN (SELECT roleId FROM users WHERE userId = ${id}
+                       UNION SELECT roleId FROM user_roles WHERE userId = ${id})
+    UNION ALL
+    SELECT 'directo', 'directo', up.modulo, up.puedeVer, up.puedeCrear, up.puedeEditar, up.puedeEliminar
+    FROM user_permissions up
+    WHERE up.userId = ${id}`;
+  // Todo usuario tiene rol principal: sin filas de rol, el usuario no existe.
+  const deRol = filas.filter((f) => f.tipo === "rol");
+  if (!deRol.length) return null;
 
-  const roles = [user.roles, ...user.user_roles.map((ur) => ur.roles)].filter(
-    (r, i, a) => a.findIndex((x) => x.roleId === r.roleId) === i,
-  );
+  const roles = [...new Set(deRol.map((f) => f.nombre))].map((roleName) => ({ roleName }));
   const admin = roles.some((r) => r.roleName === "ADMIN");
 
   const permisos = {};
@@ -32,8 +37,7 @@ export async function getPermisos(userId) {
     for (const x of ACCIONES) if (fila[col(x)]) (p[x] = true), (alguno = true);
     if (alguno) (p.ver = true), p.origen.push(origen); // cualquier acción implica ver
   };
-  for (const r of roles) for (const rp of r.role_permissions) add(rp.modulo, rp, r.roleName);
-  for (const up of user.user_permissions) add(up.modulo, up, "directo");
+  for (const f of filas) if (f.modulo) add(f.modulo, f, f.nombre);
   // Datos de apoyo: lo que consultan los módulos con acceso. Solo lectura de API; sin pantalla ni menú.
   for (const m of Object.keys(permisos))
     if (permisos[m].ver)

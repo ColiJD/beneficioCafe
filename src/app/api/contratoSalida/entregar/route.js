@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
 import { checkRole } from "@/lib/checkRole";
-import { moverInventario, respuestaError } from "@/lib/inventarioMov";
+import { ErrorNegocio, bloquearContrato, moverInventario, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function POST(request) {
   // 🔹 Verificar rol usando el request correcto
@@ -49,33 +49,22 @@ export async function POST(request) {
       );
     }
 
-    // 2️⃣ Calcular total entregado (solo detalles válidos)
-    const detalle = await prisma.detalleContratoSalida.aggregate({
-      _sum: { cantidadQQ: true },
-      where: {
-        contratoID: Number(contratoID),
-        tipoMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] },
-      },
-    });
-
-    const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
     const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
-    const saldoDisponible = contratoCantidadQQ - totalEntregado;
 
-    const cantidadQQNum = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
-    const saldoDispNum = truncarDosDecimalesSinRedondear(saldoDisponible);
-
-    if (cantidadQQNum > saldoDispNum) {
-      return Response.json(
-        {
-          error: `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
-        },
-        { status: 400 },
-      );
-    }
-
-    // 3️⃣ Ejecutar transacción completa
+    // 2️⃣ Transacción completa. El saldo del contrato se calcula dentro, con el contrato bloqueado:
+    // dos entregas simultáneas del mismo contrato no pueden pasarse de lo pactado.
     const resultado = await prisma.$transaction(async (tx) => {
+      const totalEntregado = await bloquearContrato(tx, "contratoSalida", contratoID);
+      const saldoDisponible = contratoCantidadQQ - totalEntregado;
+
+      const cantidadQQNum = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
+      const saldoDispNum = truncarDosDecimalesSinRedondear(saldoDisponible);
+      if (cantidadQQNum > saldoDispNum) {
+        throw new ErrorNegocio(
+          `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
+        );
+      }
+
       // 🔹 Deducción de Inventario (Global por Producto)
       // Buscamos el registro de inventario específico para el tipo de café del contrato
       // Resta solo si el saldo alcanza en ese momento (otra transacción pudo entrar en paralelo)
@@ -138,7 +127,7 @@ export async function POST(request) {
           (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ),
         ),
       };
-    });
+    }, TX_ESPERA);
 
     return Response.json(
       {

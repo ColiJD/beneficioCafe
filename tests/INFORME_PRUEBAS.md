@@ -35,14 +35,16 @@ TEST_URL=http://localhost:3001 npm run test:e2e
 
 ### Rendimiento medido (servidor de desarrollo, base remota)
 
-| Endpoint | p50 | p95 | Límite |
+| Endpoint | p95 antes | p95 ahora | Límite de la prueba |
 |---|---|---|---|
-| `GET /api/compras` | 1231 ms | 1357 ms | 3000 ms |
-| `GET /api/reportes` | 3164 ms | 3289 ms | 4000 ms |
-| `GET /api/auth/permisos` | 1104 ms | 1228 ms | 2000 ms |
-| 20 × `GET /api/compras` simultáneas | — | 4510 ms en total | 15000 ms |
+| `GET /api/compras` | 1357 ms | 915 ms | 2000 ms |
+| `GET /api/reportes` | 3289–3886 ms | 1127 ms | 2500 ms |
+| `GET /api/auth/permisos` | 1228 ms | 731 ms | 1500 ms |
+| 20 × `GET /api/compras` simultáneas | 4510 ms | 3571 ms en total | 15000 ms |
 
-`/api/reportes` es el más lento: unos 3 s.
+Cada consulta a la base remota tarda unos 78 ms de ida y vuelta. Había dos causas de lentitud:
+- **Permisos:** `getPermisos`, que corre en cada petición a la API, hacía unas 13 consultas seguidas y tardaba 1 s. Ahora es una sola consulta y tarda 72 ms.
+- **Informe general:** hacía 16 consultas una tras otra. Ahora van en paralelo. Comparé la respuesta vieja y la nueva: son idénticas, para el mes actual y para un rango de dos años.
 
 ## Defectos que encontraron las pruebas (ya corregidos)
 
@@ -75,14 +77,19 @@ TEST_URL=http://localhost:3001 npm run test:e2e
    - **Inicio de secado:** dos secados a la vez en la misma secadora producían un deadlock de MySQL y respondían 500. Ahora la secadora se bloquea primero y el segundo espera su turno.
    - **Respuestas de error:** cualquier conflicto entre transacciones simultáneas (Prisma `P2034`) responde 409, "intente de nuevo". Estas rutas ya no devuelven al usuario mensajes internos de la base: el saldo insuficiente da 400 con su mensaje, y cualquier otro error da 500 con un texto genérico.
 
-**Total después de las correcciones: 71 pruebas** (26 unitarias, 13 de integración y 32 por HTTP). En la última corrida pasaron todas menos una vez la de rendimiento: `/api/reportes` tiene un p95 de 3.3 a 4.0 s, justo en el límite de 4 s. Al repetirla pasó con 3.9 s. Es el endpoint a optimizar si el informe general se siente lento.
+8. **Medio, contratos:** el saldo de los contratos se validaba fuera de la transacción, o dentro pero sin bloqueo. Dos entregas simultáneas del mismo contrato podían pasarse de lo pactado, y eso pasaba en entrada y en salida. Ahora cada entrega y cada edición bloquea el contrato (`SELECT … FOR UPDATE`) y calcula el saldo dentro de la transacción, con `bloquearContrato` en `inventarioMov.js`.
+   - **Ediciones simultáneas de la misma entrega:** calculaban la diferencia con una copia vieja de la entrega y ajustaban el inventario dos veces. Ahora lo primero dentro de la transacción es el bloqueo. Cualquier lectura previa fija una foto vieja de los datos (REPEATABLE READ de MySQL).
+   - **Contrato de la entrega:** al editar, se usaba el contrato que mandaba el navegador y no el de la propia entrega. Corregido.
+   - **Tiempo de espera:** las transacciones que esperan un bloqueo tienen 20 s en lugar de 5. Si aun así se pasan, o hay un deadlock, responden 409 "intente de nuevo".
+9. **Medio, regresión mía:** al anular una entrega de un contrato de entrada que ya estaba liquidado, el filtro `noAnulado` fallaba, porque `detallecontrato.tipoMovimiento` no admite NULL y Prisma rechaza la consulta. Corregido.
+
+**Total después de las correcciones: 75 pruebas** (26 unitarias, 13 de integración y 36 por HTTP). Todas pasan.
 
 ## Observaciones sin corregir
 
 - **Envío real del correo: verificado el 2026-11-05.** Con las credenciales SMTP en el `.env`, el correo llegó a `jdsoportesys@gmail.com`, el enlace abrió el formulario y la contraseña nueva permitió iniciar sesión.
 - **Usuario de prueba.** `jdsoportesys@gmail.com` (userId 40, "Soporte pruebas") existe en desarrollo con el rol `PRUEBAS`, que no tiene permisos. Su contraseña es aleatoria: se define con la recuperación.
 - **Enlace del correo.** Se arma con `NEXT_PUBLIC_URL` (`http://localhost:3000` en el `.env`). Si el servidor de desarrollo corre en otro puerto, el enlace apunta al puerto equivocado. Si `NEXT_PUBLIC_URL` faltara, se usa el `Host` de la petición, que el cliente puede falsear: en producción debe estar definido.
-- **Saldo del contrato de salida.** Se valida fuera de la transacción: dos entregas simultáneas del mismo contrato podrían pasar juntas el saldo del contrato. El inventario sí queda protegido.
 - **El límite de intentos vive en la memoria del proceso.** Se reinicia al reiniciar el servidor y no se comparte si hay varias instancias.
 - **Tokens de refresco y de recuperación comparten la tabla `password_resets`.** Al iniciar sesión se borran los enlaces de recuperación pendientes del usuario. Separarlos requiere un cambio de esquema.
 
