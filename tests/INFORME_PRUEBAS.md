@@ -62,12 +62,24 @@ TEST_URL=http://localhost:3001 npm run test:e2e
 
    Los módulos que consultan esos datos siguen entrando gracias a las dependencias, y hay una prueba que lo comprueba. De paso, `salidas/pendientes` y `secadoras/[id]` ahora esperan `params` (`await`), como pide Next 15. `GET /api/liqDeposito` ya estaba protegido.
 
-**Total después de las correcciones: 60 de 60 pruebas pasan** (26 unitarias, 13 de integración y 21 por HTTP).
+5. **Medio, inventario:** la venta directa validaba el saldo antes de la transacción y descontaba sin condición. Dos ventas simultáneas podían dejar el inventario en negativo. Ahora descuenta con `moverInventario`, que solo resta si el saldo alcanza. Una prueba lanza dos ventas a la vez que juntas superan el saldo: solo pasa una.
+6. **Recuperación de contraseña:**
+   - **Alto:** la sesión del navegador (`/api/auth/session`) incluía el token de refresco. Ese token se guarda en `password_resets` y servía como enlace de recuperación durante 24 h: quien lo viera podía cambiar la contraseña. Ya no se envía al navegador.
+   - **Medio:** `recover` no tenía límite. Ahora acepta 3 solicitudes por correo y 20 por IP cada 15 minutos; después responde 429. `reset-password` acepta 20 intentos por IP.
+   - **Medio:** si el envío del correo fallaba, `recover` respondía 500 solo para correos existentes, lo que revelaba qué cuentas hay. Ahora siempre responde igual y registra el error en el servidor.
+   - **Bajo:** cada solicitud dejaba vigentes los enlaces anteriores, y al cambiar la contraseña solo se borraba el enlace usado. Ahora queda un solo enlace por usuario y al restablecer se borran todos.
+   - **Bajo:** no había mínimo de contraseña. Ahora son 8 caracteres, en el API y en el formulario.
+   - **Bajo:** cuerpos inválidos (sin JSON, objetos en lugar de texto) daban 500. Ahora dan 400.
+
+**Total después de las correcciones: 68 de 68 pruebas pasan** (26 unitarias, 13 de integración y 29 por HTTP).
 
 ## Observaciones sin corregir
 
-- **Rutas de recuperación de contraseña.** `auth/recover`, `auth/reset-password` y `auth/validate-token` son públicas por diseño. No se probaron el envío de correos ni el límite de intentos.
-- **Venta directa.** Valida el saldo antes de abrir la transacción. Dos ventas simultáneas podrían pasar la validación a la vez.
+- **Envío real del correo: verificado el 2026-11-05.** Con las credenciales SMTP en el `.env`, el correo llegó a `jdsoportesys@gmail.com`, el enlace abrió el formulario y la contraseña nueva permitió iniciar sesión.
+- **Usuario de prueba.** `jdsoportesys@gmail.com` (userId 40, "Soporte pruebas") existe en desarrollo con el rol `PRUEBAS`, que no tiene permisos. Su contraseña es aleatoria: se define con la recuperación.
+- **Enlace del correo.** Se arma con `NEXT_PUBLIC_URL` (`http://localhost:3000` en el `.env`). Si el servidor de desarrollo corre en otro puerto, el enlace apunta al puerto equivocado. Si `NEXT_PUBLIC_URL` faltara, se usa el `Host` de la petición, que el cliente puede falsear: en producción debe estar definido.
+- **El límite de intentos vive en la memoria del proceso.** Se reinicia al reiniciar el servidor y no se comparte si hay varias instancias.
+- **Tokens de refresco y de recuperación comparten la tabla `password_resets`.** Al iniciar sesión se borran los enlaces de recuperación pendientes del usuario. Separarlos requiere un cambio de esquema.
 
 ## Limpieza de datos
 

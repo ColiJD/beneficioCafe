@@ -141,6 +141,19 @@ test("REGRESIÓN: no se vende ni se transfiere más de lo que hay", async () => 
   assert.equal(await saldo(prodA), s);
 });
 
+test("REGRESIÓN: dos ventas simultáneas que juntas superan el saldo: solo pasa una", async () => {
+  const s = await saldo(prodA);
+  const cada = +(s * 0.6).toFixed(2);
+  const rs = await Promise.all([1, 2].map(() => op.pedir("/api/Venta", { method: "POST", body: venta(cada) })));
+  for (const r of rs) if (r.status === 201) comprasCreadas.push(r.json.compraId);
+  assert.deepEqual(rs.map((r) => r.status).sort(), [201, 400], rs.map((r) => r.texto.slice(0, 120)).join(" | "));
+  assert.equal(await saldo(prodA), +(s - cada).toFixed(2));
+  assert.ok((await saldo(prodA)) >= 0);
+  const id = rs.find((r) => r.status === 201).json.compraId;
+  assert.equal((await op.pedir(`/api/compras/${id}`, { method: "DELETE" })).status, 200);
+  assert.equal(await saldo(prodA), s);
+});
+
 test("REGRESIÓN: la transferencia guarda movimientos Salida/Entrada (los que suman el inventario)", async () => {
   const movs = await prisma.movimientoinventario.findMany({
     where: { movimientoID: { gt: ultimoMov }, referenciaTipo: { startsWith: "Transferencia" } },

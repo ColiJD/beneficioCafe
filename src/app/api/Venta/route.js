@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { Prisma } from "@prisma/client";
+import { moverInventario, respuestaError } from "@/lib/inventarioMov";
 export async function POST(request) {
   // 1️⃣ Verificar roles
   const sessionOrResponse = await checkRole(request, [
@@ -77,13 +78,8 @@ export async function POST(request) {
         },
       });
 
-      // 5b️⃣ Actualizar inventario global
-      await tx.inventariocliente.update({
-        where: { productoID: Number(compraTipoCafe) },
-        data: {
-          cantidadQQ: { decrement: new Prisma.Decimal(cantidadQQ) },
-        },
-      });
+      // 5b️⃣ Descontar del inventario solo si sigue alcanzando (otra venta pudo entrar en paralelo)
+      await moverInventario(tx, compraTipoCafe, -cantidadQQ);
 
       // 5c️⃣ Registrar movimiento de inventario
       await tx.movimientoinventario.create({
@@ -102,10 +98,6 @@ export async function POST(request) {
 
     return new Response(JSON.stringify(resultado), { status: 201 });
   } catch (error) {
-    console.error("🔥 Error al registrar la venta:", error);
-    return new Response(
-      JSON.stringify({ error: "Error al registrar la venta" }),
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al registrar la venta");
   }
 }
