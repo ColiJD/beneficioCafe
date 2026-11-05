@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { calcularPendientes, crearDetallesFIFO, redondear } from "@/lib/pendientesSalida";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 export async function POST(req) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA", "COLABORADORES"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -118,6 +119,7 @@ export async function POST(req) {
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error FIFO transacción:", error);
 
     if (error.message === "NO_PENDIENTES") {
@@ -196,6 +198,7 @@ export async function GET(req) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error en reporte de liquidaciones de salida:", error);
     return new Response(
       JSON.stringify({ error: "Error al obtener liquidaciones de salida" }),

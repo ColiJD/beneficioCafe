@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { excedeLimite, ipDe } from "@/lib/limiteIntentos";
+import { getEmpresa } from "@/lib/empresa";
 
 const VENTANA = 15 * 60 * 1000;
 const RESPUESTA = { message: "Si el correo existe, se enviará un enlace" };
@@ -42,8 +43,10 @@ export async function POST(req) {
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     });
 
+    const { nombre } = await getEmpresa();
+    const nombreHtml = nombre.replace(/[<>&"]/g, "");
     await transporter.sendMail({
-      from: `"Belagos" <${process.env.SMTP_USER}>`,
+      from: `"${nombreHtml}" <${process.env.SMTP_USER}>`,
       to: user.userEmail,
       subject: "Recuperación de contraseña",
       html: `
@@ -61,7 +64,7 @@ export async function POST(req) {
 
       <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-      <p style="font-size: 12px; color: #888;">Soporte Belagos - Si tienes dudas, responde a este correo.</p>
+      <p style="font-size: 12px; color: #888;">Soporte ${nombreHtml} - Si tienes dudas, responde a este correo.</p>
     </div>
   `,
     });

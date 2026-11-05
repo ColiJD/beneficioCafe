@@ -3,14 +3,16 @@ import { useState } from "react";
 import "../style/Header.css";
 import Link from "next/link";
 import { menuHeader } from "@/lib/page";
+import useEmpresa from "@/components/useEmpresa";
 export default function Header() {
+  const { nombre } = useEmpresa();
   const [menuOpen, setMenuOpen] = useState(false);
   // Función para cerrar menú
   const cerrarMenu = () => setMenuOpen(false);
   return (
     <>
       <header className="header">
-        <h1 className="title">Belagos</h1>
+        <h1 className="title">{nombre}</h1>
         <button
           aria-label="Toggle menu"
           onClick={() => setMenuOpen(!menuOpen)}

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function POST(request) {
   const sessionOrResponse = await checkRole(request, [
@@ -114,6 +115,7 @@ export async function POST(request) {
 
     return NextResponse.json(nuevoDeposito, { status: 201 });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al registrar depósito:", error);
     return NextResponse.json(
       { error: "Error al registrar depósito" },
@@ -140,6 +142,7 @@ export async function GET(request) {
 
     return NextResponse.json(depositos, { status: 200 });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al obtener vista vw_SaldoDepositos:", error);
     return NextResponse.json(
       { error: "Error interno" },

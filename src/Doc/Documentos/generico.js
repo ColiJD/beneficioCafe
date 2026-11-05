@@ -3,7 +3,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/belagos.png";
+import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import cafe from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
@@ -32,6 +32,7 @@ export const PDFComprobante = async ({
     { title: "Total", key: "total" },
   ],
 }) => {
+  const empresa = await getEmpresaPDF();
   const doc = new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
@@ -39,7 +40,7 @@ export const PDFComprobante = async ({
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const fondoGray = await processImageToGray(fondoImg.src, 0.15);
+  const fondoGray = await processImageToGray(empresa.logo, 0.15);
 
   const fechaObj = new Date();
   const dia = String(fechaObj.getDate()).padStart(2, "0");
@@ -80,7 +81,7 @@ export const PDFComprobante = async ({
     // === Encabezado central y datos de contacto ===
     doc.setFont("times", "bold");
     doc.setFontSize(16 * scale);
-    doc.text("BENEFICIO CAFÉ BELAGOS", pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -91,10 +92,10 @@ export const PDFComprobante = async ({
 
     // Propietario y contacto
     doc.setFontSize(12 * scale);
-    doc.text("Propietario BeLago", pageWidth / 2, 85 + offsetY, {
+    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 100 + offsetY, {
+    doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 100 + offsetY, {
       align: "center",
     });
 
@@ -212,7 +213,7 @@ export const PDFComprobante = async ({
     doc.text("LUGAR Y FECHA", lugarX + firmaWidth / 2 - 40, firmaY + 12);
 
     doc.setTextColor(255, 0, 0);
-    doc.text(`El Paraíso  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
+    doc.text(`${empresa.ciudad}  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
     doc.setTextColor(0, 0, 0);
   };
 

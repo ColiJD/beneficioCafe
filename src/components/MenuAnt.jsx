@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { menuItem } from "@/lib/menu";
 import usePermisos from "@/components/usePermisos";
+import useEmpresa from "@/components/useEmpresa";
 import { puedeEnRuta } from "@/lib/modulos";
 import { Layout, Menu, Button, theme, Grid, Drawer } from "antd";
 import "@/style/menu.css";
@@ -16,6 +17,7 @@ const { useBreakpoint } = Grid;
 export default function DashboardLayout({ children }) {
   const screens = useBreakpoint();
   const acc = usePermisos();
+  const { nombre } = useEmpresa();
   const [mounted, setMounted] = useState(false); // 🔹 Para evitar SSR mobile flash
   const [collapsed, setCollapsed] = useState(false); // desktop
   const [drawerVisible, setDrawerVisible] = useState(false); // mobile
@@ -125,7 +127,7 @@ export default function DashboardLayout({ children }) {
                   transition: "all 0.2s",
                 }}
               >
-                Belagos
+                {nombre}
               </h1>
 
               <Button
@@ -176,7 +178,7 @@ export default function DashboardLayout({ children }) {
                   color: "#fff",
                 }}
               >
-                Belagos
+                {nombre}
               </h1>
               <Button
                 type="text"

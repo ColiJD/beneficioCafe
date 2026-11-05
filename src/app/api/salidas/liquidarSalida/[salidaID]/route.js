@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { calcularPendientes, crearDetallesFIFO, redondear } from "@/lib/pendientesSalida";
 import { noAnulado } from "@/lib/inventarioMov";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 const json = (body, status) => new Response(JSON.stringify(body), { status });
 const REF_LIQ = ["Liquidación Salida", "Modificación Liquidación Salida"];
@@ -65,6 +66,7 @@ export async function DELETE(req, context) {
       200,
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     if (error.message === "NO_EXISTE") return json({ error: "Registro no encontrado" }, 404);
     if (error.message === "YA_ANULADA") return json({ error: "La liquidación ya está anulada" }, 400);
     console.error("❌ Error al anular registro de liqSalida:", error);
@@ -160,6 +162,7 @@ export async function PUT(req, context) {
 
     return json({ message: "Liquidación actualizada correctamente", diferencia }, 200);
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("❌ Error al actualizar liquidación:", error);
     if (error.message?.includes("Inventario insuficiente") || error.message?.includes("Cantidad excede")) {
       return json({ error: error.message }, 400);

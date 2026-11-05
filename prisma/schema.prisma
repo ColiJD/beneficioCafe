@@ -555,3 +555,41 @@ model user_permissions {
 
   @@id([userId, modulo])
 }
+
+model empresa {
+  empresaID   Int     @id @default(autoincrement())
+  nombre      String  @db.VarChar(120)
+  propietario String  @db.VarChar(120)
+  ciudad      String  @db.VarChar(80)
+  pais        String  @default("Honduras") @db.VarChar(80)
+  rtn         String? @db.VarChar(20)
+  telefono    String? @db.VarChar(30)
+  logoDatos   Bytes?  @db.LongBlob
+  logoTipo    String? @db.VarChar(50)
+  iconoDatos  Bytes?  @db.LongBlob
+  iconoTipo   String? @db.VarChar(50)
+  funciones   Json?
+}
+
+model cosecha {
+  cosechaID   Int                  @id @default(autoincrement())
+  nombre      String               @unique(map: "cosecha_nombre") @db.VarChar(50)
+  fechaInicio DateTime             @db.Date
+  fechaFin    DateTime?            @db.Date
+  estado      String               @default("Abierta") @db.VarChar(10)
+  notas       String?              @db.VarChar(255)
+  cerradaEn   DateTime?            @db.DateTime(0)
+  cerradaPor  Int?
+  inventario  cosecha_inventario[]
+}
+
+model cosecha_inventario {
+  id            Int     @id @default(autoincrement())
+  cosechaID     Int
+  productoID    Int
+  cantidadQQ    Decimal @db.Decimal(15, 2)
+  cantidadSacos Decimal @db.Decimal(15, 2)
+  cosecha       cosecha @relation(fields: [cosechaID], references: [cosechaID], onDelete: Cascade, map: "cosecha_inventario_fk")
+
+  @@index([cosechaID], map: "cosecha_inventario_cosecha")
+}

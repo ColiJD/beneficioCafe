@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function POST(req) {
   const sessionOrResponse = await checkRole(req, [
@@ -49,6 +50,7 @@ export async function POST(req) {
       anticipo: nuevoRegistro,
     });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al crear préstamo o anticipo para comprador:", error);
     return NextResponse.json(
       { error: "Error al crear préstamo o anticipo" },

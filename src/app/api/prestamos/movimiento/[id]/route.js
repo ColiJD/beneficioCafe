@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function DELETE(req, props) {
   const params = await props.params;
@@ -86,6 +87,7 @@ export async function DELETE(req, props) {
       { status: 200 },
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("❌ Error al anular movimiento:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el movimiento" }),

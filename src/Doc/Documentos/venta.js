@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/belagos.png";
+import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/Doc/Documentos/funcionesdeDocumentos";
 
 export const exportVentaDirecta = async (formState) => {
+  const empresa = await getEmpresaPDF();
   const doc = new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
@@ -19,7 +20,7 @@ export const exportVentaDirecta = async (formState) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const fondoGray = await processImageToGray(fondoImg.src, 0.15);
+  const fondoGray = await processImageToGray(empresa.logo, 0.15);
 
   let fechaObj;
   if (formState?.fecha) {
@@ -102,14 +103,14 @@ export const exportVentaDirecta = async (formState) => {
     doc.setFontSize(11 * scale);
     doc.setTextColor(0, 0, 0);
     doc.text(
-      "Cosecha 2026 - 2027",
+      empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "",
       leftMargin + logo.width / 30,
       20 + logo.height + offsetY + 22,
     );
 
     doc.setFont("times", "bold");
     doc.setFontSize(16 * scale);
-    doc.text("BENEFICIO CAFÉ BELAGOS", pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
@@ -118,7 +119,7 @@ export const exportVentaDirecta = async (formState) => {
     doc.text("COMPROBANTE DE VENTA DIRECTA", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Belagos", pageWidth / 2, 85 + offsetY, {
+    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
     doc.text("Teléfono: (504) 9987-8789", pageWidth / 2, 100 + offsetY, {
@@ -251,7 +252,7 @@ export const exportVentaDirecta = async (formState) => {
     doc.setFont("times", "normal");
     doc.setTextColor(255, 0, 0);
     doc.text(
-      `El Paraíso  ${fecha}`,
+      `${empresa.ciudad}  ${fecha}`,
       pageWidth - rightMargin - firmaWidth / 2 - 60,
       firmaY - 4,
     );
@@ -259,7 +260,7 @@ export const exportVentaDirecta = async (formState) => {
 
     doc.setFontSize(8 * scale);
     doc.text(
-      "Beneficio Café Belagos - El Paraíso, Honduras",
+      `${empresa.nombre} - ${empresa.ciudad}, ${empresa.pais}`,
       pageWidth / 2,
       offsetY + pageHeight * 0.45,
       { align: "center" },

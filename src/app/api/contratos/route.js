@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function POST(request, req) {
   const sessionOrResponse = await checkRole(request, [
@@ -55,6 +56,7 @@ export async function POST(request, req) {
 
     return new Response(JSON.stringify(nuevoContrato), { status: 201 });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al registrar contrato:", error);
     return new Response(
       JSON.stringify({ error: "Error al registrar contrato" }),
@@ -79,6 +81,7 @@ export async function GET(req) {
 
     return new Response(JSON.stringify(depositos), { status: 200 });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al obtener vista vw_SaldoPorContrato:", error);
     return new Response(JSON.stringify({ error: "Error interno" }), {
       status: 500,

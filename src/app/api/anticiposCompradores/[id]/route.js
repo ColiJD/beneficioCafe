@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function DELETE(req, props) {
   const params = await props.params;
@@ -38,6 +39,7 @@ export async function DELETE(req, props) {
       message: "Anticipo anulado correctamente",
     });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al anular anticipo de comprador:", error);
     return NextResponse.json(
       { error: "Error interno al anular el anticipo" },
