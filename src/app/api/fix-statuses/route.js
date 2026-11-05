@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/permisos";
 
 // Helper function to round numbers
 const roundToTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
 export async function POST(req) {
+  const s = await requireAdmin(); // mantenimiento: solo ADMIN
+  if (s instanceof Response) return s;
   try {
     const results = {
       prestamos: { total: 0, updated: 0 },

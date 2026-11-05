@@ -158,6 +158,8 @@ export const modulosDeApi = (pathname = "", method = "GET") => {
   if (a === "reportes") return [API_INFORMES[sub] || "informe-general"];
   if (a === "secado" && sub === "reporte") return ["reg-secado"];
   if (a === "contratos" && sub === "vista") return ["informe-saldoContrato"];
+  // la pantalla de préstamos también es la de anticipos: consultar préstamos vale con cualquiera de los dos
+  if (a === "prestamos" && method === "GET") return ["prestamos", "anticipos"];
   let fam = a;
   if (a === "compras" && sub === "salidas") fam = "Venta"; // lista de ventas
   else if (a === "contratos" && (sub === "entregar" || sub === "detallecontrato")) fam = "entregaContratos";

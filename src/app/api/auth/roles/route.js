@@ -4,10 +4,8 @@ import { limpiarPermisos, requireAdmin } from "@/lib/permisos";
 
 // GET → roles con sus permisos (+ lista de módulos disponibles)
 export async function GET() {
-  const { getServerSession } = await import("next-auth");
-  const { authOptions } = await import("@/lib/auth");
-  if (!(await getServerSession(authOptions)))
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  const s = await requireAdmin(); // solo lo usan las pantallas de Administración
+  if (s instanceof Response) return s;
   const roles = await prisma.roles.findMany({
     include: { role_permissions: true },
   });

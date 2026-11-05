@@ -1,17 +1,25 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { requireAdmin } from "@/lib/permisos";
 
-// GET → Listar usuarios
+// Administración de usuarios: solo ADMIN. La ruta está fuera del middleware (/api/auth), así que se valida aquí.
+
+// GET → Listar usuarios (sin el hash de la contraseña)
 export async function GET() {
+  const s = await requireAdmin();
+  if (s instanceof Response) return s;
   const users = await prisma.users.findMany({
     include: { roles: true },
+    omit: { userPassword: true },
   });
   return NextResponse.json(users);
 }
 
 // POST → Crear usuario
 export async function POST(req) {
+  const s = await requireAdmin();
+  if (s instanceof Response) return s;
   const { userEmail, userPassword, userName, roleId } = await req.json();
 
   const hashedPassword = await bcrypt.hash(userPassword, 10);
@@ -23,6 +31,7 @@ export async function POST(req) {
       userName,
       roleId,
     },
+    omit: { userPassword: true },
   });
 
   return NextResponse.json(user);
@@ -30,6 +39,8 @@ export async function POST(req) {
 
 // PUT → Actualizar usuario
 export async function PUT(req) {
+  const s = await requireAdmin();
+  if (s instanceof Response) return s;
   try {
     const { userId, userEmail, userName, roleId, userPassword } =
       await req.json();
@@ -48,6 +59,7 @@ export async function PUT(req) {
       where: { userId: Number(userId) },
       data,
       include: { roles: true },
+      omit: { userPassword: true },
     });
 
     return NextResponse.json(updatedUser);
@@ -61,6 +73,8 @@ export async function PUT(req) {
 
 // DELETE → Eliminar usuario
 export async function DELETE(req) {
+  const s = await requireAdmin();
+  if (s instanceof Response) return s;
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");

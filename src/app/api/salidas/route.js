@@ -3,7 +3,7 @@ import { checkRole } from "@/lib/checkRole";
 
 // Registrar nueva salida (venta/compromiso)
 export async function POST(request, req) {
-  const sessionOrResponse = await checkRole(req, [
+  const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
     "COLABORADORES",

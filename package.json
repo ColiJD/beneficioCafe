@@ -6,7 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:unit": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./tests/setup/alias.mjs --test \"tests/unit/*.test.mjs\"",
+    "test:integracion": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./tests/setup/alias.mjs --test --test-concurrency=1 \"tests/integracion/*.test.mjs\"",
+    "test:e2e": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./tests/setup/alias.mjs --test --test-concurrency=1 \"tests/e2e/*.test.mjs\"",
+    "test": "npm run test:unit && npm run test:integracion && npm run test:e2e"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",

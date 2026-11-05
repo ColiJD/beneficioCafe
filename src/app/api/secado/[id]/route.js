@@ -3,6 +3,8 @@ import { checkRole } from "@/lib/checkRole";
 import { ErrorNegocio, moverInventario, respuestaError } from "@/lib/inventarioMov";
 
 export async function GET(req, { params }) {
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   const { id } = await params;
   try {
     const secado = await prisma.secado.findUnique({
