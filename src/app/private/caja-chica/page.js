@@ -20,6 +20,7 @@ import {
 import { formatNumber } from "@/components/Formulario";
 
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 import EstadisticasCards from "@/components/ReportesElement/DatosEstadisticos";
 
 export default function CajaChicaPage() {
@@ -324,7 +325,7 @@ export default function CajaChicaPage() {
           >
             Editar
           </Button>
-          <Popconfirm
+          <ProtectedButton accion="eliminar"><Popconfirm
             title="¿Eliminar movimiento?"
             okText="Sí"
             cancelText="No"
@@ -333,7 +334,7 @@ export default function CajaChicaPage() {
             <Button danger size="small">
               Eliminar
             </Button>
-          </Popconfirm>
+          </Popconfirm></ProtectedButton>
         </Space>
       ),
     },
@@ -375,7 +376,7 @@ export default function CajaChicaPage() {
           fields={fields}
           onSubmit={handleRegistrarClick}
           submitting={submitting}
-          button={{
+          button={{ accion: selectedMovimiento ? "editar" : "crear",
             text: selectedMovimiento ? "Actualizar" : "Guardar",
             onClick: handleRegistrarClick,
             type: "primary",
@@ -422,7 +423,7 @@ export default function CajaChicaPage() {
         >
           Hoy
         </Button>
-        <Popconfirm
+        <ProtectedButton accion="crear"><Popconfirm
           title="¿Cerrar caja del día seleccionado?"
           description="Esto generará el Saldo Inicial para el día siguiente basado en el balance actual."
           onConfirm={async () => {
@@ -454,7 +455,7 @@ export default function CajaChicaPage() {
           <Button type="default" danger>
             Cerrar Caja
           </Button>
-        </Popconfirm>
+        </Popconfirm></ProtectedButton>
       </div>
 
       {/* Tabla */}

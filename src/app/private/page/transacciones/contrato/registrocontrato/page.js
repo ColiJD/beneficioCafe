@@ -203,9 +203,7 @@ export default function ReporteRegistroContrato() {
           >
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
-          <ProtectedButton
-            allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-          >
+          <ProtectedButton accion="editar" modulo="contratos">
             <Popconfirm
               title="¿Seguro que deseas EDITAR este contrato?"
               onConfirm={() =>
@@ -219,7 +217,7 @@ export default function ReporteRegistroContrato() {
               <Button size="small" type="default" icon={<EditFilled />} />
             </Popconfirm>
           </ProtectedButton>
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar">
             <Popconfirm
               title="¿Seguro que deseas eliminar este contrato"
               onConfirm={() => eliminarContrato(record.contratoID)}
@@ -478,9 +476,7 @@ export default function ReporteRegistroContrato() {
                         icon={<FilePdfOutlined />}
                       />
                     </Popconfirm>
-                    {/* <ProtectedButton
-                      allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}
-                    >
+                    {/* <ProtectedButton accion="editar" modulo="contratos">
                       <Button
                         size="small"
                         type="default"
@@ -496,7 +492,7 @@ export default function ReporteRegistroContrato() {
                       </Button>
                     </ProtectedButton> */}
 
-                    <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+                    <ProtectedButton accion="eliminar">
                       <Popconfirm
                         title="¿Seguro que deseas eliminar este contrato?"
                         onConfirm={() => eliminarContrato(item.contratoID)}

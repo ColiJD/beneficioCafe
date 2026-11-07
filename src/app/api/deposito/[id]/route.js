@@ -1,114 +1,70 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
+import {
+  ErrorNegocio,
+  esAnulado,
+  moverInventario,
+  movimientoOriginal,
+  noAnulado,
+  redondear,
+  respuestaError,
+} from "@/lib/inventarioMov";
 
 export async function DELETE(request, { params }) {
   const sessionOrResponse = await checkRole(request, ["ADMIN", "GERENCIA"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const depositoID = Number(params.id);
+    const depositoID = Number((await params).id);
     if (!depositoID) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    // 🔹 Buscar el depósito
-    const registro = await prisma.deposito.findUnique({
-      where: { depositoID },
-    });
-    if (!registro) {
-      return NextResponse.json(
-        { error: "Depósito no encontrado" },
-        { status: 404 },
+    await prisma.$transaction(async (tx) => {
+      const registro = await tx.deposito.findUnique({ where: { depositoID } });
+      if (!registro) throw new ErrorNegocio("Depósito no encontrado", 404);
+      if (esAnulado(registro.depositoMovimiento) || esAnulado(registro.estado)) {
+        throw new ErrorNegocio("El depósito ya está anulado");
+      }
+
+      const liquidacionesActivas = await tx.detalleliqdeposito.findMany({
+        where: { depositoID, ...noAnulado("movimiento") },
+        select: { id: true, liqID: true },
+      });
+      if (liquidacionesActivas.length > 0) {
+        const lista = liquidacionesActivas.map((l) => `#${l.liqID}`).join(", ");
+        throw new ErrorNegocio(
+          `No se puede eliminar el depósito porque está asociado a la liquidación ${lista}.`,
+        );
+      }
+
+      const movimiento = await movimientoOriginal(tx, [`Deposito #${depositoID}`]);
+      if (!movimiento) throw new ErrorNegocio("Movimiento de inventario no encontrado", 404);
+
+      // Las modificaciones del depósito dejaron movimientos "Ajuste": se anulan junto al original
+      const ajustes = await tx.movimientoinventario.findMany({
+        where: { referenciaTipo: `Depósito #${depositoID}`, tipoMovimiento: "Ajuste" },
+      });
+      const total = redondear(
+        Number(movimiento.cantidadQQ) + ajustes.reduce((a, m) => a + Number(m.cantidadQQ), 0),
       );
-    }
 
-    // 🔹 Buscar liquidaciones activas (para obtener IDs)
-    // 🔹 Buscar liquidaciones activas del depósito
-    const liquidacionesActivas = await prisma.detalleliqdeposito.findMany({
-      where: {
-        depositoID,
-        movimiento: { not: "Anulado" }, // activas
-      },
-      select: {
-        id: true, // id del detalle
-        liqID: true, // id de la liquidación
-      },
-    });
+      await moverInventario(tx, registro.depositoTipoCafe, -total, -Number(movimiento.cantidadSacos || 0));
 
-    if (liquidacionesActivas.length > 0) {
-      const listaLiquidaciones = liquidacionesActivas
-        .map((l) => `#${l.liqID}`)
-        .join(", ");
-
-      return NextResponse.json(
-        {
-          error: `No se puede eliminar el depósito porque está asociado a la liquidación ${listaLiquidaciones}.`,
-          detalles: liquidacionesActivas,
-        },
-        { status: 400 },
-      );
-    }
-
-    // 🔹 Buscar el movimiento asociado
-    const movimiento = await prisma.movimientoinventario.findFirst({
-      where: {
-        referenciaTipo: { contains: `Deposito #${depositoID}` },
-        tipoMovimiento: "Entrada",
-        NOT: { tipoMovimiento: "Anulado" },
-      },
-    });
-
-    if (!movimiento) {
-      return NextResponse.json(
-        { error: "Movimiento de inventario no encontrado" },
-        { status: 404 },
-      );
-    }
-
-    const esEntrada = movimiento.tipoMovimiento === "Entrada";
-
-    // 🔹 Ejecutar la transacción
-    await prisma.$transaction([
-      prisma.movimientoinventario.update({
-        where: { movimientoID: movimiento.movimientoID },
-        data: {
-          tipoMovimiento: "Anulado",
-          nota: `Depósito anulado #${depositoID}`,
-        },
-      }),
-
-      prisma.inventariocliente.update({
-        where: { inventarioClienteID: movimiento.inventarioClienteID },
-        data: esEntrada
-          ? {
-              cantidadQQ: { decrement: movimiento.cantidadQQ },
-              cantidadSacos: { decrement: movimiento.cantidadSacos },
-            }
-          : {
-              cantidadQQ: { increment: movimiento.cantidadQQ },
-              cantidadSacos: { increment: movimiento.cantidadSacos },
-            },
-      }),
-
-      prisma.deposito.update({
+      await tx.movimientoinventario.updateMany({
+        where: { movimientoID: { in: [movimiento.movimientoID, ...ajustes.map((a) => a.movimientoID)] } },
+        data: { tipoMovimiento: "Anulado", nota: `Depósito anulado #${depositoID}` },
+      });
+      await tx.deposito.update({
         where: { depositoID },
         data: { depositoMovimiento: "Anulado", estado: "Anulado" },
-      }),
-    ]);
+      });
+    });
 
-    return NextResponse.json(
-      {
-        message: `Depósito anulado correctamente`,
-      },
-      { status: 200 },
-    );
+    return NextResponse.json({ message: "Depósito anulado correctamente" });
   } catch (error) {
-    console.error("❌ Error al anular depósito:", error);
-    return NextResponse.json(
-      { error: "Error interno al anular el depósito" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error interno al anular el depósito");
   }
 }
 
@@ -122,26 +78,19 @@ export async function PUT(request, { params }) {
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const depositoID = Number(params.id);
+    const depositoID = Number((await params).id);
     if (!depositoID) {
-      return Response.json(
-        { error: "ID de depósito inválido" },
-        { status: 400 },
-      );
+      return Response.json({ error: "ID de depósito inválido" }, { status: 400 });
     }
 
     // ✅ Usar los nombres que envía el front
     const { cantidadQQ, observaciones } = await request.json();
 
     if (cantidadQQ === undefined || observaciones === undefined) {
-      return Response.json(
-        { error: "Faltan datos obligatorios" },
-        { status: 400 },
-      );
+      return Response.json({ error: "Faltan datos obligatorios" }, { status: 400 });
     }
 
     const cantidad = parseFloat(cantidadQQ);
-
     if (isNaN(cantidad) || cantidad <= 0) {
       return Response.json(
         { error: "La cantidad en QQ debe ser un número mayor que cero" },
@@ -149,43 +98,26 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // 1️⃣ Obtener depósito original
-    const depositoOriginal = await prisma.deposito.findUnique({
-      where: { depositoID },
-    });
-    if (!depositoOriginal) {
-      return Response.json(
-        { error: "No se encontró el depósito a modificar" },
-        { status: 404 },
-      );
-    }
-
-    // Cliente y producto del depósito original
-    const clienteID = depositoOriginal.clienteID;
-    const depositoTipoCafe = depositoOriginal.depositoTipoCafe;
-
-    // Verificar si existen registros en detalleliqdeposito no anulados
-    const registroLiq = await prisma.detalleliqdeposito.findFirst({
-      where: {
-        depositoID,
-        movimiento: { notIn: ["ANULADO", "anulado", "Anulado"] }, // Ignorar anulados
-      },
-      include: { liqdeposito: true },
-    });
-
-    if (registroLiq) {
-      const numeroLiquidacion = registroLiq.liqdeposito?.liqID || "desconocida";
-      return Response.json(
-        {
-          error: `No se puede modificar el depósito porque ya tiene registros de liquidación asociados (Liquidación #${numeroLiquidacion})`,
-        },
-        { status: 403 },
-      );
-    }
-
-    // 3️⃣ Transacción para actualizar depósito e inventario
     const resultado = await prisma.$transaction(async (tx) => {
-      // a) Actualizar depósito
+      const depositoOriginal = await tx.deposito.findUnique({ where: { depositoID } });
+      if (!depositoOriginal) throw new ErrorNegocio("No se encontró el depósito a modificar", 404);
+      if (esAnulado(depositoOriginal.depositoMovimiento) || esAnulado(depositoOriginal.estado)) {
+        throw new ErrorNegocio("No se puede modificar un depósito anulado");
+      }
+
+      // Con liquidaciones activas no se puede modificar
+      const registroLiq = await tx.detalleliqdeposito.findFirst({
+        where: { depositoID, ...noAnulado("movimiento") },
+        include: { liqdeposito: true },
+      });
+      if (registroLiq) {
+        const numero = registroLiq.liqdeposito?.liqID || "desconocida";
+        throw new ErrorNegocio(
+          `No se puede modificar el depósito porque ya tiene registros de liquidación asociados (Liquidación #${numero})`,
+          403,
+        );
+      }
+
       const depositoActualizado = await tx.deposito.update({
         where: { depositoID },
         data: {
@@ -196,47 +128,28 @@ export async function PUT(request, { params }) {
         },
       });
 
-      // b) Ajustar inventario
-      const diferenciaQQ =
-        cantidad - Number(depositoOriginal.depositoCantidadQQ);
+      const diferenciaQQ = redondear(cantidad - Number(depositoOriginal.depositoCantidadQQ));
+      const inventarioGlobal = await moverInventario(tx, depositoOriginal.depositoTipoCafe, diferenciaQQ);
 
-      const inventarioGlobal = await tx.inventariocliente.upsert({
-        where: {
-          productoID: Number(depositoTipoCafe),
-        },
-        update: { cantidadQQ: { increment: diferenciaQQ } },
-        create: {
-          productoID: Number(depositoTipoCafe),
-          cantidadQQ: cantidad,
-          cantidadSacos: depositoOriginal.depositoTotalSacos || 0,
-        },
-      });
+      if (diferenciaQQ !== 0) {
+        await tx.movimientoinventario.create({
+          data: {
+            inventarioClienteID: inventarioGlobal.inventarioClienteID,
+            tipoMovimiento: "Ajuste",
+            referenciaTipo: `Depósito #${depositoID}`,
+            referenciaID: depositoID,
+            cantidadQQ: diferenciaQQ,
+            nota: "Ajuste por modificación de depósito",
+          },
+        });
+      }
 
-      // c) Registrar movimiento de inventario
-      await tx.movimientoinventario.create({
-        data: {
-          inventarioClienteID: inventarioGlobal.inventarioClienteID,
-          tipoMovimiento: "Ajuste",
-          referenciaTipo: `Depósito #${depositoID}`,
-          referenciaID: depositoID,
-          cantidadQQ: diferenciaQQ,
-          nota: "Ajuste por modificación de depósito",
-        },
-      });
-
-      return {
-        message: "Depósito actualizado correctamente",
-        depositoActualizado,
-      };
+      return { message: "Depósito actualizado correctamente", depositoActualizado };
     });
 
-    return Response.json(resultado, { status: 200 });
+    return Response.json(resultado);
   } catch (error) {
-    console.error("Error al actualizar depósito:", error);
-    return NextResponse.json(
-      { error: error?.message || "Error al actualizar depósito" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al actualizar depósito");
   }
 }
 
@@ -249,7 +162,7 @@ export async function GET(request, context) {
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
 
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });

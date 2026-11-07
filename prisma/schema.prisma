@@ -12,6 +12,8 @@ model roles {
   roleName  String   @unique(map: "roleName") @db.VarChar(50)
   createdAt DateTime @default(now()) @db.DateTime(0)
   users     users[]
+  user_roles       user_roles[]
+  role_permissions role_permissions[]
 }
 
 model users {
@@ -23,6 +25,8 @@ model users {
   createdAt       DateTime          @default(now()) @db.DateTime(0)
   caja_chica      caja_chica[]
   password_resets password_resets[]
+  user_roles       user_roles[]
+  user_permissions user_permissions[]
   roles           roles             @relation(fields: [roleId], references: [roleId], onDelete: NoAction, onUpdate: NoAction, map: "users_ibfk_1")
 
   @@index([roleId], map: "roleId")
@@ -516,4 +520,38 @@ model secado {
   @@index([secadoraId])
   @@index([productoId])
   @@index([productoIdDestino])
+}
+
+model role_permissions {
+  roleId      Int
+  modulo      String  @db.VarChar(50)
+  puedeVer      Boolean @default(false)
+  puedeCrear    Boolean @default(false)
+  puedeEditar   Boolean @default(false)
+  puedeEliminar Boolean @default(false)
+  roles       roles   @relation(fields: [roleId], references: [roleId], onDelete: Cascade, map: "role_permissions_ibfk_1")
+
+  @@id([roleId, modulo])
+}
+
+model user_roles {
+  userId Int
+  roleId Int
+  users  users @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "user_roles_ibfk_1")
+  roles  roles @relation(fields: [roleId], references: [roleId], onDelete: Cascade, map: "user_roles_ibfk_2")
+
+  @@id([userId, roleId])
+  @@index([roleId], map: "user_roles_ibfk_2")
+}
+
+model user_permissions {
+  userId      Int
+  modulo      String  @db.VarChar(50)
+  puedeVer      Boolean @default(false)
+  puedeCrear    Boolean @default(false)
+  puedeEditar   Boolean @default(false)
+  puedeEliminar Boolean @default(false)
+  users       users   @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "user_permissions_ibfk_1")
+
+  @@id([userId, modulo])
 }

@@ -279,7 +279,7 @@ export default function PrestamosCompradores() {
           ? (r.prestamoId ? `/api/prestamosCompradores/movimiento/${r.MovimientoId}` : `/api/anticiposCompradores/movimiento/${r.MovimientoId}`)
           : (r.prestamoId ? `/api/prestamosCompradores/${r.prestamoId}` : `/api/anticiposCompradores/${r.anticipoId}`);
         return (
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar" modulo={r.prestamoId ? "prestamosCompradores" : "anticiposCompradores"}>
             <Popconfirm title="¿Confirma anulación?" onConfirm={() => handleAnular(null, "REGISTRO", endpoint)} okType="danger">
               <Button type="text" danger icon={<DeleteFilled />} size="small" />
             </Popconfirm>
@@ -372,8 +372,8 @@ export default function PrestamosCompradores() {
                 <ShopOutlined style={{ marginRight: "8px" }} /> Prstamos Compradores
               </Title>
               <Space>
-                <Button icon={<CalculatorOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawerInteres(true)}>CALCULAR INTERES</Button>
-                <Button type="primary" icon={<PlusOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawer(true)} style={{ background: "#4f46e5" }}>NUEVO MOVIMIENTO</Button>
+                <ProtectedButton accion="crear"><Button icon={<CalculatorOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawerInteres(true)}>CALCULAR INTERES</Button></ProtectedButton>
+                <ProtectedButton accion="crear"><Button type="primary" icon={<PlusOutlined />} disabled={!compradorSeleccionado} onClick={() => setOpenDrawer(true)} style={{ background: "#4f46e5" }}>NUEVO MOVIMIENTO</Button></ProtectedButton>
               </Space>
             </div>
           </Col>

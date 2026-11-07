@@ -1,6 +1,8 @@
 "use client";
 import { Drawer, List, Badge, Button, Tooltip } from "antd";
 import { BellOutlined } from "@ant-design/icons";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnRuta, puedeEnModulo } from "@/lib/modulos";
 
 export default function NotificationDrawer({
   visible,
@@ -10,6 +12,11 @@ export default function NotificationDrawer({
   notifications = [],
   actions = [],
 }) {
+  const acc = usePermisos();
+  // action.route: solo si puede abrir esa pantalla; action.modulo + action.accion: solo si tiene ese permiso
+  const permitida = (a) =>
+    (!a.route || puedeEnRuta(acc, a.route)) &&
+    (!a.modulo || puedeEnModulo(acc, a.modulo, a.accion || "ver"));
   // Detecta si las notificaciones son una lista simple o agrupada
   const isGrouped =
     Array.isArray(notifications) &&
@@ -74,7 +81,7 @@ export default function NotificationDrawer({
    
     >
       {/* 🔹 Botones configurables */}
-      {actions.length > 0 && (
+      {actions.filter(permitida).length > 0 && (
         <div
           style={{
             display: "flex",
@@ -83,7 +90,7 @@ export default function NotificationDrawer({
             flexWrap: "wrap",
           }}
         >
-          {actions.map((action, i) => (
+          {actions.filter(permitida).map((action, i) => (
             <Tooltip key={i} title={action.tooltip || action.label}>
               <Button
                 type={action.type || "primary"}

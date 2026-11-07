@@ -23,6 +23,8 @@ import ProtectedPage from "@/components/ProtectedPage";
 import SectionHeader from "@/components/ReportesElement/AccionesResporte";
 import useClientAndDesktop from "@/hook/useClientAndDesktop";
 import { registroRoutes } from "@/lib/registroRoutes";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnRuta } from "@/lib/modulos";
 
 const { Paragraph, Text } = Typography;
 
@@ -30,12 +32,17 @@ export default function RegistrosCentralPage() {
   const router = useRouter();
   const { mounted, isDesktop } = useClientAndDesktop();
   const [busqueda, setBusqueda] = useState("");
+  const acceso = usePermisos();
+  const permitidos = useMemo(
+    () => registroRoutes.filter((r) => puedeEnRuta(acceso, r.route)),
+    [acceso],
+  );
 
   const registrosFiltrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
-    if (!termino) return registroRoutes;
+    if (!termino) return permitidos;
 
-    return registroRoutes.filter((item) => {
+    return permitidos.filter((item) => {
       const origenes = item.origenes.join(" ").toLowerCase();
       return (
         item.titulo.toLowerCase().includes(termino) ||
@@ -45,7 +52,7 @@ export default function RegistrosCentralPage() {
         origenes.includes(termino)
       );
     });
-  }, [busqueda]);
+  }, [busqueda, permitidos]);
 
   const grupos = useMemo(() => {
     return registrosFiltrados.reduce((acc, item) => {

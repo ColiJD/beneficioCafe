@@ -535,7 +535,8 @@ export default function CompraForm({ compraId }) {
                   icon: <SolutionOutlined />,
                   onClick: () =>
                     router.push("/private/page/transacciones/compra/vista"),
-                },
+                route: "/private/page/transacciones/compra/vista",
+              },
               ]}
             />
 
@@ -546,7 +547,7 @@ export default function CompraForm({ compraId }) {
               fields={fields}
               onSubmit={handleRegistrarClick}
               submitting={submitting}
-              button={{
+              button={{ accion: compraId ? "editar" : "crear",
                 text: compraId ? "Actualizar Compra" : "Registrar Compra",
                 onClick: handleRegistrarClick,
                 type: "primary",

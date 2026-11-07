@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
+import { ErrorNegocio, bloquearContrato, esAnulado, noAnulado, moverInventario, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
@@ -27,11 +28,12 @@ export async function DELETE(req, { params }) {
     }
 
     await prisma.$transaction(async (tx) => {
-      // 1️⃣ Actualizar estado del registro a "Anulado"
-      await tx.detalleContratoSalida.update({
-        where: { detalleID },
+      // 1️⃣ Anular de forma atómica: si ya estaba anulada no se devuelve stock otra vez
+      const anulada = await tx.detalleContratoSalida.updateMany({
+        where: { detalleID, ...noAnulado("tipoMovimiento") },
         data: { tipoMovimiento: "Anulado" },
       });
+      if (anulada.count === 0) throw new ErrorNegocio("La entrega ya está anulada");
 
       // 🔹 REVERSIÓN DE INVENTARIO (ANULACIÓN GLOBAL)
       // Devolver la cantidad al inventario global del producto del contrato.
@@ -96,11 +98,7 @@ export async function DELETE(req, { params }) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("❌ Error al anular registro:", error);
-    return new Response(
-      JSON.stringify({ error: "Error interno al anular el registro" }),
-      { status: 500 },
-    );
+    return respuestaError(error, "Error interno al anular el registro");
   }
 }
 
@@ -211,9 +209,17 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // 2️⃣ Obtener contrato
+    if (esAnulado(entregaOriginal.tipoMovimiento)) {
+      return Response.json(
+        { error: "No se puede modificar una entrega anulada" },
+        { status: 400 },
+      );
+    }
+
+    // 2️⃣ Obtener contrato: el de la entrega, no el que mande el cliente
+    const idContrato = entregaOriginal.contratoID;
     const contrato = await prisma.contratoSalida.findUnique({
-      where: { contratoID: Number(contratoID) },
+      where: { contratoID: idContrato },
     });
     if (!contrato) {
       return Response.json(
@@ -234,78 +240,31 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // 3️⃣ Calcular Saldo y Validar
-    // (Omitimos logica redundante de saldo si confiamos en la validacion de abajo, pero por seguridad la dejamos)
-    const detalle = await prisma.detalleContratoSalida.aggregate({
-      _sum: { cantidadQQ: true },
-      where: {
-        contratoID: Number(contratoID),
-        detalleID: { not: detalleID },
-        tipoMovimiento: { notIn: ["ANULADO", "anulado", "Anulado"] },
-      },
-    });
-    const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
     const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
-    const saldoDisponible = contratoCantidadQQ - totalEntregado;
-
     const cantidadNueva = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
-    const saldoVisible = truncarDosDecimalesSinRedondear(saldoDisponible);
 
-    // Nota: saldoDisponible incluye la cantidad "liberada" de esta entrega porque la excluímos en el where
-    // Comentado para permitir edición flexible si hay inventario
-    /* if (cantidadNueva > saldoVisible) {
-      return Response.json(
-        {
-          error: `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoVisible}).`,
-        },
-        { status: 400 }
-      );
-    } */
-
-    // 🔹 Nueva Validación: Verificar Si hay Inventario Físico suficiente para el INCREMENTO
-    const cantidadAnterior = Number(entregaOriginal.cantidadQQ);
-    const diferencia = truncarDosDecimalesSinRedondear(
-      cantidadNueva - cantidadAnterior,
-    );
-
-    if (diferencia > 0) {
-      const stockActualResult = await prisma.inventariocliente.findUnique({
-        where: { productoID: contrato.contratoTipoCafe },
-      });
-      const stockActual = Number(stockActualResult?.cantidadQQ || 0);
-
-      if (diferencia > stockActual) {
-        return Response.json(
-          {
-            error: `Inventario insuficiente para el producto #${
-              contrato.contratoTipoCafe
-            }. Incremento: ${diferencia}, Stock Actual: ${truncarDosDecimalesSinRedondear(
-              stockActual,
-            )}`,
-          },
-          { status: 400 },
-        );
-      }
-    }
-
-    // 4️⃣ Transacción para actualizar entrega e inventario
+    // 3️⃣ Transacción. Con el contrato bloqueado se recalcula todo: dos ediciones o entregas simultáneas
+    // del mismo contrato se atienden una tras otra y la segunda ve lo que ya hizo la primera.
     const resultado = await prisma.$transaction(async (tx) => {
-      const cantidadAnterior = Number(entregaOriginal.cantidadQQ);
-      const diferencia = cantidadNueva - cantidadAnterior;
+      const totalEntregado = await bloquearContrato(tx, "contratoSalida", idContrato, detalleID);
+
+      // Se vuelve a leer la entrega: otra edición pudo cambiarla o anularla mientras tanto.
+      const entrega = await tx.detalleContratoSalida.findUnique({ where: { detalleID } });
+      if (esAnulado(entrega.tipoMovimiento))
+        throw new ErrorNegocio("No se puede modificar una entrega anulada");
+
+      // El saldo excluye esta entrega, así que incluye lo que se "libera" al editarla
+      const saldoVisible = truncarDosDecimalesSinRedondear(contratoCantidadQQ - totalEntregado);
+      if (cantidadNueva > saldoVisible)
+        throw new ErrorNegocio(
+          `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoVisible}).`,
+        );
+
+      const diferencia = truncarDosDecimalesSinRedondear(cantidadNueva - Number(entrega.cantidadQQ));
 
       if (diferencia !== 0) {
-        // Obtenemos o creamos el registro de inventario para este producto
-        const inventario = await tx.inventariocliente.upsert({
-          where: { productoID: contrato.contratoTipoCafe },
-          update: {
-            cantidadQQ: { decrement: diferencia }, // prisma maneja incremento negativo como decremento, pero usamos decrement por claridad
-          },
-          create: {
-            productoID: contrato.contratoTipoCafe,
-            cantidadQQ: -diferencia,
-            cantidadSacos: 0,
-          },
-        });
+        // Más entrega = resta (solo si el inventario alcanza); menos entrega = devuelve
+        const inventario = await moverInventario(tx, contrato.contratoTipoCafe, -diferencia);
 
         await tx.movimientoinventario.create({
           data: {
@@ -314,7 +273,7 @@ export async function PUT(request, { params }) {
             referenciaTipo: `Edición Entrega Contrato (${
               diferencia > 0 ? "Inc" : "Dec"
             })`,
-            referenciaID: Number(contratoID),
+            referenciaID: idContrato,
             cantidadQQ: Math.abs(diferencia),
             nota: `Ajuste por edición de entrega #${detalleID} (Producto: ${contrato.contratoTipoCafe})`,
           },
@@ -337,13 +296,13 @@ export async function PUT(request, { params }) {
       if (nuevoTotalEntregado >= contratoCantidadQQ) {
         estadoContrato = "Liquidado";
         await tx.contratoSalida.update({
-          where: { contratoID },
+          where: { contratoID: idContrato },
           data: { estado: "Liquidado" },
         });
       } else {
         // Asegurar que si bajó la cantidad, se quite "Liquidado" si estaba
         await tx.contratoSalida.update({
-          where: { contratoID },
+          where: { contratoID: idContrato },
           data: { estado: "Pendiente" },
         });
       }
@@ -354,14 +313,10 @@ export async function PUT(request, { params }) {
         estadoContrato,
         saldoRestante: contratoCantidadQQ - nuevoTotalEntregado,
       };
-    });
+    }, TX_ESPERA);
 
     return Response.json(resultado, { status: 200 });
   } catch (error) {
-    console.error("Error en PUT /api/contratos/entregar:", error);
-    return Response.json(
-      { error: error?.message || "Error al actualizar entrega" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al actualizar entrega");
   }
 }

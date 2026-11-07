@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function GET(request) {
+  const sessionOrResponse = await checkRole(request);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   const { searchParams } = new URL(request.url);
   const secadoraId = searchParams.get("secadoraId");
   const startDate = searchParams.get("startDate");

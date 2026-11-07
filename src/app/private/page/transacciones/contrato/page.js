@@ -385,7 +385,8 @@ export default function ContratoForm({ contratoID }) {
                     router.push(
                       "/private/page/transacciones/contrato/registrocontrato",
                     ),
-                },
+                route: "/private/page/transacciones/contrato/registrocontrato",
+              },
               ]}
             />
             {/* Componente de formulario principal */}
@@ -395,7 +396,7 @@ export default function ContratoForm({ contratoID }) {
               fields={fields}
               onSubmit={handleRegistrarClick}
               submitting={submitting}
-              button={{
+              button={{ accion: contratoID ? "editar" : "crear",
                 text: contratoID ? "Actualizar Contrato" : "Registrar Contrato",
                 onClick: handleRegistrarClick,
                 type: "primary",

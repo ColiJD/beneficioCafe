@@ -2,15 +2,19 @@
 
 import { useSession, getSession } from "next-auth/react";
 import { Spin, Result, Button } from "antd";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnRuta } from "@/lib/modulos";
 import { useEffect, useState } from "react";
 
 export default function ProtectedPage({ allowedRoles = [], children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const acc = usePermisos();
 
-  // 🔹 Mientras carga la sesión
-  if (status === "loading") {
+  // 🔹 Mientras carga la sesión y los permisos
+  if (status === "loading" || (session && !acc)) {
     return (
       <Spin tip="Cargando..." size="large">
         <div
@@ -40,8 +44,8 @@ export default function ProtectedPage({ allowedRoles = [], children }) {
     );
   }
 
-  // 🔹 Si el rol no está permitido
-  if (allowedRoles.length > 0 && !allowedRoles.includes(session.user?.role)) {
+  // 🔹 Permisos desde BD (roles + directos); allowedRoles queda sin uso
+  if (!puedeEnRuta(acc, pathname)) {
     return (
       <Result
         status="403"

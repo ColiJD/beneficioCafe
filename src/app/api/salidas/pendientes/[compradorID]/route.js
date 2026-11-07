@@ -1,7 +1,10 @@
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function GET(req, { params }) {
-  const compradorID = Number(params.compradorID);
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
+  const compradorID = Number((await params).compradorID);
 
   if (isNaN(compradorID) || compradorID <= 0) {
     return new Response(

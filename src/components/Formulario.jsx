@@ -4,6 +4,9 @@ import Select from "react-select";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { usePathname } from "next/navigation";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnRuta, puedeEnModulo } from "@/lib/modulos";
 
 // Funciones de formato
 export const formatNumber = (num, type) => {
@@ -26,6 +29,12 @@ export default function Formulario({
   buttons,
 }) {
   const [rawValues, setRawValues] = React.useState({});
+  const acc = usePermisos();
+  const pathname = usePathname();
+  // btn.accion ("crear" | "editar" | "eliminar"): sin ese permiso el botón queda deshabilitado
+  const sinPermiso = (b) =>
+    !!b?.accion &&
+    !(b.modulo ? puedeEnModulo(acc, b.modulo, b.accion) : puedeEnRuta(acc, pathname, b.accion));
 
   // Manejo de cambio de número (integer o float)
   const handleNumberChange = (label, setter, type) => (e) => {
@@ -194,7 +203,8 @@ export default function Formulario({
                 type={btn.type || "primary"}
                 htmlType={btn.htmlType || "submit"}
                 onClick={btn.onClick}
-                disabled={submitting || btn.disabled}
+                disabled={submitting || btn.disabled || sinPermiso(btn)}
+                    title={sinPermiso(btn) ? "No tienes permiso para esta acción" : undefined}
                 danger={btn.type === "danger"}
               >
                 {submitting ? "Enviando..." : btn.text}
@@ -213,7 +223,8 @@ export default function Formulario({
                     type={btn.type || "primary"}
                     htmlType={btn.htmlType || "submit"}
                     onClick={btn.onClick}
-                    disabled={submitting || btn.disabled}
+                    disabled={submitting || btn.disabled || sinPermiso(btn)}
+                    title={sinPermiso(btn) ? "No tienes permiso para esta acción" : undefined}
                     danger={btn.type === "danger"}
                   >
                     {submitting ? "Enviando..." : btn.text}
@@ -225,7 +236,8 @@ export default function Formulario({
                   type={button.type || "primary"}
                   htmlType={button.htmlType || "submit"}
                   onClick={button.onClick}
-                  disabled={submitting || button.disabled}
+                  disabled={submitting || button.disabled || sinPermiso(button)}
+                  title={sinPermiso(button) ? "No tienes permiso para esta acción" : undefined}
                 >
                   {submitting ? "Enviando..." : button.text}
                 </Button>

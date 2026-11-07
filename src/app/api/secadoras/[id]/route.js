@@ -2,7 +2,9 @@ import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 
 export async function GET(req, { params }) {
-  const { id } = params;
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
+  const { id } = await params;
   try {
     const secadora = await prisma.secadora.findUnique({
       where: { secadoraId: Number(id) },
@@ -17,7 +19,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PUT(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
@@ -41,7 +43,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {

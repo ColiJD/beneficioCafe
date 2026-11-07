@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
-export async function GET() {
+export async function GET(req) {
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const liquidaciones = await prisma.liqdeposito.findMany({
       where: {

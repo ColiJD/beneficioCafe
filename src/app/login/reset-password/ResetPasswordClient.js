@@ -159,6 +159,7 @@ export default function ResetPassword({ token }) {
                     name="password"
                     rules={[
                       { required: true, message: "Ingrese nueva contraseña" },
+                      { min: 8, message: "Mínimo 8 caracteres" },
                     ]}
                   >
                     <Input.Password placeholder="********" />

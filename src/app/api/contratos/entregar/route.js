@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, bloquearContrato, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function POST(request) {
   // 🔹 Verificar rol usando el request correcto
@@ -48,33 +49,21 @@ export async function POST(request) {
       );
     }
 
-    // 2️⃣ Calcular total entregado (solo detalles válidos)
-    const detalle = await prisma.detallecontrato.aggregate({
-      _sum: { cantidadQQ: true },
-      where: {
-        contratoID: Number(contratoID),
-        tipoMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] },
-      },
-    });
-
-    const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
     const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
-    const saldoDisponible = contratoCantidadQQ - totalEntregado;
 
-    const cantidadQQNum = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
-    const saldoDispNum = truncarDosDecimalesSinRedondear(saldoDisponible);
-
-    if (cantidadQQNum > saldoDispNum) {
-      return Response.json(
-        {
-          error: `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
-        },
-        { status: 400 },
-      );
-    }
-
-    // 3️⃣ Ejecutar transacción completa
+    // 2️⃣ Transacción completa. El saldo se calcula dentro, con el contrato bloqueado:
+    // dos entregas simultáneas del mismo contrato no pueden pasarse de lo pactado.
     const resultado = await prisma.$transaction(async (tx) => {
+      const totalEntregado = await bloquearContrato(tx, "contrato", contratoID);
+      const saldoDisponible = contratoCantidadQQ - totalEntregado;
+      const cantidadQQNum = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
+      const saldoDispNum = truncarDosDecimalesSinRedondear(saldoDisponible);
+      if (cantidadQQNum > saldoDispNum) {
+        throw new ErrorNegocio(
+          `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
+        );
+      }
+
       // a) Crear detalle de entrega
       const detalleEntrega = await tx.detallecontrato.create({
         data: {
@@ -154,7 +143,7 @@ export async function POST(request) {
           (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ),
         ),
       };
-    });
+    }, TX_ESPERA);
 
     return Response.json(
       {
@@ -164,10 +153,6 @@ export async function POST(request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Error en POST /api/contratos/entregar:", error);
-    return Response.json(
-      { error: error?.message || "Error interno" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al registrar la entrega");
   }
 }

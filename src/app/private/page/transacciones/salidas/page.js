@@ -273,15 +273,19 @@ export default function FormSalida() {
               icon: <FileAddOutlined />,
               onClick: () =>
                 router.push("/private/page/transacciones/salidas/registro"),
-            },
+                route: "/private/page/transacciones/salidas/registro",
+              },
             {
               tooltip: "Ir a Registro de Liquidacion",
               icon: <SolutionOutlined />,
               onClick: () =>
                 router.push("/private/page/transacciones/salidas/registroliq"),
-            },
+                route: "/private/page/transacciones/salidas/registroliq",
+              },
             {
               label: "Liquidar Salida",
+              modulo: "liqSalidas",
+              accion: "crear",
               type: "primary", // color azul de primary
               onClick: () => handleAbrirLiquidacion(comprador),
             },
@@ -337,7 +341,7 @@ export default function FormSalida() {
           fields={fields}
           onSubmit={handleRegistrarClick}
           submitting={submitting}
-          button={{
+          button={{ accion: "crear",
             text: "Registrar Salida",
             onClick: handleRegistrarClick,
             type: "primary",

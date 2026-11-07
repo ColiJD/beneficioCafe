@@ -1,8 +1,11 @@
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const { searchParams } = new URL(req.url);
     const compradorID = searchParams.get("compradorID");

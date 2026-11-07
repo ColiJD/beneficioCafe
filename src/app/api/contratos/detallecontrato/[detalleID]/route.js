@@ -1,106 +1,77 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { NextResponse } from "next/server";
+import {
+  ErrorNegocio,
+  bloquearContrato,
+  esAnulado,
+  moverInventario,
+  movimientoOriginal,
+  redondear,
+  respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const detalleID = Number(params.detalleID);
+    const detalleID = Number((await params).detalleID);
     if (!detalleID) {
-      return new Response(JSON.stringify({ error: "ID inválido" }), {
-        status: 400,
+      return Response.json({ error: "ID inválido" }, { status: 400 });
+    }
+
+    const esEntrada = await prisma.$transaction(async (tx) => {
+      const registro = await tx.detallecontrato.findUnique({
+        where: { detalleID },
+        include: { contrato: { select: { contratoTipoCafe: true } } },
       });
-    }
+      if (!registro) throw new ErrorNegocio("Registro no encontrado", 404);
+      if (esAnulado(registro.tipoMovimiento)) throw new ErrorNegocio("La entrega ya está anulada");
 
-    // 🔹 Buscar el registro (puede ser compra o venta)
-    const registro = await prisma.detallecontrato.findUnique({
-      where: { detalleID },
-    });
-    if (!registro) {
-      return new Response(JSON.stringify({ error: "Registro no encontrado" }), {
-        status: 404,
+      const ref = `EntregaContrato #${detalleID}`;
+      const movimiento = await movimientoOriginal(tx, [ref]);
+      if (!movimiento) throw new ErrorNegocio("Movimiento de inventario no encontrado", 404);
+
+      // Las modificaciones de la entrega dejaron movimientos "Ajuste": se anulan junto al original
+      const ajustes = await tx.movimientoinventario.findMany({
+        where: { referenciaTipo: ref, tipoMovimiento: "Ajuste" },
       });
-    }
-
-    // 🔹 Buscar el movimiento asociado
-    const movimiento = await prisma.movimientoinventario.findFirst({
-      where: {
-        referenciaTipo: { contains: `EntregaContrato #${detalleID}` },
-        NOT: { tipoMovimiento: "Anulado" },
-      },
-    });
-
-    if (!movimiento) {
-      return new Response(
-        JSON.stringify({ error: "Movimiento de inventario no encontrado" }),
-        { status: 404 },
+      const entrada = movimiento.tipoMovimiento === "Entrada";
+      const total = redondear(
+        Number(movimiento.cantidadQQ) + ajustes.reduce((a, m) => a + Number(m.cantidadQQ), 0),
       );
-    }
 
-    // 🔹 Determinar tipo de movimiento (Entrada o Salida)
-    const esEntrada = movimiento.tipoMovimiento === "Entrada";
-    const esSalida = movimiento.tipoMovimiento === "Salida";
+      // Anular una entrada resta del inventario; anular una salida lo devuelve
+      await moverInventario(tx, registro.contrato.contratoTipoCafe, entrada ? -total : total);
 
-    if (!esEntrada && !esSalida) {
-      return new Response(
-        JSON.stringify({
-          error: "El movimiento ya fue anulado)",
-        }),
-        { status: 400 },
-      );
-    }
-
-    // 🔹 Ejecutar la lógica correspondiente en una transacción
-    await prisma.$transaction([
-      // 1️⃣ Actualizar movimiento
-      prisma.movimientoinventario.update({
-        where: { movimientoID: movimiento.movimientoID },
+      await tx.movimientoinventario.updateMany({
+        where: { movimientoID: { in: [movimiento.movimientoID, ...ajustes.map((a) => a.movimientoID)] } },
         data: {
           tipoMovimiento: "Anulado",
-          nota: `${
-            esEntrada ? "EntregaContrato" : "Contrato"
-          } anulada #${detalleID}`,
+          nota: `${entrada ? "EntregaContrato" : "Contrato"} anulada #${detalleID}`,
         },
-      }),
+      });
+      await tx.detallecontrato.update({ where: { detalleID }, data: { tipoMovimiento: "Anulado" } });
 
-      // 2️⃣ Ajustar inventario (según tipo)
-      prisma.inventariocliente.update({
-        where: { inventarioClienteID: movimiento.inventarioClienteID },
-        data: esEntrada
-          ? {
-              // Si era Entrada, ahora restamos
-              cantidadQQ: { decrement: movimiento.cantidadQQ },
-            }
-          : {
-              // Si era Salida, ahora sumamos
-              cantidadQQ: { increment: movimiento.cantidadQQ },
-            },
-      }),
+      // Si el contrato estaba Liquidado y con esta anulación vuelve a tener saldo, queda Pendiente
+      const contrato = await tx.contrato.findUnique({ where: { contratoID: registro.contratoID } });
+      if (contrato && contrato.estado === "Liquidado") {
+        const agregado = await tx.detallecontrato.aggregate({
+          _sum: { cantidadQQ: true },
+          where: { contratoID: registro.contratoID, tipoMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] } }, // campo sin NULL: noAnulado no aplica
+        });
+        if (Number(agregado._sum.cantidadQQ ?? 0) < Number(contrato.contratoCantidadQQ)) {
+          await tx.contrato.update({ where: { contratoID: registro.contratoID }, data: { estado: "Pendiente" } });
+        }
+      }
+      return entrada;
+    });
 
-      // 3️⃣ Actualizar estado del registro (compra/venta)
-      prisma.detallecontrato.update({
-        where: { detalleID },
-        data: { tipoMovimiento: "Anulado" },
-      }),
-    ]);
-
-    return new Response(
-      JSON.stringify({
-        message: `${esEntrada ? "Entrega" : "Contrato"} anulada correctamente`,
-      }),
-      { status: 200 },
-    );
+    return Response.json({ message: `${esEntrada ? "Entrega" : "Contrato"} anulada correctamente` });
   } catch (error) {
-    console.error("❌ Error al anular registro:", error);
-    return new Response(
-      JSON.stringify({ error: "Error interno al anular el registro" }),
-      { status: 500 },
-    );
+    return respuestaError(error, "Error interno al anular el registro");
   }
 }
-
-import { NextResponse } from "next/server";
 
 export async function GET(req, context) {
   const sessionOrResponse = await checkRole(req, [
@@ -182,136 +153,76 @@ export async function PUT(request, { params }) {
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    const detalleID = Number(params.detalleID);
+    const detalleID = Number((await params).detalleID);
     if (!detalleID) {
-      return Response.json(
-        { error: "ID de entrega inválido" },
-        { status: 400 },
-      );
+      return Response.json({ error: "ID de entrega inválido" }, { status: 400 });
     }
 
     const { contratoID, cantidadQQ, observaciones } = await request.json();
-    console.log("Datos recibidos:", {
-      detalleID,
-      contratoID,
-      cantidadQQ,
-      observaciones,
-    });
-
-    if (!contratoID || !cantidadQQ || observaciones === undefined) {
-      return Response.json(
-        { error: "Faltan datos obligatorios" },
-        { status: 400 },
-      );
-    }
-
-    // 1️⃣ Obtener la entrega original
-    const entregaOriginal = await prisma.detallecontrato.findUnique({
-      where: { detalleID },
-    });
-    if (!entregaOriginal) {
-      return Response.json(
-        { error: "No se encontró la entrega a modificar" },
-        { status: 404 },
-      );
-    }
-
-    // 2️⃣ Obtener contrato y datos del cliente/producto
-    const contrato = await prisma.contrato.findUnique({
-      where: { contratoID: Number(contratoID) },
-    });
-    if (!contrato) {
-      return Response.json(
-        { error: "No se encontró el contrato asociado" },
-        { status: 400 },
-      );
-    }
-    const clienteID = contrato.contratoclienteID;
-    const tipoCafe = contrato.contratoTipoCafe;
-
-    if (
-      contrato.estado?.toUpperCase() === "ANULADO" ||
-      contrato.contratoMovimiento?.toUpperCase() === "ANULADO"
-    ) {
-      return Response.json(
-        {
-          error: "El contrato está ANULADO y no se pueden modificar entregas.",
-        },
-        { status: 403 },
-      );
-    }
-
-    // 3️⃣ Calcular saldo disponible
-    const detalle = await prisma.detallecontrato.aggregate({
-      _sum: { cantidadQQ: true },
-      where: {
-        contratoID: Number(contratoID),
-        detalleID: { not: detalleID },
-        tipoMovimiento: { notIn: ["ANULADO", "anulado", "Anulado"] },
-      },
-    });
-    const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
-    const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
-    const saldoDisponible = contratoCantidadQQ - totalEntregado;
-
     const cantidadNueva = Number(cantidadQQ);
-    if (cantidadNueva > saldoDisponible) {
-      return Response.json(
-        {
-          error: `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoDisponible}).`,
-        },
-        { status: 400 },
-      );
+
+    if (!contratoID || !(cantidadNueva > 0) || observaciones === undefined) {
+      return Response.json({ error: "Faltan datos obligatorios" }, { status: 400 });
     }
 
-    // 4️⃣ Transacción para actualizar entrega e inventario
+    // El contrato es el de la entrega, no el que mande el cliente.
+    const leida = await prisma.detallecontrato.findUnique({ where: { detalleID }, select: { contratoID: true } });
+    if (!leida) return Response.json({ error: "No se encontró la entrega a modificar" }, { status: 404 });
+    const idContrato = leida.contratoID;
+
     const resultado = await prisma.$transaction(async (tx) => {
-      // a) Actualizar detalle
+      // Lo primero es bloquear el contrato: dos ediciones o entregas simultáneas se atienden una tras otra.
+      // Cualquier lectura previa dentro de la transacción fijaría una foto vieja de los datos (REPEATABLE READ).
+      const totalEntregado = await bloquearContrato(tx, "contrato", idContrato, detalleID);
+      const entregaOriginal = await tx.detallecontrato.findUnique({ where: { detalleID } });
+      if (esAnulado(entregaOriginal.tipoMovimiento)) {
+        throw new ErrorNegocio("No se puede modificar una entrega anulada");
+      }
+
+      const contrato = await tx.contrato.findUnique({ where: { contratoID: idContrato } });
+      if (!contrato) throw new ErrorNegocio("No se encontró el contrato asociado");
+      if (esAnulado(contrato.estado) || esAnulado(contrato.contratoMovimiento)) {
+        throw new ErrorNegocio("El contrato está ANULADO y no se pueden modificar entregas.", 403);
+      }
+
+      // Saldo disponible del contrato (sin contar esta entrega)
+      const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
+      const saldoDisponible = contratoCantidadQQ - totalEntregado;
+
+      if (cantidadNueva > saldoDisponible) {
+        throw new ErrorNegocio(
+          `La cantidad actualizada (${cantidadNueva}) supera el saldo disponible (${saldoDisponible}).`,
+        );
+      }
+
       const entregaActualizada = await tx.detallecontrato.update({
         where: { detalleID },
-        data: {
-          cantidadQQ: cantidadNueva,
-          observaciones: observaciones || null,
-          fecha: new Date(),
-        },
+        data: { cantidadQQ: cantidadNueva, observaciones: observaciones || null, fecha: new Date() },
       });
 
-      // b) Ajustar inventario (Global)
-      const diferenciaQQ = cantidadNueva - Number(entregaOriginal.cantidadQQ);
-      const inventarioCliente = await tx.inventariocliente.upsert({
-        where: {
-          productoID: Number(tipoCafe),
-        },
-        update: { cantidadQQ: { increment: diferenciaQQ } },
-        create: {
-          productoID: Number(tipoCafe),
-          cantidadQQ: cantidadNueva,
-          cantidadSacos: 0,
-        },
-      });
+      const diferenciaQQ = redondear(cantidadNueva - Number(entregaOriginal.cantidadQQ));
+      const inventarioCliente = await moverInventario(tx, contrato.contratoTipoCafe, diferenciaQQ);
 
-      // c) Registrar movimiento de inventario
-      await tx.movimientoinventario.create({
-        data: {
-          inventarioClienteID: inventarioCliente.inventarioClienteID,
-          tipoMovimiento: "Ajuste",
-          referenciaTipo: `EntregaContrato #${detalleID}`,
-          referenciaID: detalleID,
-          cantidadQQ: diferenciaQQ,
-          nota: "Ajuste por modificación de entrega",
-        },
-      });
-
-      // d) Validar si contrato queda liquidado
-      const nuevoTotalEntregado = totalEntregado + cantidadNueva;
-      let estadoContrato = "Pendiente";
-      if (nuevoTotalEntregado >= contratoCantidadQQ) {
-        estadoContrato = "Liquidado";
-        await tx.contrato.update({
-          where: { contratoID },
-          data: { estado: "Liquidado" },
+      if (diferenciaQQ !== 0) {
+        await tx.movimientoinventario.create({
+          data: {
+            inventarioClienteID: inventarioCliente.inventarioClienteID,
+            tipoMovimiento: "Ajuste",
+            referenciaTipo: `EntregaContrato #${detalleID}`,
+            referenciaID: detalleID,
+            cantidadQQ: diferenciaQQ,
+            nota: "Ajuste por modificación de entrega",
+          },
         });
       }
+
+      const nuevoTotalEntregado = totalEntregado + cantidadNueva;
+      // Liquidado si se completó el contrato; Pendiente si al bajar la cantidad vuelve a tener saldo
+      const estadoContrato = nuevoTotalEntregado >= contratoCantidadQQ ? "Liquidado" : "Pendiente";
+      await tx.contrato.update({
+        where: { contratoID: idContrato },
+        data: { estado: estadoContrato },
+      });
 
       return {
         message: "Entrega actualizada correctamente",
@@ -319,14 +230,10 @@ export async function PUT(request, { params }) {
         estadoContrato,
         saldoRestante: contratoCantidadQQ - nuevoTotalEntregado,
       };
-    });
+    }, TX_ESPERA);
 
-    return Response.json(resultado, { status: 200 });
+    return Response.json(resultado);
   } catch (error) {
-    console.error("Error en PUT /api/contratos/entregar:", error);
-    return Response.json(
-      { error: error?.message || "Error al actualizar entrega" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al actualizar entrega");
   }
 }

@@ -7,6 +7,7 @@ import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import { obtenerSelectData } from "@/lib/consultas";
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 
 import {
   capitalizarNombre,
@@ -288,6 +289,7 @@ export default function CompradorForm() {
           submitting={submitting}
           buttons={[
             {
+              accion: selectedComprador?.data?.compradorId ? "editar" : "crear",
               text: selectedComprador?.data?.compradorId
                 ? "Actualizar Comprador"
                 : "Crear Comprador",
@@ -296,7 +298,7 @@ export default function CompradorForm() {
             },
             selectedComprador?.data?.compradorId && {
               render: (
-                <Popconfirm
+                <ProtectedButton accion="eliminar"><Popconfirm
                   title="¿Seguro que quieres eliminar este comprador?"
                   okText="Sí"
                   cancelText="No"
@@ -305,7 +307,7 @@ export default function CompradorForm() {
                   }
                 >
                   <Button danger>Eliminar Comprador</Button>
-                </Popconfirm>
+                </Popconfirm></ProtectedButton>
               ),
             },
           ].filter(Boolean)}

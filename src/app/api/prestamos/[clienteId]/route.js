@@ -1,6 +1,9 @@
 import prisma from "@/lib/prisma";
+import { checkRole } from "@/lib/checkRole";
 
 export async function GET(req, { params }) {
+  const sessionOrResponse = await checkRole(req);
+  if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
     const { clienteId } = await params;
 
@@ -46,8 +49,6 @@ export async function GET(req, { params }) {
     );
   }
 }
-
-import { checkRole } from "@/lib/checkRole";
 
 export async function DELETE(req, { params }) {
   // Validar permisos

@@ -1,8 +1,8 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 
-export async function POST(req, res) {
-  const sessionOrResponse = await checkRole(res, [
+export async function POST(req) {
+  const sessionOrResponse = await checkRole(req, [
     "ADMIN",
     "GERENCIA",
     "COLABORADORES",
@@ -10,7 +10,10 @@ export async function POST(req, res) {
   ]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
   try {
-    const { fromProductID, toProductID, cantidadQQ, nota } = await req.json();
+    const body = await req.json();
+    const { cantidadQQ, nota } = body;
+    const fromProductID = Number(body.fromProductID);
+    const toProductID = Number(body.toProductID);
 
     // 🔹 1️⃣ Validación de campos obligatorios
     if (!fromProductID || !toProductID || !cantidadQQ) {
@@ -54,11 +57,14 @@ export async function POST(req, res) {
       }
 
       // 🔹 4c️⃣ Procesar la transferencia
-      // Reducir inventario origen
-      await tx.inventariocliente.update({
-        where: { productoID: fromProductID },
+      // Reducir inventario origen (condicionado al saldo por si cambió en paralelo)
+      const bajado = await tx.inventariocliente.updateMany({
+        where: { productoID: fromProductID, cantidadQQ: { gte: cantidad } },
         data: { cantidadQQ: { decrement: cantidad } },
       });
+      if (bajado.count === 0) {
+        return { ok: false, error: "No hay suficiente inventario para transferir" };
+      }
 
       // Actualizar inventario destino
       const inventarioDestino = await tx.inventariocliente.upsert({
@@ -75,7 +81,7 @@ export async function POST(req, res) {
       await tx.movimientoinventario.create({
         data: {
           inventarioClienteID: inventarioOrigen.inventarioClienteID,
-          tipoMovimiento: "Transferencia",
+          tipoMovimiento: "Salida", // tipo que reconocen las sumas del inventario
           referenciaTipo: `Transferencia de producto ${fromProductID} ➜ ${toProductID}`,
           referenciaID: toProductID,
           cantidadQQ: cantidad,
@@ -90,7 +96,7 @@ export async function POST(req, res) {
       await tx.movimientoinventario.create({
         data: {
           inventarioClienteID: inventarioDestino.inventarioClienteID,
-          tipoMovimiento: "Entrada por Transferencia",
+          tipoMovimiento: "Entrada",
           referenciaTipo: `Transferencia desde ${fromProductID}`,
           referenciaID: fromProductID,
           cantidadQQ: cantidad,
@@ -125,9 +131,14 @@ export async function GET(req) {
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
 
   try {
-    // 🔹 Consultar solo movimientos de tipo "Transferencia"
+    // 🔹 Movimiento de origen de cada transferencia (incluye los antiguos tipo "Transferencia")
     const movimientos = await prisma.movimientoinventario.findMany({
-      where: { tipoMovimiento: "Transferencia" },
+      where: {
+        OR: [
+          { tipoMovimiento: "Transferencia" },
+          { referenciaTipo: { startsWith: "Transferencia de producto" } },
+        ],
+      },
       orderBy: { fecha: "desc" }, // los más recientes primero
     });
 

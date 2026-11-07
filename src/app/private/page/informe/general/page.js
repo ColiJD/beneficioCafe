@@ -405,14 +405,49 @@ export default function ResumenMovimientos() {
   const datosInventario = useMemo(() => {
     if (!data) return [];
 
+    // Cuadre: Entradas - Salidas - café en secado - merma = Inventario
+    const entradasQQ = datosTabla.find((f) => f.key === "entradas")?.totalQQ ?? 0;
+    const salidasQQ = datosTabla.find((f) => f.key === "salidas")?.totalQQ ?? 0;
+    const enProcesoQQ = Number(data?.secado?.enProcesoQQ ?? 0);
+    const mermaQQ = Number(data?.secado?.mermaQQ ?? 0);
+    const inventarioQQ = Number(data?.inventario?.disponibleQQ ?? 0);
+    const diferenciaQQ = entradasQQ - salidasQQ - enProcesoQQ - mermaQQ - inventarioQQ;
+
     return [
+      { key: "ent", descripcion: "Total de Entradas", signo: "+", cantidad: entradasQQ },
+      { key: "sal", descripcion: "Total de Salidas", signo: "−", cantidad: salidasQQ },
+      {
+        key: "secProc",
+        descripcion:
+          "Café en secado: salió del inventario y todavía no termina de secarse",
+        signo: "−",
+        cantidad: enProcesoQQ,
+      },
+      {
+        key: "secMerma",
+        descripcion:
+          "Merma de secado: café que entró a secar menos café seco que salió, en secados terminados",
+        signo: "−",
+        cantidad: mermaQQ,
+      },
       {
         key: "inv",
         descripcion: "Inventario Disponible (QQ)",
-        cantidad: Number(data?.inventario?.disponibleQQ ?? 0),
+        signo: "=",
+        cantidad: inventarioQQ,
       },
+      // Solo aparece si algo no cuadra (por ejemplo, un rango de fechas que no cubre todo el historial)
+      ...(Math.abs(diferenciaQQ) > 0.005
+        ? [
+            {
+              key: "pend",
+              descripcion: "Diferencia sin explicar (revise el rango de fechas)",
+              cantidad: diferenciaQQ,
+            },
+          ]
+        : []),
     ];
-  }, [data]);
+  }, [data, datosTabla]);
 
   const columnasInventario = [
     {
@@ -433,7 +468,12 @@ export default function ResumenMovimientos() {
         if (record.key === "inv") color = "green"; // Inventario en verde
         if (record.key === "pend") color = "red"; // Pendiente en rojo
 
-        return <span style={{ color }}>{formatNumber(v)}</span>;
+        return (
+          <span style={{ color }}>
+            {record.signo ? `${record.signo} ` : ""}
+            {formatNumber(v)}
+          </span>
+        );
       },
     },
   ];

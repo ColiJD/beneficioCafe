@@ -10,7 +10,11 @@ import {
   message,
   Popconfirm,
   Space,
+  Drawer,
+  Descriptions,
+  Tag,
 } from "antd";
+import PermisosMatriz from "@/components/PermisosMatriz";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSession } from "next-auth/react";
 
@@ -21,6 +25,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [ficha, setFicha] = useState(null); // { user, efectivo, roleIds, permisos }
 
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
@@ -120,6 +125,32 @@ export default function UsersPage() {
     setOpen(true);
   };
 
+  const abrirFicha = async (u) => {
+    const r = await fetch(`/api/auth/acceso?userId=${u.userId}`);
+    if (!r.ok) return messageApi.error("No se pudo cargar la ficha");
+    const d = await r.json();
+    setFicha({
+      ...d,
+      roleIds: d.user.user_roles.map((x) => x.roleId),
+      permisos: d.user.user_permissions,
+    });
+  };
+
+  const guardarFicha = async () => {
+    const r = await fetch("/api/auth/acceso", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: ficha.user.userId,
+        roleIds: ficha.roleIds,
+        permisos: ficha.permisos,
+      }),
+    });
+    if (!r.ok) return messageApi.error("Error al guardar");
+    messageApi.success("Accesos guardados");
+    abrirFicha(ficha.user);
+  };
+
   const columns = [
     { title: "ID", dataIndex: "userId" },
     { title: "Nombre", dataIndex: "userName" },
@@ -135,6 +166,9 @@ export default function UsersPage() {
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
+          <Button type="link" onClick={() => abrirFicha(record)}>
+            Ver / Accesos
+          </Button>
           <Button type="link" onClick={() => handleEdit(record)}>
             Editar
           </Button>
@@ -177,6 +211,65 @@ export default function UsersPage() {
           rowKey="userId"
           loading={loading}
         />
+
+        <Drawer
+          title={ficha ? `Usuario: ${ficha.user.userName || ficha.user.userEmail}` : ""}
+          open={!!ficha}
+          onClose={() => setFicha(null)}
+          width={560}
+          extra={<Button type="primary" onClick={guardarFicha}>Guardar</Button>}
+        >
+          {ficha && (
+            <>
+              <Descriptions column={1} size="small" bordered>
+                <Descriptions.Item label="Correo">{ficha.user.userEmail}</Descriptions.Item>
+                <Descriptions.Item label="Rol principal">{ficha.user.roles.roleName}</Descriptions.Item>
+                <Descriptions.Item label="Creado">
+                  {new Date(ficha.user.createdAt).toLocaleString()}
+                </Descriptions.Item>
+              </Descriptions>
+
+              <h3 className="mt-4 mb-1 font-bold">Roles adicionales</h3>
+              <Select
+                mode="multiple"
+                style={{ width: "100%" }}
+                value={ficha.roleIds}
+                onChange={(roleIds) => setFicha({ ...ficha, roleIds })}
+                options={roles.map((r) => ({ value: r.roleId, label: r.roleName }))}
+              />
+
+              <h3 className="mt-4 mb-1 font-bold">Permisos directos (extra a sus roles)</h3>
+              <PermisosMatriz
+                value={ficha.permisos}
+                onChange={(permisos) => setFicha({ ...ficha, permisos })}
+              />
+
+              <h3 className="mt-4 mb-1 font-bold">Acceso efectivo (al guardar)</h3>
+              {Object.entries(ficha.efectivo.permisos)
+                .filter(([, p]) => p.ver)
+                .map(([m, p]) => (
+                  <div key={m} className="mb-1">
+                    <b>{m}</b>: {["ver","crear","editar","eliminar"].filter((a) => p[a]).map((a) => ({ ver: "Ver", crear: "Registrar", editar: "Actualizar", eliminar: "Eliminar" })[a]).join(" · ")}{" "}
+                    {[...new Set(p.origen)].map((o) => (
+                      <Tag key={o}>{o}</Tag>
+                    ))}
+                  </div>
+                ))}
+              {Object.entries(ficha.efectivo.permisos).some(([, p]) => !p.ver && p.datosDe?.length) && (
+                <>
+                  <h3 className="mt-4 mb-1 font-bold">Solo datos de apoyo (sin pantalla)</h3>
+                  {Object.entries(ficha.efectivo.permisos)
+                    .filter(([, p]) => !p.ver && p.datosDe?.length)
+                    .map(([m, p]) => (
+                      <div key={m} className="mb-1">
+                        <b>{m}</b> <Tag>por {[...new Set(p.datosDe)].join(", ")}</Tag>
+                      </div>
+                    ))}
+                </>
+              )}
+            </>
+          )}
+        </Drawer>
 
         <Modal
           title={editingUser ? "Editar Usuario" : "Crear Usuario"}

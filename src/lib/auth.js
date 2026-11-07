@@ -79,7 +79,7 @@ export const authOptions = {
     async session({ session, token }) {
       session.user.id = token.id;
       session.user.role = token.role;
-      session.user.refreshToken = token.refreshToken;
+      // refreshToken no se expone al navegador: vive en password_resets y serviría para cambiar la contraseña.
       return session;
     },
   },

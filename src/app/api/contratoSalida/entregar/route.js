@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, bloquearContrato, moverInventario, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function POST(request) {
   // 🔹 Verificar rol usando el request correcto
@@ -48,54 +49,30 @@ export async function POST(request) {
       );
     }
 
-    // 2️⃣ Calcular total entregado (solo detalles válidos)
-    const detalle = await prisma.detalleContratoSalida.aggregate({
-      _sum: { cantidadQQ: true },
-      where: {
-        contratoID: Number(contratoID),
-        tipoMovimiento: { notIn: ["ANULADO", "Anulado", "anulado"] },
-      },
-    });
-
-    const totalEntregado = parseFloat(detalle._sum?.cantidadQQ ?? "0");
     const contratoCantidadQQ = Number(contrato.contratoCantidadQQ);
-    const saldoDisponible = contratoCantidadQQ - totalEntregado;
 
-    const cantidadQQNum = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
-    const saldoDispNum = truncarDosDecimalesSinRedondear(saldoDisponible);
-
-    if (cantidadQQNum > saldoDispNum) {
-      return Response.json(
-        {
-          error: `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
-        },
-        { status: 400 },
-      );
-    }
-
-    // 3️⃣ Ejecutar transacción completa
+    // 2️⃣ Transacción completa. El saldo del contrato se calcula dentro, con el contrato bloqueado:
+    // dos entregas simultáneas del mismo contrato no pueden pasarse de lo pactado.
     const resultado = await prisma.$transaction(async (tx) => {
-      // 🔹 Deducción de Inventario (Global por Producto)
-      // Buscamos el registro de inventario específico para el tipo de café del contrato
-      const inventario = await tx.inventariocliente.findUnique({
-        where: { productoID: Number(contrato.contratoTipoCafe || tipoCafe) },
-      });
+      const totalEntregado = await bloquearContrato(tx, "contratoSalida", contratoID);
+      const saldoDisponible = contratoCantidadQQ - totalEntregado;
 
-      if (!inventario || Number(inventario.cantidadQQ) < Number(cantidadQQ)) {
-        throw new Error(
-          `Inventario insuficiente para el producto #${
-            contrato.contratoTipoCafe || tipoCafe
-          }. Disponible: ${Number(inventario?.cantidadQQ || 0)} QQ.`,
+      const cantidadQQNum = truncarDosDecimalesSinRedondear(Number(cantidadQQ));
+      const saldoDispNum = truncarDosDecimalesSinRedondear(saldoDisponible);
+      if (cantidadQQNum > saldoDispNum) {
+        throw new ErrorNegocio(
+          `La cantidad a entregar (${cantidadQQNum}) supera el saldo disponible (${saldoDispNum})`,
         );
       }
 
-      // Actualizar inventario directamente
-      await tx.inventariocliente.update({
-        where: { inventarioClienteID: inventario.inventarioClienteID },
-        data: {
-          cantidadQQ: { decrement: Number(cantidadQQ) },
-        },
-      });
+      // 🔹 Deducción de Inventario (Global por Producto)
+      // Buscamos el registro de inventario específico para el tipo de café del contrato
+      // Resta solo si el saldo alcanza en ese momento (otra transacción pudo entrar en paralelo)
+      const inventario = await moverInventario(
+        tx,
+        contrato.contratoTipoCafe || tipoCafe,
+        -Number(cantidadQQ),
+      );
 
       // Registrar movimiento de inventario
       await tx.movimientoinventario.create({
@@ -150,7 +127,7 @@ export async function POST(request) {
           (contratoCantidadQQ - nuevoTotalEntregado) * Number(precioQQ),
         ),
       };
-    });
+    }, TX_ESPERA);
 
     return Response.json(
       {
@@ -160,10 +137,6 @@ export async function POST(request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Error en POST /api/contratos/entregar:", error);
-    return Response.json(
-      { error: error?.message || "Error interno" },
-      { status: 500 },
-    );
+    return respuestaError(error, "Error al registrar la entrega");
   }
 }

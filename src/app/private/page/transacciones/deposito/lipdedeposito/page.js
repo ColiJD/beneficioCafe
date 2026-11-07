@@ -95,7 +95,7 @@ export default function ReporteLiquidacionDeposito() {
               <Button size="small" type="primary" icon={<FilePdfOutlined />} />
             </Popconfirm>
 
-            <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+            <ProtectedButton accion="eliminar">
               <Popconfirm
                 title="¿Seguro que deseas eliminar este registro?"
                 onConfirm={() =>
@@ -255,7 +255,7 @@ export default function ReporteLiquidacionDeposito() {
             <Button size="small" type="primary" icon={<FilePdfOutlined />} />
           </Popconfirm>
 
-          <ProtectedButton allowedRoles={["ADMIN", "GERENCIA"]}>
+          <ProtectedButton accion="eliminar">
             <Popconfirm
               title="¿Seguro que deseas eliminar este contrato?"
               onConfirm={() =>

@@ -43,6 +43,7 @@ export default function LoginComponent() {
         body: JSON.stringify({ email: values.email }),
       });
       const data = await res.json();
+      if (!res.ok) return messageApi.error(data.message || "No se pudo enviar el correo");
       messageApi.success(data.message);
       setIsModalOpen(false);
     } catch (error) {

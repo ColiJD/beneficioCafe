@@ -14,6 +14,7 @@ import {
 } from "@/config/validacionesForm";
 import { validarDatos } from "@/lib/validacionesForm";
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 
 export default function ClienteForm() {
   // 🔹 Estados de datos seleccionables
@@ -389,7 +390,7 @@ export default function ClienteForm() {
           fields={fields}
           onSubmit={handleSubmitClick}
           submitting={submitting}
-          button={{
+          button={{ accion: selectedCliente?.data?.clienteID ? "editar" : "crear",
             text: selectedCliente?.data?.clienteID
               ? "Actualizar Cliente"
               : "Crear Cliente",
@@ -401,7 +402,7 @@ export default function ClienteForm() {
         {selectedCliente?.data?.clienteID && (
           <Row style={{ marginTop: "1rem", justifyContent: "flex-start" }}>
             <Col>
-              <Popconfirm
+              <ProtectedButton accion="eliminar"><Popconfirm
                 title="¿Seguro que quieres eliminar?"
                 onConfirm={() => handleDelete(selectedCliente.data.clienteID)}
                 okText="Sí"
@@ -410,7 +411,7 @@ export default function ClienteForm() {
                 <Button danger disabled={submitting}>
                   Eliminar Cliente
                 </Button>
-              </Popconfirm>
+              </Popconfirm></ProtectedButton>
             </Col>
           </Row>
         )}

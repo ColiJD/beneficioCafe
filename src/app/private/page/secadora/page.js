@@ -16,6 +16,7 @@ import { obtenerSecadorasSelect } from "@/lib/consultas";
 import { validarFloatPositivo } from "@/config/validacionesForm";
 import { validarDatos } from "@/lib/validacionesForm";
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -193,7 +194,7 @@ export default function PageSecadoras() {
               style={{ borderRadius: "6px" }}
             />
           </Tooltip>
-          <Popconfirm title="¿Eliminar definitivamente?" onConfirm={() => handleDelete(record.value)} okButtonProps={{ danger: true }}>
+          <ProtectedButton accion="eliminar"><Popconfirm title="¿Eliminar definitivamente?" onConfirm={() => handleDelete(record.value)} okButtonProps={{ danger: true }}>
             <Button
               type="text"
               danger
@@ -202,7 +203,7 @@ export default function PageSecadoras() {
               disabled={record.data.estado === "En Uso"}
               style={{ borderRadius: "6px" }}
             />
-          </Popconfirm>
+          </Popconfirm></ProtectedButton>
         </Space>
       ),
     },
@@ -240,7 +241,7 @@ export default function PageSecadoras() {
                 fields={fields}
                 onSubmit={handleRegistrarClick}
                 submitting={submitting}
-                button={{ text: selectedSecadora ? "ACTUALIZAR DATOS" : "GUARDAR EQUIPO", onClick: handleRegistrarClick, style: { height: "40px", borderRadius: "8px", width: "100%", fontWeight: 700, fontSize: "14px" } }}
+                button={{ accion: selectedSecadora ? "editar" : "crear", text: selectedSecadora ? "ACTUALIZAR DATOS" : "GUARDAR EQUIPO", onClick: handleRegistrarClick, style: { height: "40px", borderRadius: "8px", width: "100%", fontWeight: 700, fontSize: "14px" } }}
               />
             </Card>
           </Col>

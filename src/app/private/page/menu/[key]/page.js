@@ -2,13 +2,15 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { menuItems } from "@/lib/menu";
+import useMenuItems from "@/components/useMenuItems";
 import "@/style/menu.css";
 
 export default function SubMenuPage() {
   const params = useParams();
   const router = useRouter();
   const menuId = Number(params.key);
+  const menuItems = useMenuItems();
+  if (!menuItems) return null; // permisos cargando
 
   const menu = menuItems.find((item) => item.id === menuId);
 

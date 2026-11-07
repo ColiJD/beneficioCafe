@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { moverInventario, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 
 export async function GET(req) {
   const sessionOrResponse = await checkRole(req, [
@@ -43,6 +44,13 @@ export async function POST(req) {
 
     // Iniciar transacción: crear registro de secado, actualizar estado de secadora y afectar inventario
     const result = await prisma.$transaction(async (tx) => {
+      // Primero se bloquea la secadora: si dos secados entran a la vez, el segundo espera su turno
+      // (crear el secado antes bloqueaba la secadora en modo compartido y producía un deadlock).
+      await tx.secadora.update({
+        where: { secadoraId: Number(secadoraId) },
+        data: { estado: "En Uso" }
+      });
+
       const nuevoSecado = await tx.secado.create({
         data: {
           secadoraId: Number(secadoraId),
@@ -56,26 +64,8 @@ export async function POST(req) {
         },
       });
 
-      // Actualizar estado de secadora
-      await tx.secadora.update({
-        where: { secadoraId: Number(secadoraId) },
-        data: { estado: "En Uso" }
-      });
-
-      // Verificar que haya inventario suficiente antes de descontar
-      const invActual = await tx.inventariocliente.findUnique({
-        where: { productoID: Number(productoId) }
-      });
-
-      if (!invActual || invActual.cantidadQQ < Number(cantidadEntradaQQ)) {
-        throw new Error(`Inventario insuficiente. Disponible: ${invActual?.cantidadQQ || 0} QQ`);
-      }
-
-      // Descontar del inventario el producto que entra a secar
-      const inventario = await tx.inventariocliente.update({
-        where: { productoID: Number(productoId) },
-        data: { cantidadQQ: { decrement: Number(cantidadEntradaQQ) } }
-      });
+      // Descontar el producto que entra a secar, solo si el saldo alcanza en ese momento
+      const inventario = await moverInventario(tx, productoId, -Number(cantidadEntradaQQ));
 
       // Registrar movimiento de inventario
       await tx.movimientoinventario.create({
@@ -90,13 +80,10 @@ export async function POST(req) {
       });
 
       return nuevoSecado;
-    });
+    }, TX_ESPERA);
 
     return new Response(JSON.stringify(result), { status: 201 });
   } catch (error) {
-    console.error("Error creating secado:", error);
-    return new Response(JSON.stringify({ error: "Error al registrar secado" }), {
-      status: 500,
-    });
+    return respuestaError(error, "Error al registrar secado");
   }
 }

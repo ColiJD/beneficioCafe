@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 
 export async function GET(request, context, req) {
-  const sessionOrResponse = await checkRole(req, [
+  const sessionOrResponse = await checkRole(request, [
     "ADMIN",
     "GERENCIA",
     "COLABORADORES",
