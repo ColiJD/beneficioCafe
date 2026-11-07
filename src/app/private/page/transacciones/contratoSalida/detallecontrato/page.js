@@ -243,7 +243,7 @@ export default function Reportedetallecontrato() {
             okText="Sí"
             cancelText="No"
           >
-            <Button size="small" type="primary" icon={<FilePdfOutlined />} />
+            <Button size="small" type="primary" icon={<FilePdfOutlined />} title="Exportar PDF" aria-label="Exportar PDF" />
           </Popconfirm>
           <ProtectedButton accion="editar">
             <Button
@@ -277,7 +277,7 @@ export default function Reportedetallecontrato() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" danger icon={<DeleteFilled />} />
+              <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
             </Popconfirm>
           </ProtectedButton>
         </div>
@@ -576,7 +576,7 @@ export default function Reportedetallecontrato() {
                         okText="Sí"
                         cancelText="No"
                       >
-                        <Button size="small" danger icon={<DeleteFilled />} />
+                        <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
                       </Popconfirm>
                     </ProtectedButton>
                   </div>

@@ -16,7 +16,9 @@ const theme = {
     colorWarning: "#8A5A12", // ámbar
     colorError: "#9B1C1C",
     colorInfo: "#5B4636",
-    colorLink: cereza,
+    colorLink: "#4A2E16",
+    colorLinkHover: cereza,
+    colorLinkActive: "#7A1A20",
     colorTextBase: tinta,
     colorBgBase: papel,
     colorBgLayout: fondo,

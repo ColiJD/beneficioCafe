@@ -92,9 +92,10 @@ export default function LoginComponent() {
               src={empresa.logo}
               unoptimized
               alt={`Logo ${empresa.nombre}`}
-              width={160}
-              height={96}
-              style={{ objectFit: "contain" }}
+              width={240}
+              height={135}
+              // multiply: el fondo blanco del logo se funde con el papel de la tarjeta (sirve con cualquier logo claro)
+              style={{ objectFit: "contain", mixBlendMode: "multiply" }}
             />
           </div>
 

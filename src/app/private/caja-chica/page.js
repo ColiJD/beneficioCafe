@@ -20,6 +20,7 @@ import {
 import { formatNumber } from "@/components/Formulario";
 
 import ProtectedPage from "@/components/ProtectedPage";
+import { BotonEditar, BotonEliminar } from "@/components/BotonesAccion";
 import ProtectedButton from "@/components/ProtectedButton";
 import EstadisticasCards from "@/components/ReportesElement/DatosEstadisticos";
 
@@ -318,22 +319,14 @@ export default function CajaChicaPage() {
       key: "acciones",
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            onClick={() => handleEdit(record)}
-          >
-            Editar
-          </Button>
+          <BotonEditar onClick={() => handleEdit(record)} />
           <ProtectedButton accion="eliminar"><Popconfirm
             title="¿Eliminar movimiento?"
             okText="Sí"
             cancelText="No"
             onConfirm={() => handleDelete(record.id)}
           >
-            <Button danger size="small">
-              Eliminar
-            </Button>
+            <BotonEliminar />
           </Popconfirm></ProtectedButton>
         </Space>
       ),

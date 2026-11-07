@@ -201,7 +201,7 @@ export default function ReporteRegistroContrato() {
             okText="Sí"
             cancelText="No"
           >
-            <Button size="small" type="primary" icon={<FilePdfOutlined />} />
+            <Button size="small" type="primary" icon={<FilePdfOutlined />} title="Exportar PDF" aria-label="Exportar PDF" />
           </Popconfirm>
           <ProtectedButton accion="editar" modulo="contratos">
             <Popconfirm
@@ -214,7 +214,7 @@ export default function ReporteRegistroContrato() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" type="default" icon={<EditFilled />} />
+              <Button size="small" type="default" icon={<EditFilled />} title="Editar" aria-label="Editar" />
             </Popconfirm>
           </ProtectedButton>
           <ProtectedButton accion="eliminar">
@@ -224,7 +224,7 @@ export default function ReporteRegistroContrato() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" danger icon={<DeleteFilled />} />
+              <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
             </Popconfirm>
           </ProtectedButton>
         </div>

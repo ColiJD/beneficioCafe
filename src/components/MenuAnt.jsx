@@ -114,6 +114,7 @@ export default function DashboardLayout({ children }) {
                 gap: collapsed ? 4 : 8,
                 color: "#fff",
                 margin: "16px 0",
+                padding: "0 12px",
                 transition: "all 0.2s",
               }}
             >

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Table, Button, Modal, Input, message, Space, Tag, Alert, Descriptions } from "antd";
 import ProtectedPage from "@/components/ProtectedPage";
+import EncabezadoPagina from "@/components/EncabezadoPagina";
 
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "—");
 const dias = (a, b) => Math.round((new Date(b ?? Date.now()) - new Date(a)) / 86400000) + 1;
@@ -54,11 +55,11 @@ export default function CosechasPage() {
   return (
     <ProtectedPage allowedRoles={["ADMIN"]}>
       {ctx}
-      <div style={{ padding: 16 }}>
-        <Space style={{ marginBottom: 16 }} wrap>
+      <div>
+        <EncabezadoPagina titulo="Cosechas">
           <Button type="primary" disabled={!!actual} onClick={() => abrirModal("abrir")}>Abrir cosecha</Button>
           <Button danger disabled={!actual} onClick={() => abrirModal("cerrar")}>Cerrar cosecha actual</Button>
-        </Space>
+        </EncabezadoPagina>
         {actual ? (
           <Alert type="success" showIcon style={{ marginBottom: 16 }}
             message={`Cosecha actual: ${actual.nombre}`}

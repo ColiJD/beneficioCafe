@@ -16,6 +16,8 @@ import {
 } from "antd";
 import PermisosMatriz from "@/components/PermisosMatriz";
 import ProtectedPage from "@/components/ProtectedPage";
+import { BotonEditar, BotonEliminar, BotonVer } from "@/components/BotonesAccion";
+import EncabezadoPagina from "@/components/EncabezadoPagina";
 import { useSession } from "next-auth/react";
 
 export default function UsersPage() {
@@ -166,12 +168,8 @@ export default function UsersPage() {
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
-          <Button type="link" onClick={() => abrirFicha(record)}>
-            Ver / Accesos
-          </Button>
-          <Button type="link" onClick={() => handleEdit(record)}>
-            Editar
-          </Button>
+          <BotonVer titulo="Ver / Accesos" onClick={() => abrirFicha(record)} />
+          <BotonEditar onClick={() => handleEdit(record)} />
           <Popconfirm
             title="¿Eliminar usuario?"
             description="Esta acción no se puede deshacer."
@@ -179,9 +177,7 @@ export default function UsersPage() {
             okText="Sí"
             cancelText="No"
           >
-            <Button type="link" danger>
-              Eliminar
-            </Button>
+            <BotonEliminar />
           </Popconfirm>
         </Space>
       ),
@@ -192,20 +188,20 @@ export default function UsersPage() {
     <ProtectedPage allowedRoles={["ADMIN"]}>
       {contextHolder}
       <div className="p-6">
-        <h1 className="text-xl font-bold mb-4">Gestión de Usuarios</h1>
-        <Button
-          type="primary"
-          onClick={() => {
-            setEditingUser(null);
-            form.resetFields();
-            setOpen(true);
-          }}
-        >
-          Nuevo Usuario
-        </Button>
+        <EncabezadoPagina titulo="Gestión de Usuarios">
+          <Button
+            type="primary"
+            onClick={() => {
+              setEditingUser(null);
+              form.resetFields();
+              setOpen(true);
+            }}
+          >
+            Nuevo Usuario
+          </Button>
+        </EncabezadoPagina>
 
         <Table
-          className="mt-4"
           columns={columns}
           dataSource={users}
           rowKey="userId"

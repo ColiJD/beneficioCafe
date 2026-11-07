@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Checkbox, Col, Collapse, Input, Row, Space, Switch, message } from "antd";
 import ProtectedPage from "@/components/ProtectedPage";
+import EncabezadoPagina from "@/components/EncabezadoPagina";
 import { GRUPOS } from "@/lib/modulos";
 
 const CAMPOS = [
@@ -66,7 +67,10 @@ export default function EmpresaPage() {
   return (
     <ProtectedPage allowedRoles={["ADMIN"]}>
       {ctx}
-      <div style={{ padding: 16, maxWidth: 900 }}>
+      <div style={{ maxWidth: 900 }}>
+        <EncabezadoPagina titulo="Empresa">
+          <Button type="primary" loading={guardando} onClick={guardar}>Guardar</Button>
+        </EncabezadoPagina>
         <Card title="Datos de la empresa" style={{ marginBottom: 16 }}>
           <Row gutter={[16, 12]}>
             {CAMPOS.map(([k, etiqueta, max]) => (
@@ -107,7 +111,6 @@ export default function EmpresaPage() {
           )}
         </Card>
 
-        <Button type="primary" loading={guardando} onClick={guardar}>Guardar</Button>
       </div>
     </ProtectedPage>
   );

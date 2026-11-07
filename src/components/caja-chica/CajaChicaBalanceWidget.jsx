@@ -100,7 +100,7 @@ export default function CajaChicaBalanceWidget({ collapsed }) {
                 Caja Chica (Hoy)
               </span>
             }
-            value={balance}
+            value={balance ?? "—"}
             precision={2}
             valueStyle={{
               color: "#E8C98B",
@@ -108,7 +108,7 @@ export default function CajaChicaBalanceWidget({ collapsed }) {
               fontWeight: "bold",
             }}
             prefix={<WalletOutlined />}
-            suffix="L."
+            suffix={balance === null ? "" : "L."}
           />
         )}
       </Card>

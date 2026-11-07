@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { Table, Button, Modal, Input, message, Popconfirm, Space, Tag } from "antd";
 import ProtectedPage from "@/components/ProtectedPage";
+import { BotonEditar, BotonEliminar } from "@/components/BotonesAccion";
+import EncabezadoPagina from "@/components/EncabezadoPagina";
 import PermisosMatriz from "@/components/PermisosMatriz";
 
 export default function RolesPage() {
@@ -36,12 +38,12 @@ export default function RolesPage() {
     <ProtectedPage allowedRoles={["ADMIN"]}>
       {ctx}
       <div className="p-6">
-        <h1 className="text-xl font-bold mb-4">Roles y permisos</h1>
-        <Button type="primary" onClick={() => setEdit({ roleName: "", permisos: [] })}>
-          Nuevo rol
-        </Button>
+        <EncabezadoPagina titulo="Roles y permisos">
+          <Button type="primary" onClick={() => setEdit({ roleName: "", permisos: [] })}>
+            Nuevo rol
+          </Button>
+        </EncabezadoPagina>
         <Table
-          className="mt-4"
           rowKey="roleId"
           dataSource={roles}
           columns={[
@@ -59,12 +61,10 @@ export default function RolesPage() {
               title: "Acciones",
               render: (_, r) => (
                 <Space>
-                  <Button type="link" onClick={() => setEdit({ ...r, permisos: r.role_permissions })}>
-                    Editar
-                  </Button>
+                  <BotonEditar onClick={() => setEdit({ ...r, permisos: r.role_permissions })} />
                   {r.roleName !== "ADMIN" && (
                     <Popconfirm title="¿Eliminar rol?" onConfirm={() => del(r.roleId)}>
-                      <Button type="link" danger>Eliminar</Button>
+                      <BotonEliminar />
                     </Popconfirm>
                   )}
                 </Space>
