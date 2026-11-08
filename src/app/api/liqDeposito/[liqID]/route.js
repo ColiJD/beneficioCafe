@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function DELETE(request, context) {
   // ✅ Verificar permisos
@@ -65,6 +66,7 @@ export async function DELETE(request, context) {
       { status: 200 },
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("❌ Error al anular registro de liqdeposito:", error);
     return NextResponse.json(
       { error: "Error interno al anular el registro" },

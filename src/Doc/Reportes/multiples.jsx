@@ -3,7 +3,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
-import fondoImg from "@/img/frijoles.png";
+import { logoSync } from "@/lib/empresa-cliente";
 
 export const generarPDFMultiplesSecciones = (
   secciones,
@@ -52,7 +52,7 @@ const formatNumber = (num) => {
   doc.setFillColor(...colorAccento);
   doc.rect(0, 0, pageWidth, 3, "F");
   try {
-    doc.addImage(fondoImg, "PNG", margin, 7, 18, 18);
+    doc.addImage(logoSync(), "PNG", margin, 7, 18, 18);
   } catch (e) {}
 
   doc.setTextColor(255, 255, 255);

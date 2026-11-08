@@ -1,6 +1,6 @@
 import JsPDF from "jspdf";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/belagos.png";
+import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import autoTable from "jspdf-autotable";
@@ -12,6 +12,7 @@ import {
 } from "@/Doc/Documentos/funcionesdeDocumentos";
 
 export const exportDeposito = async (formState) => {
+  const empresa = await getEmpresaPDF();
   const doc = new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 72;
   const rightMargin = 72;
@@ -20,7 +21,7 @@ export const exportDeposito = async (formState) => {
   const pageHeight = doc.internal.pageSize.getHeight();
 
   // Fondo gris
-  const fondoGray = await processImageToGray(fondoImg.src, 0.15);
+  const fondoGray = await processImageToGray(empresa.logo, 0.15);
 
   // Fecha (solo para pie de página)
   let fechaObj;
@@ -105,7 +106,7 @@ export const exportDeposito = async (formState) => {
     // Encabezado
     doc.setFont("times", "bold");
     doc.setFontSize(20);
-    doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 60 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 60 + offsetY, {
       align: "center",
     });
 
@@ -114,17 +115,17 @@ export const exportDeposito = async (formState) => {
     doc.text("COMPROBANTE DE DEPÓSITO", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text("Propietario Belago", pageWidth / 2, 100 + offsetY, {
+    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 100 + offsetY, {
       align: "center",
     });
     doc.setFontSize(12);
-    doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 115 + offsetY, {
+    doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 115 + offsetY, {
       align: "center",
     });
 
     // Cosecha
     doc.setFont("times", "normal");
-    doc.text("Cosecha 2026 - 2027", leftMargin, 110 + offsetY);
+    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, 110 + offsetY);
 
     // Productor y comprobante alineados
     let startY = topMargin + 70 + offsetY;
@@ -207,14 +208,14 @@ export const exportDeposito = async (formState) => {
       startY,
     );
     doc.setTextColor(255, 0, 0);
-    doc.text(`El Paraíso  ${fecha}`, pageWidth - rightMargin - 140, startY - 4);
+    doc.text(`${empresa.ciudad}  ${fecha}`, pageWidth - rightMargin - 140, startY - 4);
     doc.setTextColor(0, 0, 0);
     doc.text("LUGAR Y FECHA", pageWidth - rightMargin - 130, startY + 15);
 
     // Footer
     doc.setFontSize(10);
     doc.text(
-      "Beneficio Café Belago - El Paraíso, Honduras",
+      `${empresa.nombre} - ${empresa.ciudad}, ${empresa.pais}`,
       pageWidth / 2,
       offsetY + pageHeight / 2 - 15,
       { align: "center" },

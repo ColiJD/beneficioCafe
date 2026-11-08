@@ -161,3 +161,6 @@ export async function getLogoScaled(imgUrl, targetWidth, targetHeight) {
 
   return { src: imgUrl, width, height };
 }
+
+// Datos de la empresa (tabla empresa) para los encabezados y pies de los PDFs.
+export { cargarEmpresa as getEmpresaPDF } from "@/lib/empresa-cliente";

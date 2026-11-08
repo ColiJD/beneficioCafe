@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function DELETE(req) {
   // ✅ Validar permisos
@@ -44,6 +45,7 @@ export async function DELETE(req) {
       }
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("❌ Error al anular anticipo:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el anticipo" }),

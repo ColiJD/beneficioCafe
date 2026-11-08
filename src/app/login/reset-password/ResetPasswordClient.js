@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Form, Input, Button, message, Card, Spin, Row, Col } from "antd";
 import Image from "next/image";
-import frijolesImg from "@/img/frijoles.png";
+import useEmpresa from "@/components/useEmpresa";
 
 export default function ResetPassword({ token }) {
+  const empresa = useEmpresa();
   const [validToken, setValidToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
@@ -137,8 +138,9 @@ export default function ResetPassword({ token }) {
               }}
             >
               <Image
-                src={frijolesImg}
-                alt="Logo Frijoles"
+                src={empresa.logo}
+                unoptimized
+                alt={`Logo ${empresa.nombre}`}
                 width={120}
                 height={120}
                 style={{

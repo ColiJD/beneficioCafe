@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 // 🟡 Actualizar movimiento
 export async function PUT(request, { params }) {
@@ -35,6 +36,7 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(updated);
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error updating caja chica movement:", error);
     return NextResponse.json(
       { error: "Error updating movement" },
@@ -66,6 +68,7 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ message: "Movimiento eliminado" });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error deleting caja chica movement:", error);
     return NextResponse.json(
       { error: "Error deleting movement" },

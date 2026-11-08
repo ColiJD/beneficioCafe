@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function GET(req, { params }) {
   const sessionOrResponse = await checkRole(req);
@@ -42,6 +43,7 @@ export async function GET(req, { params }) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al obtener datos del cliente:", error);
     return new Response(
       JSON.stringify({ message: "Error interno del servidor" }),
@@ -93,6 +95,7 @@ export async function DELETE(req, { params }) {
       },
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("❌ Error al anular préstamo:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el préstamo" }),

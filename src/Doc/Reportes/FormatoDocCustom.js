@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
-import fondoImg from "@/img/frijoles.png";
+import { logoSync } from "@/lib/empresa-cliente";
 
 /**
  * Genera un archivo PDF para reportes con diseño optimizado (Custom).
@@ -69,7 +69,7 @@ export const generarReportePDF = (
   const logoY = 7;
 
   try {
-    doc.addImage(fondoImg, "PNG", logoX, logoY, logoSize, logoSize);
+    doc.addImage(logoSync(), "PNG", logoX, logoY, logoSize, logoSize);
   } catch (error) {
     console.warn("No se pudo cargar el logo:", error);
   }
@@ -320,7 +320,7 @@ export const generarReportePDF = (
       );
 
       try {
-        doc.addImage(fondoImg, "PNG", margin, footerY + 1.5, 5, 5);
+        doc.addImage(logoSync(), "PNG", margin, footerY + 1.5, 5, 5);
       } catch {}
     },
   });

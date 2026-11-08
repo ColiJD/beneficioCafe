@@ -85,6 +85,8 @@ const RUTAS = [
   ["/private/caja-chica", "caja-chica"],
   ["/private/page/user", "ADMIN"],
   ["/private/page/roles", "ADMIN"],
+  ["/private/page/cosechas", "ADMIN"],
+  ["/private/page/empresa", "ADMIN"],
   ["/private/page/cliente", "clientes"],
   ["/private/page/compradores", "compradores"],
   ["/private/page/producto", "productos"],

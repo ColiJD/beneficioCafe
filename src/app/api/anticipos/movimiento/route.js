@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function POST(req) {
   const sessionOrResponse = await checkRole(req, [
@@ -303,6 +304,7 @@ export async function POST(req) {
       message: "Movimiento registrado correctamente siguiendo FIFO.",
     });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al registrar movimiento:", error);
     return NextResponse.json(
       { error: error.message || "Error interno al registrar movimiento." },

@@ -1,4 +1,6 @@
 import prisma from "@/lib/prisma";
+import { getEmpresa } from "@/lib/empresa";
+import { funcionHabilitada } from "@/lib/empresa-cliente";
 
 import { MODULOS, ACCIONES, col, DEPENDENCIAS, aplica } from "@/lib/modulos";
 export { MODULOS };
@@ -45,6 +47,9 @@ export async function getPermisos(userId) {
         const x = (permisos[d] ??= { origen: [], ...Object.fromEntries(ACCIONES.map((a) => [a, false])) });
         (x.datosDe ??= []).push(m);
       }
+  // Funciones que este cliente no tiene (empresa.funciones): se quitan, así no aparecen en el menú ni responde su API.
+  const { funciones } = await getEmpresa();
+  for (const m of Object.keys(permisos)) if (!funcionHabilitada(funciones, m)) delete permisos[m];
   return { admin, roles: roles.map((r) => r.roleName), permisos };
 }
 

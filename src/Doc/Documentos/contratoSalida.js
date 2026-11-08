@@ -1,7 +1,7 @@
 import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatNumber } from "@/components/Formulario";
-import fondoImg from "@/img/belagos.png";
+import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
@@ -13,6 +13,7 @@ import {
 
 /** Genera el PDF del contrato de salida de café (Venta) */
 export const exportContratoSalida = async (formState) => {
+  const empresa = await getEmpresaPDF();
   const doc = new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
@@ -20,7 +21,7 @@ export const exportContratoSalida = async (formState) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const fondoGray = await processImageToGray(fondoImg.src, 0.15);
+  const fondoGray = await processImageToGray(empresa.logo, 0.15);
 
   // Fecha larga (si la quieres usar en texto) y fecha corta para la firma
   const fechaInput = formState?.fecha ? new Date(formState.fecha) : new Date();
@@ -74,15 +75,15 @@ export const exportContratoSalida = async (formState) => {
   // === Encabezado central ===
   doc.setFont("times", "bold");
   doc.setFontSize(16 * scale);
-  doc.text("BENEFICIO CAFÉ BELAGO", pageWidth / 2, 50, { align: "center" });
+  doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50, { align: "center" });
 
   doc.setFont("times", "normal");
   doc.setFontSize(10 * scale);
   doc.text("CONTRATO DE VENTA DE CAFÉ", pageWidth / 2, 70, {
     align: "center",
   });
-  doc.text("Propietario Belago", pageWidth / 2, 85, { align: "center" });
-  doc.text("Teléfono: (504) 9964-9154", pageWidth / 2, 100, {
+  doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85, { align: "center" });
+  doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 100, {
     align: "center",
   });
 
@@ -90,7 +91,7 @@ export const exportContratoSalida = async (formState) => {
   let startY = topMargin + 80;
   doc.setFont("times", "bold");
   doc.setFontSize(10 * scale);
-  doc.text("Cosecha 2025 - 2026", leftMargin, startY);
+  doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, startY);
 
   //Contrato No. pasa donde estaba Cosecha
   const cosechaX = pageWidth - rightMargin - frijolimg.width;
@@ -106,7 +107,7 @@ export const exportContratoSalida = async (formState) => {
   startY += 25;
   doc.setFont("times", "normal");
   doc.text(
-    `En el departamento del El Paraíso, Honduras, se celebra el presente contrato de venta de café entre:`,
+    `En el departamento del ${empresa.ciudad}, ${empresa.pais}, se celebra el presente contrato de venta de café entre:`,
     leftMargin,
     startY,
     { maxWidth: pageWidth - leftMargin - rightMargin },
@@ -125,7 +126,7 @@ export const exportContratoSalida = async (formState) => {
 
   startY += 18;
   doc.text(
-    `Quien en lo sucesivo se denominará "EL COMPRADOR", y el BENEFICIO CAFÉ BELAGO, en lo sucesivo denominado "EL VENDEDOR".`,
+    `Quien en lo sucesivo se denominará "EL COMPRADOR", y el ${empresa.nombre.toUpperCase()}, en lo sucesivo denominado "EL VENDEDOR".`,
     leftMargin,
     startY,
     { maxWidth: pageWidth - leftMargin - rightMargin },
@@ -178,7 +179,7 @@ export const exportContratoSalida = async (formState) => {
   const clausulas = [
     "1. El vendedor se compromete a entregar el café en la cantidad, calidad y condiciones pactadas.",
     "2. El comprador se obliga a pagar el precio acordado en los términos y plazos establecidos.",
-    "3. Ambas partes aceptan que cualquier disputa será resuelta conforme a las leyes de la República de Honduras.",
+    `3. Ambas partes aceptan que cualquier disputa será resuelta conforme a las leyes de la República de ${empresa.pais}.`,
     "4. El presente contrato se firma en duplicado, quedando una copia para cada parte.",
   ];
   doc.setFont("times", "bold");
@@ -215,14 +216,14 @@ export const exportContratoSalida = async (formState) => {
   // Fecha roja sobre la línea derecha
   doc.setFont("times", "bold");
   doc.setTextColor(255, 0, 0);
-  doc.text(`El Paraíso ${fechaCorta}`, rightX + 20, firmaY - 5);
+  doc.text(`${empresa.ciudad} ${fechaCorta}`, rightX + 20, firmaY - 5);
   doc.setTextColor(0, 0, 0);
   doc.setFont("times", "normal");
 
   // Footer
   doc.setFontSize(8 * scale);
   doc.text(
-    "Beneficio Café Belago - El Paraíso, Honduras",
+    `${empresa.nombre} - ${empresa.ciudad}, ${empresa.pais}`,
     pageWidth / 2,
     pageHeight - 30,
     { align: "center" },

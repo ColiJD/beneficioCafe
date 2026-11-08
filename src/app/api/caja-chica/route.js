@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 export async function GET(req) {
   // 🔹 Validar roles
@@ -123,6 +124,7 @@ export async function GET(req) {
 
     return NextResponse.json(movimientos);
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error fetching caja chica movements:", error);
     return NextResponse.json(
       { error: "Error fetching caja chica" },
@@ -156,6 +158,7 @@ export async function POST(request) {
 
     return NextResponse.json(newMovement);
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error creating caja chica movement:", error);
     return NextResponse.json(
       { error: "Error creating movement" },

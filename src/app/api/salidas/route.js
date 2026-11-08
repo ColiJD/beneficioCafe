@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 
 // Registrar nueva salida (venta/compromiso)
 export async function POST(request, req) {
@@ -67,6 +68,7 @@ export async function POST(request, req) {
 
     return new Response(JSON.stringify(nuevaSalida), { status: 201 });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al registrar salida:", error);
     return new Response(
       JSON.stringify({ error: "Error al registrar salida" }),
@@ -128,6 +130,7 @@ export async function GET(req) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al obtener salidas:", error);
     return new Response(JSON.stringify({ error: "Error al obtener salidas" }), {
       status: 500,

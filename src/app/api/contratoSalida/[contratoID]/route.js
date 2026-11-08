@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
+import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, ["ADMIN", "GERENCIA"]);
   if (sessionOrResponse instanceof Response) return sessionOrResponse;
@@ -58,6 +59,7 @@ export async function DELETE(req, { params }) {
       { status: 200 },
     );
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("❌ Error al anular contrato:", error);
     return new Response(
       JSON.stringify({ error: "Error interno al anular el contrato" }),
@@ -152,6 +154,7 @@ export async function PUT(request, { params }) {
 
     return new Response(JSON.stringify(contratoActualizado), { status: 200 });
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error al actualizar contrato:", error);
     return new Response(
       JSON.stringify({ error: "Error al actualizar contrato" }),
@@ -201,6 +204,7 @@ export async function GET(req, context) {
 
     return NextResponse.json(contrato);
   } catch (error) {
+    if (error instanceof ErrorNegocio) return respuestaError(error);
     console.error("Error en GET /api/contratos/[id]:", error);
     return NextResponse.json(
       { error: "Error interno del servidor" },
