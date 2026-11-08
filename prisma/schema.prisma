@@ -137,6 +137,7 @@ model compra {
   compraTotal         Decimal?     @db.Decimal(15, 2)
   compraTotalSacos    Decimal?     @db.Decimal(15, 2)
   compraRetencio      Decimal?     @db.Decimal(15, 2)
+  compraFlete         Decimal      @default(0.00) @db.Decimal(15, 2) // cobro por flete: ya está descontado de compraTotal
   compraEn            String?      @db.VarChar(20)
   compraDescripcion   String?      @db.VarChar(200)
   cliente             cliente?     @relation(fields: [clienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "compra_ibfk_1")

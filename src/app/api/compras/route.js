@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
+import { validarFlete } from "@/lib/flete";
 
 export async function POST(request, req) {
   const sessionOrResponse = await checkRole(request, [
@@ -21,6 +22,7 @@ export async function POST(request, req) {
       compraTotal,
       compraTotalSacos,
       compraRetencio,
+      compraFlete,
       compraDescripcion,
       compraEn,
     } = body;
@@ -38,6 +40,7 @@ export async function POST(request, req) {
         { status: 400 },
       );
     }
+    const flete = validarFlete(compraFlete, compraTotal);
     const hoy = new Date();
     const fechaSolo = new Date(
       Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()),
@@ -56,6 +59,7 @@ export async function POST(request, req) {
         compraTotal: parseFloat(compraTotal),
         compraTotalSacos: compraTotalSacos ? parseFloat(compraTotalSacos) : 0,
         compraRetencio: compraRetencio ? parseFloat(compraRetencio) : 0,
+        compraFlete: flete,
         compraEn,
         compraDescripcion: compraDescripcion || "",
       },
