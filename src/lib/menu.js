@@ -239,6 +239,7 @@ export const menuItems = [
       { id: 507, name: "Roles y permisos", href: Ruta + "/roles", image: eventos },
       { id: 508, name: "Cosechas", href: Ruta + "/cosechas", image: eventos },
       { id: 509, name: "Empresa", href: Ruta + "/empresa", image: eventos },
+      { id: 510, name: "Bitácora", href: Ruta + "/bitacora", image: eventos },
     ],
   },
 ];

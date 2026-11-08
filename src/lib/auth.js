@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { prismaSafe } from "@/lib/prismaSafe";
+import { registrar } from "@/lib/bitacora";
 
 export const authOptions = {
   providers: [
@@ -13,7 +14,8 @@ export const authOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        const ip = String(req?.headers?.["x-forwarded-for"] ?? "").split(",")[0].trim();
         // Envolvemos la consulta en prismaSafe para manejar errores de conexión
         const user = await prismaSafe(async () => {
           return prisma.users.findUnique({
@@ -23,14 +25,20 @@ export const authOptions = {
         });
 
         const errorMsg = "Usuario o contraseña incorrecta";
-        if (!user) throw new Error(errorMsg);
+        if (!user) {
+          await registrar({ evento: "LOGIN_FALLIDO", modulo: "sesion", ip, detalle: { correo: credentials.email, motivo: "el usuario no existe" } });
+          throw new Error(errorMsg);
+        }
 
         const isValid = await bcrypt.compare(
           credentials.password,
           user.userPassword,
         );
 
-        if (!isValid) throw new Error(errorMsg);
+        if (!isValid) {
+          await registrar({ evento: "LOGIN_FALLIDO", modulo: "sesion", ip, usuario: { userId: user.userId, usuario: user.userName, rol: user.roles.roleName }, detalle: { correo: credentials.email, motivo: "contraseña incorrecta" } });
+          throw new Error(errorMsg);
+        }
 
         // Crear refresh token
         const refreshToken = crypto.randomBytes(32).toString("hex");
@@ -50,6 +58,8 @@ export const authOptions = {
             },
           });
         });
+
+        await registrar({ evento: "LOGIN", modulo: "sesion", ip, usuario: { userId: user.userId, usuario: user.userName, rol: user.roles.roleName } });
 
         return {
           id: user.userId,
