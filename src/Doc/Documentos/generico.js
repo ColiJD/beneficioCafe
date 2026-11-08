@@ -25,6 +25,8 @@ export const PDFComprobante = async ({
   observaciones = "N/A",
   comprobanteID = "0000",
   formaPago = "",
+  columnStyles = {}, // anchos por columna (opcional): { 0: { cellWidth: 200 } }
+  espacioFirma = 80, // espacio entre observaciones y la línea de firma (comprobantes con más filas lo reducen)
   columnas = [
     { title: "Producto", key: "nombre" },
     { title: "Cantidad", key: "cantidad" },
@@ -149,6 +151,7 @@ export const PDFComprobante = async ({
       margin: { left: leftMargin, right: rightMargin },
       head: [columnas.map((c) => c.title)],
       body: bodyProductos,
+      columnStyles,
       styles: {
         font: "times",
         fontSize: 10 * scale,
@@ -183,7 +186,7 @@ export const PDFComprobante = async ({
     formas.forEach((f) => {
       const rectWidth = 10;
       doc.rect(x, startY - 7, rectWidth, 10); // caja
-      if (formaPago === f) doc.text("X", x + 2, startY + 1); // marcar seleccionado
+      if ([].concat(formaPago).includes(f)) doc.text("X", x + 2, startY + 1); // marcar seleccionado
       const textX = x + rectWidth + 5; // espacio entre cuadro y texto
       doc.text(f, textX, startY + 1);
       // mover x al final del texto + un margen
@@ -200,7 +203,7 @@ export const PDFComprobante = async ({
       maxWidth: pageWidth - leftMargin - rightMargin,
     });
 
-    startY += 80;
+    startY += espacioFirma;
 
     const firmaWidth = 150;
     const firmaY = startY;

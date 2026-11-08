@@ -6,7 +6,7 @@ import { ErrorNegocio } from "@/lib/inventarioMov";
 const FECHAS = {
   compra: "compraFecha", deposito: "depositoFecha", contrato: "contratoFecha", contratoSalida: "contratoFecha",
   detallecontrato: "fecha", detalleContratoSalida: "fecha", liqdeposito: "liqFecha", liqsalida: "liqFecha",
-  salida: "salidaFecha", caja_chica: "fecha", secado: "fechaInicio",
+  salida: "salidaFecha", caja_chica: "fecha", secado: "fechaInicio", servicio_secado: "fecha",
   prestamos: "fecha", anticipo: "fecha", prestamos_compradores: "fecha", anticipo_compradores: "fecha",
   movimientos_prestamo: "fecha", movimientos_anticipos: "fecha",
   movimientos_prestamo_compradores: "fecha", movimientos_anticipos_compradores: "fecha",

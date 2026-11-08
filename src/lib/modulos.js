@@ -20,7 +20,10 @@ export const GRUPOS = [
     ["productos", "Productos"], ["clientes", "Clientes"], ["compradores", "Compradores"] ] },
   { grupo: "Inventario y secado", items: [
     ["inventario", "Inventario"], ["transferencias", "Conversión / transferencia de café"],
-    ["secado", "Control de secado"], ["secadoras", "Secadoras"] ] },
+    ["secado", "Control de secado"], ["secadoras", "Secadoras"],
+    ["servicio-secado", "Servicio de secado (recibir, cobrar y ver los activos)"],
+    ["reg-servicio-pagado", "Servicios de secado pagados (ver)"], ["reg-servicio-vendido", "Servicios de secado con compra (ver)"],
+    ["reg-servicio-anulado", "Servicios de secado anulados (ver)"], ["tarifa-secado", "Tarifa del servicio de secado"] ] },
   { grupo: "Informes", items: [
     ["informe-general", "General"], ["informe-entradas", "Registro de entradas"],
     ["informe-salidas", "Registro de salidas"], ["informe-porCliente", "Por cliente"],
@@ -54,6 +57,9 @@ export const DEPENDENCIAS = {
   "reg-entregaContratoSalida": ["contratoSalida", "contratos"],
   transferencias: ["productos"],
   secado: ["productos", "secadoras"],
+  "servicio-secado": ["clientes", "productos", "secadoras"],
+  "reg-servicio-pagado": ["clientes", "productos", "secadoras"], "reg-servicio-vendido": ["clientes", "productos", "secadoras"],
+  "reg-servicio-anulado": ["clientes", "productos", "secadoras"],
   "informe-porCliente": ["clientes"],
   "informe-saldoDeposito": ["deposito"],
   "informe-saldoContrato": ["contratos"],
@@ -72,6 +78,9 @@ const NO_APLICA = {
   "reg-liqDepositos": ["crear", "editar"], "reg-liqSalidas": ["crear", "editar"],
   "reg-depositos": ["crear"], "reg-entregaContratos": ["crear"], "reg-entregaContratoSalida": ["crear"],
   "reg-salidas": ["crear"], "reg-secado": ["crear", "editar", "eliminar"],
+  "servicio-secado": ["eliminar"], // se anula (editar), no se elimina
+  "reg-servicio-pagado": ["crear", "editar", "eliminar"], "reg-servicio-vendido": ["crear", "editar", "eliminar"], "reg-servicio-anulado": ["crear", "editar", "eliminar"], // solo ver
+  "tarifa-secado": ["crear", "eliminar"], // solo ver y cambiar la tarifa
 };
 export const aplica = (modulo, accion) => !(NO_APLICA[modulo] || []).includes(accion);
 
@@ -99,6 +108,7 @@ const RUTAS = [
     "reg-entregaContratos", "reg-salidas", "reg-liqSalidas", "reg-contratoSalida", "reg-entregaContratoSalida",
     "prestamos", "anticipos", "prestamosCompradores", "anticiposCompradores", "reg-secado"]],
   ["/private/page/secado/reporte", "reg-secado"],
+  ["/private/page/secado/servicio", ["servicio-secado", "reg-servicio-pagado", "reg-servicio-vendido", "reg-servicio-anulado"]], // basta ver cualquiera
   ["/private/page/secado", "secado"],
   ["/private/page/informe/general", "informe-general"],
   ["/private/page/informe/reporteCliente", "informe-entradas"],
@@ -140,6 +150,8 @@ const FAMILIAS = {
   salidas: ["salidas", "reg-salidas"], liqSalidas: ["liqSalidas", "reg-liqSalidas"],
   contratoSalida: ["contratoSalida", "reg-contratoSalida"],
   entregaContratoSalida: ["entregaContratoSalida", "reg-entregaContratoSalida"],
+  // consultar la lista (GET) basta con cualquiera; recibir, cobrar, comprar y anular (POST/PUT) exigen el principal
+  "servicio-secado": ["servicio-secado", "reg-servicio-pagado", "reg-servicio-vendido", "reg-servicio-anulado"],
 };
 // dónde se edita: 0 = formulario (el lápiz del registro lleva a él), 1 = el propio registro
 const EDITA_EN = { deposito: 1, salidas: 1, entregaContratos: 1, entregaContratoSalida: 1 };
