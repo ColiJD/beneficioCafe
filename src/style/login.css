@@ -17,13 +17,13 @@
 .lg-marca p { margin-top: 18px; font-size: 18px; line-height: 1.5; color: #D8CBB0; }
 .lg-marca small { display: block; margin-top: 24px; font-family: var(--font-mono), monospace; font-size: 13px; color: #B8A98C; }
 
-.lg-sello { position: absolute; top: 36px; left: 40px; width: 100px; height: 100px; color: #F0A08A; transform: rotate(-9deg); }
+.lg-sello { position: absolute; top: 36px; left: 40px; width: 100px; height: 100px; color: #E8C98B; transform: rotate(-9deg); }
 
 .lg-form {
   flex: 1 1 420px; min-width: 0; position: relative; z-index: 1;
   display: flex; align-items: center; justify-content: center;
   padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 40px);
-  background: radial-gradient(ellipse at 50% 0%, var(--campo) 0%, var(--papel) 72%);
+  background: var(--fondo);
   box-shadow: -22px 0 40px -14px rgba(0, 0, 0, .55);
 }
 .lg-tarjeta {
@@ -33,7 +33,7 @@
 }
 .lg-tarjeta h2 { font-size: 30px; margin-bottom: 24px; }
 .lg-tarjeta .ant-form { text-align: left; }
-.lg-olvido { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--cereza); background: none; border: none; cursor: pointer; text-underline-offset: 3px; }
+.lg-olvido { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--primario); background: none; border: none; cursor: pointer; text-underline-offset: 3px; }
 .lg-olvido:hover { text-decoration: underline; }
 
 /* Animación (se desactiva con "reducir movimiento") */

@@ -12,27 +12,38 @@
   flex-direction: column;
   text-decoration: none;
   color: inherit;
-  border: 1px solid #CDBB94;
+  border: 1px solid var(--linea);
   border-radius: 8px;
   overflow: hidden;
-  background-color: var(--campo);
-  box-shadow: 0 2px 8px rgba(42,26,16,0.14);
+  background-color: var(--papel);
+  box-shadow: 0 1px 3px rgba(28,25,23,0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .menu-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 10px 20px -8px rgba(42,26,16,0.4);
+  box-shadow: 0 12px 24px -10px rgba(28,25,23,0.28);
+  border-color: var(--primario);
 }
 
 .menu-card-image {
-  filter: sepia(0.38) saturate(0.85) contrast(0.96); /* entona las ilustraciones con la paleta */
   width: 100%;
   height: 140px;
   object-fit: cover;
 }
 
+/* Foco visible al navegar con teclado (WCAG 2.4.7) */
+.menu-card:focus-visible {
+  outline: 3px solid var(--primario);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-card, .menu-card:hover { transition: none; transform: none; }
+}
+
 .menu-card-title {
+  color: var(--tinta);
   padding: 1rem;
   font-size: 1.25rem;
   font-weight: 600;

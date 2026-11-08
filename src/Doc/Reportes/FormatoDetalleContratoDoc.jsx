@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { blancoYNegro } from "./impresionBN";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 
@@ -13,11 +14,11 @@ export const generarReporteDetalleContrato = (
   filtros = {},
   resumen = {}
 ) => {
-  const doc = new jsPDF({
+  const doc = blancoYNegro(new jsPDF({
     orientation: "landscape",
     unit: "mm",
     format: "a4",
-  });
+  }));
 
   const colorPrimario = [16, 86, 132];
   const colorSecundario = [240, 242, 245];

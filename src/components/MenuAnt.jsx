@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }) {
   const [drawerVisible, setDrawerVisible] = useState(false); // mobile
 
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { colorBgLayout },
   } = theme.useToken();
 
   useEffect(() => {
@@ -211,9 +211,8 @@ export default function DashboardLayout({ children }) {
             style={{
               height: "100vh",
               overflowY: "auto",
-              padding: 24,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
+              padding: isMobile ? 12 : 24,
+              background: colorBgLayout, // fondo neutro: las tarjetas blancas se distinguen sin marcos extra
             }}
             className="scroll-hidden"
           >

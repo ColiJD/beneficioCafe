@@ -149,11 +149,11 @@ export default function PageReporteSecado() {
       align: "right",
       render: (_, r) => (
         <Space direction="vertical" align="end" size={0}>
-          <Text strong style={{ color: "#A6232B" }}>
+          <Text strong style={{ color: "#8A4B1F" }}>
             Entrada: {r.cantidadEntradaQQ} QQ
           </Text>
           {r.cantidadSalidaQQ && (
-            <Text strong style={{ color: "#2F5A3B" }}>
+            <Text strong style={{ color: "#1F6B4A" }}>
               Salida: {r.cantidadSalidaQQ} QQ
             </Text>
           )}
@@ -210,7 +210,7 @@ export default function PageReporteSecado() {
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA"]}>
       <div
-        style={{ padding: "16px", background: "#F7F1E3", minHeight: "100vh" }}
+        style={{ padding: "16px", background: "#FFFFFF", minHeight: "100vh" }}
       >
         {contextHolder}
 
@@ -242,7 +242,7 @@ export default function PageReporteSecado() {
           <Col span={24}>
             <Card
               size="small"
-              style={{ borderRadius: "12px", border: "1px solid #E0D3B4" }}
+              style={{ borderRadius: "12px", border: "1px solid #E7E4DF" }}
             >
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} md={6}>
@@ -307,7 +307,7 @@ export default function PageReporteSecado() {
                       icon={<SearchOutlined />}
                       onClick={generarReporte}
                       loading={loading}
-                      style={{ background: "#A6232B" }}
+                      style={{ background: "#8A4B1F" }}
                     >
                       Actualizar
                     </Button>
@@ -334,7 +334,7 @@ export default function PageReporteSecado() {
                     value={stats.totalQQEntrada}
                     suffix="QQ"
                     precision={2}
-                    valueStyle={{ color: "#A6232B", fontWeight: 800 }}
+                    valueStyle={{ color: "#8A4B1F", fontWeight: 800 }}
                   />
                 </Card>
               </Col>
@@ -352,7 +352,7 @@ export default function PageReporteSecado() {
                     value={stats.totalQQSalida}
                     suffix="QQ"
                     precision={2}
-                    valueStyle={{ color: "#2F5A3B", fontWeight: 800 }}
+                    valueStyle={{ color: "#1F6B4A", fontWeight: 800 }}
                   />
                 </Card>
               </Col>
@@ -375,7 +375,7 @@ export default function PageReporteSecado() {
                     }
                     suffix="%"
                     precision={1}
-                    valueStyle={{ color: "#B8801F" }}
+                    valueStyle={{ color: "#B54708" }}
                   />
                 </Card>
               </Col>

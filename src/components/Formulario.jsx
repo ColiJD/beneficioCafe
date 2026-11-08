@@ -142,9 +142,9 @@ export default function Formulario({
                   }}
                   inputStyle={{
                     width: "100%",
-                    borderColor: f.error ? "red" : "#CDBB94",
+                    borderColor: f.error ? "red" : "#E2DFDA",
                     boxShadow: f.error ? "0 0 0 2px rgba(255,0,0,0.2)" : "none",
-                    backgroundColor: f.readOnly ? "#EDE3CB" : "#FFFCF5",
+                    backgroundColor: f.readOnly ? "#E7E4DF" : "#FFFFFF",
                     cursor: f.readOnly ? "not-allowed" : "text",
                   }}
                 />
@@ -169,7 +169,7 @@ export default function Formulario({
                   onBlur={() => handleNumberBlur(f.label, f.value, f.type)}
                   readOnly={f.readOnly}
                   style={{
-                    backgroundColor: f.readOnly ? "#EDE3CB" : "#FFFCF5",
+                    backgroundColor: f.readOnly ? "#E7E4DF" : "#FFFFFF",
                     cursor: f.readOnly ? "not-allowed" : "text",
                   }}
                 />
@@ -183,7 +183,7 @@ export default function Formulario({
                   }
                   readOnly={f.readOnly}
                   style={{
-                    backgroundColor: f.readOnly ? "#EDE3CB" : "#FFFCF5",
+                    backgroundColor: f.readOnly ? "#E7E4DF" : "#FFFFFF",
                     cursor: f.readOnly ? "not-allowed" : "text",
                   }}
                 />

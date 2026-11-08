@@ -70,7 +70,7 @@ export default function NotificationDrawer({
           <Badge
             count={totalCount}
             size="default"
-            style={{ backgroundColor: "#2F5A3B" }}
+            style={{ backgroundColor: "#1F6B4A" }}
           />
         </div>
       }
@@ -113,7 +113,7 @@ export default function NotificationDrawer({
             padding: "2rem 0",
           }}
         >
-          <BellOutlined style={{ fontSize: 40, color: "#CDBB94" }} />
+          <BellOutlined style={{ fontSize: 40, color: "#E2DFDA" }} />
           <p style={{ marginTop: 10 }}>No hay notificaciones pendientes</p>
         </div>
       ) : isGrouped ? (

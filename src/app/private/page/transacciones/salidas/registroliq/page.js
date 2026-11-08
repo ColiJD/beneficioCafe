@@ -253,8 +253,6 @@ export default function ReporteLiqSalida() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -315,7 +313,7 @@ export default function ReporteLiqSalida() {
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                 ]}
               />

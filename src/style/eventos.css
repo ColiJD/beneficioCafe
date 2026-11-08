@@ -24,19 +24,19 @@
 .eventos-table th,
 .eventos-table td {
   padding: 0.6rem 0.75rem;
-  border: 1px solid #CDBB94;
+  border: 1px solid #E2DFDA;
   text-align: left;
   vertical-align: middle;
   font-size: 0.875rem;
 }
 
 .eventos-table th {
-  background-color: #EFE6D0;
+  background-color: #F3F2EF;
   font-weight: 600;
 }
 
 .eventos-table tbody tr:nth-child(even) {
-  background-color: #FBF7EC;
+  background-color: #FAFAF9;
 }
 
 .eventos-right {
@@ -88,7 +88,7 @@
     justify-content: space-between;
     padding: 0.5rem 0;
     border: none;
-    border-bottom: 1px solid #E0D3B4;
+    border-bottom: 1px solid #E7E4DF;
     font-size: 0.9rem;
   }
 

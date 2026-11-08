@@ -375,8 +375,6 @@ export default function Reportedetallecontrato() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -460,12 +458,12 @@ export default function Reportedetallecontrato() {
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps,
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                 ]}
               />

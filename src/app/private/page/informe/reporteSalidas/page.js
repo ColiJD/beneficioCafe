@@ -260,7 +260,7 @@ export default function ReporteCompradoresSalidas() {
           ),
           onHeaderCell,
           onCell: () => ({
-            style: { backgroundColor: "#F6E3E0", fontWeight: "bold" },
+            style: { backgroundColor: "#F0EEEA", fontWeight: "bold" },
           }),
         },
       ],
@@ -334,8 +334,6 @@ export default function ReporteCompradoresSalidas() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -409,7 +407,7 @@ export default function ReporteCompradoresSalidas() {
                     titulo: "Total Quintales",
                     valor: formatNumber(estadisticas.totalQQ),
                     prefix: "QQ.",
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Total Lempiras",
@@ -421,7 +419,7 @@ export default function ReporteCompradoresSalidas() {
                     titulo: "Promedio General",
                     valor: formatNumber(estadisticas.promedioGeneral),
                     prefix: "L.",
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                 ]}
               />

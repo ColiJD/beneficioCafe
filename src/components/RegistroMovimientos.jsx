@@ -422,8 +422,6 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
         {contextHolder}
         <div
           style={{
-            padding: isDesktop ? "24px" : "12px",
-            background: "#EFE6D0",
             minHeight: "100vh",
           }}
         >

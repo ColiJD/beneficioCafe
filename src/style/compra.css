@@ -2,9 +2,9 @@
   max-width: 800px;
   margin: 2rem auto;
   padding: 2rem;
-  border: 1px solid #CDBB94;
+  border: 1px solid #E2DFDA;
   border-radius: 8px;
-  background-color: #FBF7EC;
+  background-color: #FAFAF9;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -38,7 +38,7 @@
 .compra-form button {
   padding: 0.6rem;
   font-size: 1rem;
-  border: 1px solid #CDBB94;
+  border: 1px solid #E2DFDA;
   border-radius: 5px;
   width: 100%;
 }
@@ -49,7 +49,7 @@
 }
 
 .compra-form input[readonly] {
-  background-color: #E0D3B4;
+  background-color: #E7E4DF;
   color: #555;
 }
 

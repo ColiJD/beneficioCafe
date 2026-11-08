@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { blancoYNegro } from "./impresionBN";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 import { logoSync } from "@/lib/empresa-cliente";
@@ -25,11 +26,11 @@ export const generarReportePDF = (
   columnas = [],
   options = {}
 ) => {
-  const doc = new jsPDF({
+  const doc = blancoYNegro(new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "letter",
-  });
+  }));
 
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;

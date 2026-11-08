@@ -262,10 +262,10 @@ export default function ReporteRegistroDeposito() {
           style={{
             color:
               text === "Completado"
-                ? "#2F5A3B"
+                ? "#1F6B4A"
                 : text === "Pendiente"
-                  ? "#B8801F"
-                  : "#A6232B",
+                  ? "#B54708"
+                  : "#8A4B1F",
           }}
         >
           {text || "—"}
@@ -431,8 +431,6 @@ export default function ReporteRegistroDeposito() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -513,7 +511,7 @@ export default function ReporteRegistroDeposito() {
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                 ]}
               />

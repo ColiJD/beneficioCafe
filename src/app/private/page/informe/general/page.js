@@ -127,7 +127,7 @@ export default function ResumenMovimientos() {
           <span style={{ fontWeight: "bold" }}>{formatNumber(v)}</span>
         ),
         onCell: () => ({
-          style: { backgroundColor: "#F1E7CF", fontWeight: "bold" }, // celdas azul claro y negrita
+          style: { backgroundColor: "#F0EEEA", fontWeight: "bold" }, // celdas azul claro y negrita
         }),
         onHeaderCell: () => ({
           style: {
@@ -199,7 +199,7 @@ export default function ResumenMovimientos() {
               return formatNumber(valor);
             },
             onCell: () => ({
-              style: { backgroundColor: "#F6E3E0", fontWeight: "bold" }, // color diferente
+              style: { backgroundColor: "#F0EEEA", fontWeight: "bold" }, // color diferente
             }),
             onHeaderCell: () => ({
               style: { textAlign: "center" },
@@ -331,7 +331,7 @@ export default function ResumenMovimientos() {
         align: "left",
         render: (v) => `L. ${formatNumber(v)}`,
         onCell: () => ({
-          style: { backgroundColor: "#F1E7CF", fontWeight: "bold" }, // celdas azul claro y negrita
+          style: { backgroundColor: "#F0EEEA", fontWeight: "bold" }, // celdas azul claro y negrita
         }),
       })),
       onHeaderCell: () => ({
@@ -486,8 +486,6 @@ export default function ResumenMovimientos() {
     >
       <div
         style={{
-          padding: isDesktop ? 24 : 12,
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -607,7 +605,7 @@ export default function ResumenMovimientos() {
             size="small"
             scroll={{ x: "max-content" }}
             onRow={(record) => ({
-              style: { backgroundColor: "#F7ECCB" },
+              style: { backgroundColor: "#F5F4F1" },
             })}
           />
         </Card>
@@ -632,7 +630,7 @@ export default function ResumenMovimientos() {
             size="small"
             scroll={{ x: "max-content" }}
             onRow={(record) => ({
-              style: { backgroundColor: "#F7ECCB" },
+              style: { backgroundColor: "#F5F4F1" },
             })}
           />
         </Card>

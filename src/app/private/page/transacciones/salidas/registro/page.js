@@ -450,8 +450,6 @@ export default function ReporteRegistroSalida() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -532,14 +530,14 @@ export default function ReporteRegistroSalida() {
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps.toLocaleString("es-HN", {
                       minimumFractionDigits: 2,
                     }),
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Promedio Ponderado",
@@ -547,7 +545,7 @@ export default function ReporteRegistroSalida() {
                       "es-HN",
                       { minimumFractionDigits: 2 },
                     ),
-                    color: "#5B4636",
+                    color: "#57534E",
                   },
                 ]}
               />

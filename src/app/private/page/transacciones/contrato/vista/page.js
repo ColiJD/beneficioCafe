@@ -131,7 +131,7 @@ export default function ReporteContratosPendientes() {
       render: (_, r) => (
         <Text
           strong
-          style={{ color: r.totalPendienteQQ > 0 ? "#B8801F" : "#2F5A3B" }}
+          style={{ color: r.totalPendienteQQ > 0 ? "#B54708" : "#1F6B4A" }}
         >
           {formatNumber(r.totalPendienteQQ)}
         </Text>
@@ -192,7 +192,7 @@ export default function ReporteContratosPendientes() {
       dataIndex: "pendiente",
       align: "right",
       render: (_, r) => (
-        <Text strong style={{ color: r.pendiente > 0 ? "#B8801F" : "#2F5A3B" }}>
+        <Text strong style={{ color: r.pendiente > 0 ? "#B54708" : "#1F6B4A" }}>
           {formatNumber(r.pendiente)}
         </Text>
       ),
@@ -213,8 +213,6 @@ export default function ReporteContratosPendientes() {
     >
       <div
         style={{
-          padding: isDesktop ? 24 : 12,
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -324,19 +322,19 @@ export default function ReporteContratosPendientes() {
                     titulo: "Total Pendiente (QQ)",
                     valor: formatNumber(estadisticas.totalPendienteQQ),
                     prefix: "QQ.",
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Pendiente (Lps)",
                     valor: formatNumber(estadisticas.totalPendienteLps),
                     prefix: "L.",
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Entregado (Lps)",
                     valor: formatNumber(estadisticas.totalEntregadoLps),
                     prefix: "L.",
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Total Contratos (Lps)",
