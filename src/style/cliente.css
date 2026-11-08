@@ -2,9 +2,9 @@ form.cliente-form {
   max-width: 400px;
   margin: 1rem auto;
   padding: 1rem;
-  border: 1px solid #CDBB94;
+  border: 1px solid #E2DFDA;
   border-radius: 8px;
-  background-color: #FBF7EC;
+  background-color: #FAFAF9;
   font-family: var(--font-cuerpo), sans-serif;
 }
 .cliente-form h2 {

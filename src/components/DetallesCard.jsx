@@ -17,8 +17,8 @@ export default function TarjetasDeTotales({ title, cards }) {
             size="small"
             style={{
               borderRadius: 6,
-              border: "1.5px solid #CDBB94", // borde más visible
-              background: "#FBF7EC",
+              border: "1.5px solid #E2DFDA", // borde más visible
+              background: "#FAFAF9",
               boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
               padding: "0",
             }}

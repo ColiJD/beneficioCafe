@@ -2,7 +2,7 @@
 
 // Mapa de calor tipo calendario: una columna por semana (lunes a domingo), un cuadro por día.
 // datos: [{ dia: "YYYY-MM-DD", valor, texto }]. Los días sin datos quedan en el color más claro.
-const NIVELES = ["#EFE4C8", "#D9B98A", "#B9814F", "#7A4A26", "#33200F"];
+const NIVELES = ["#ECEAE6", "#D9B98A", "#B9814F", "#7A4A26", "#33200F"];
 const DIAS = ["Lun", "", "Mié", "", "Vie", "", "Dom"];
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const iso = (d) => d.toISOString().slice(0, 10);

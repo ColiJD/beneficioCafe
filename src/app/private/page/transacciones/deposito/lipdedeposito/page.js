@@ -308,8 +308,6 @@ export default function ReporteLiquidacionDeposito() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -385,12 +383,12 @@ export default function ReporteLiquidacionDeposito() {
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ.toFixed(2),
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps.toFixed(2),
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                 ]}
               />

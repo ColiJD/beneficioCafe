@@ -1,6 +1,7 @@
 "use client";
 
 import jsPDF from "jspdf";
+import { blancoYNegro } from "./impresionBN";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 
@@ -11,11 +12,11 @@ import dayjs from "dayjs";
  * @param {Object} options - Opciones: title, colores, orientación
  */
 export const exportPDFClientes = (data, filtros = {}, options = {}) => {
-  const doc = new jsPDF({
+  const doc = blancoYNegro(new jsPDF({
     orientation: options.orientation || "landscape",
     unit: "mm",
     format: "a4",
-  });
+  }));
 
   const colorPrimario = options.colorPrimario || [41, 128, 185]; // Azul
   const colorSecundario = options.colorSecundario || [236, 240, 241]; // Gris claro

@@ -128,10 +128,10 @@ export default function ReporteRegistroContrato() {
         let color;
         switch (estado) {
           case "Pendiente":
-            color = "#B8801F";
+            color = "#B54708";
             break;
           case "Liquidado":
-            color = "#2F5A3B";
+            color = "#1F6B4A";
             break;
           case "Anulado":
             color = "#f5222d";
@@ -308,8 +308,6 @@ export default function ReporteRegistroContrato() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -385,12 +383,12 @@ export default function ReporteRegistroContrato() {
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps,
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                 ]}
               />

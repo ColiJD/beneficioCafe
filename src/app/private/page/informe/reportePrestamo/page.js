@@ -190,8 +190,6 @@ export default function ReporteClientes() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#EFE6D0",
           minHeight: "100vh",
         }}
       >
@@ -251,7 +249,7 @@ export default function ReporteClientes() {
                     titulo: "Activos Prestamo",
                     valor: formatNumber(estadisticas.totalActivoPrestamo),
                     prefix: "L.",
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Abonos Prestamo",
@@ -263,13 +261,13 @@ export default function ReporteClientes() {
                     titulo: "Saldo Prestamo",
                     valor: formatNumber(estadisticas.totalSaldoPrestamo),
                     prefix: "L.",
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Activos Anticipo",
                     valor: formatNumber(estadisticas.totalActivoAnticipo),
                     prefix: "L.",
-                    color: "#2F5A3B",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Abonos Anticipo",
@@ -281,7 +279,7 @@ export default function ReporteClientes() {
                     titulo: "Saldo Anticipo",
                     valor: formatNumber(estadisticas.totalSaldoAnticipo),
                     prefix: "L.",
-                    color: "#B8801F",
+                    color: "#B54708",
                   },
                 ]}
               />
