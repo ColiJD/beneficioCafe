@@ -238,6 +238,12 @@ export const menuItems = [
         href: Ruta + "/secadora",
         image: img_secadora,
       },
+      {
+        id: 803,
+        name: "Servicio de secado",
+        href: Ruta + "/secado/servicio",
+        image: img_secado,
+      },
     ],
   },
   {

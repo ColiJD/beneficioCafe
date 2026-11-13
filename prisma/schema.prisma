@@ -137,6 +137,7 @@ model compra {
   compraTotal         Decimal?     @db.Decimal(15, 2)
   compraTotalSacos    Decimal?     @db.Decimal(15, 2)
   compraRetencio      Decimal?     @db.Decimal(15, 2)
+  compraFlete         Decimal      @default(0.00) @db.Decimal(15, 2) // cobro por flete: ya está descontado de compraTotal
   compraEn            String?      @db.VarChar(20)
   compraDescripcion   String?      @db.VarChar(200)
   cliente             cliente?     @relation(fields: [clienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "compra_ibfk_1")
@@ -580,6 +581,7 @@ model cosecha {
   notas       String?              @db.VarChar(255)
   cerradaEn   DateTime?            @db.DateTime(0)
   cerradaPor  Int?
+  tarifaSecadoQQ Decimal?            @db.Decimal(10, 2) // lempiras por quintal oro del servicio de secado
   inventario  cosecha_inventario[]
 }
 
@@ -612,4 +614,40 @@ model bitacora {
   @@index([userId, fecha], map: "bitacora_usuario")
   @@index([evento, fecha], map: "bitacora_evento")
   @@index([modulo, fecha], map: "bitacora_modulo")
+}
+
+// Servicio de secado a clientes: el café es del cliente y no entra al inventario, salvo la parte que se le compra.
+// El cobro se calcula sobre los quintales oro del café que se recibe para secar (tarifa de la cosecha, copiada aquí).
+model servicio_secado {
+  servicioID        Int       @id @default(autoincrement())
+  fecha             DateTime  @default(now()) @db.DateTime(0)
+  clienteID         Int
+  productoID        Int
+  pesoBrutoEntrada  Decimal   @db.Decimal(15, 2)
+  sacosEntrada      Decimal   @default(0.00) @db.Decimal(15, 2)
+  humedadInicial    Decimal?  @db.Decimal(5, 2)
+  oroEntrada        Decimal   @db.Decimal(15, 2)
+  tarifaQQ          Decimal   @db.Decimal(10, 2)
+  cobro             Decimal   @db.Decimal(15, 2)
+  secadoraId        Int?
+  secadoraReservada Boolean   @default(false)
+  productoSecoID    Int?
+  pesoBrutoSalida   Decimal?  @db.Decimal(15, 2)
+  sacosSalida       Decimal?  @db.Decimal(15, 2)
+  humedadFinal      Decimal?  @db.Decimal(5, 2)
+  oroSalida         Decimal?  @db.Decimal(15, 2)
+  fechaFin          DateTime? @db.DateTime(0)
+  estado            String    @default("Recibido") @db.VarChar(20)
+  formaPago         String?   @db.VarChar(20)
+  pagoEfectivo      Decimal   @default(0.00) @db.Decimal(15, 2)
+  pagoTransferencia Decimal   @default(0.00) @db.Decimal(15, 2)
+  pagoCheque        Decimal   @default(0.00) @db.Decimal(15, 2)
+  cajaChicaId       Int?
+  compraId          Int?
+  qqVendidos        Decimal?  @db.Decimal(15, 2)
+  observaciones     String?   @db.VarChar(255)
+  usuarioId         Int?
+
+  @@index([clienteID], map: "servicio_secado_cliente")
+  @@index([estado], map: "servicio_secado_estado")
 }

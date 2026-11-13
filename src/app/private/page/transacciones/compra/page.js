@@ -56,6 +56,7 @@ export default function CompraForm({ compraId }) {
   const [compraOro, setCompraOro] = useState("0.00");
   const [compraPorcDano, setCompraPorcDano] = useState(0); // nuevo campo
   const [compraRebajaUva, setCompraRebajaUva] = useState(0);
+  const [compraFlete, setCompraFlete] = useState(""); // cobro por flete (opcional): se debita del monto a pagar
 
   const router = useRouter();
 
@@ -153,7 +154,7 @@ export default function CompraForm({ compraId }) {
     // ⬅️ 4. Guardar redondeado
     setCompraOro(oroConDano);
     setCompraRebajaUva(rebajaUva);
-    setCompraTotal(oroConDano * compraPrecioQQ - rebajaUva);
+    setCompraTotal(oroConDano * compraPrecioQQ - rebajaUva - (parseFloat(compraFlete) || 0));
     setCompraRetencio(retencion);
   }, [
     compraCantidadQQ,
@@ -161,6 +162,7 @@ export default function CompraForm({ compraId }) {
     compraPrecioQQ,
     producto,
     compraPorcDano,
+    compraFlete,
   ]);
 
   // Validación
@@ -173,6 +175,8 @@ export default function CompraForm({ compraId }) {
         if (error) newErrors[f.label] = error;
       }
     });
+
+    if ((parseFloat(compraFlete) || 0) > 0 && compraTotal < 0) newErrors["Cobro por flete (Lps)"] = "El flete no puede ser mayor que el pago por el café";
 
     setErrors(newErrors);
 
@@ -200,6 +204,7 @@ export default function CompraForm({ compraId }) {
       compraPrecioQQ: parseFloat(compraPrecioQQ),
       compraRetencio: parseFloat(compraRetencio),
       compraTotal: parseFloat(compraTotal),
+      compraFlete: parseFloat(compraFlete) || 0,
       compraEn: compraEn || "Compra Directa",
       compraMovimiento: "Entrada",
       compraDescripcion,
@@ -243,8 +248,9 @@ export default function CompraForm({ compraId }) {
               nombre: producto.label,
               cantidad: parseFloat(compraOro),
               precio: compraPrecioQQ,
-              total: compraTotal,
+              total: compraTotal + (parseFloat(compraFlete) || 0),
             },
+            ...((parseFloat(compraFlete) || 0) > 0 ? [{ nombre: "Menos flete", cantidad: "", precio: "", total: -parseFloat(compraFlete) }] : []),
           ],
           total: compraTotal,
           observaciones:
@@ -285,10 +291,12 @@ export default function CompraForm({ compraId }) {
         setCompraTipoDocumento,
         setCompraRetencio,
         setCompraTotal,
+        setCompraFlete,
         setCompraPrecioQQ,
         setCompraOro,
         setErrors,
       });
+      setCompraPorcDano(0);
     } catch (err) {
       console.error(err);
       messageApi.error("Error enviando datos al servidor");
@@ -395,6 +403,14 @@ export default function CompraForm({ compraId }) {
         ]
       : []),
     {
+      label: "Cobro por flete (Lps)",
+      value: compraFlete,
+      setter: setCompraFlete,
+      type: "Float",
+      error: errors["Cobro por flete (Lps)"],
+      tooltip: "Opcional. Se debita del monto a pagar por el café; varía según la zona y la cantidad que se traiga.",
+    },
+    {
       label: "Total (Lps)",
       value: compraTotal,
       setter: setCompraTotal,
@@ -456,6 +472,7 @@ export default function CompraForm({ compraId }) {
 
         setCompraTotalSacos(data.compraTotalSacos);
         setCompraDescripcion(data.compraDescripcion);
+        setCompraFlete(Number(data.compraFlete) > 0 ? data.compraFlete : "");
         setCompraTotal(data.compraTotal);
         setCompraRetencio(data.compraRetencio);
         setCompraOro(data.compraCantidadQQ);

@@ -127,13 +127,13 @@ export const exportCompraDirecta = async (formState) => {
     //Tabla de productos
     const bodyProductos = productos.map((p) => [
       { content: cleanText(p.nombre), styles: { textColor: [255, 0, 0] } },
-      { content: formatNumber(p.cantidad), styles: { textColor: [255, 0, 0] } },
+      { content: p.cantidad === "" ? "" : formatNumber(p.cantidad), styles: { textColor: [255, 0, 0] } },
       {
-        content: `L. ${formatNumber(p.precio)}`,
+        content: p.precio === "" ? "" : `L. ${formatNumber(p.precio)}`,
         styles: { textColor: [255, 0, 0] },
       },
       {
-        content: `L. ${formatNumber(p.total)}`,
+        content: p.total < 0 ? `- L. ${formatNumber(Math.abs(p.total))}` : `L. ${formatNumber(p.total)}`,
         styles: { textColor: [255, 0, 0] },
       },
     ]);

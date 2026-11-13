@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { checkRole, moduloDeCompra } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
+import { validarFlete } from "@/lib/flete";
 import {
   ErrorNegocio,
   esAnulado,
@@ -66,6 +67,7 @@ export async function PUT(request, { params }) {
       compraTotal,
       compraTotalSacos,
       compraRetencio,
+      compraFlete,
       compraDescripcion,
       compraEn,
     } = body;
@@ -76,6 +78,9 @@ export async function PUT(request, { params }) {
     if (!clienteID || !compraTipoCafe || !compraPrecioQQ || !(cantidadQQNueva > 0) || !cantidadSacosNueva) {
       return Response.json({ error: "Faltan datos obligatorios" }, { status: 400 });
     }
+
+    // Solo las compras llevan flete (las ventas que usan esta ruta no lo envían y no se tocan)
+    const flete = compraFlete === undefined ? undefined : validarFlete(compraFlete, compraTotal);
 
     const updated = await prisma.$transaction(async (tx) => {
       const compraExistente = await tx.compra.findUnique({ where: { compraId } });
@@ -101,6 +106,7 @@ export async function PUT(request, { params }) {
           compraTotal: parseFloat(compraTotal),
           compraTotalSacos: cantidadSacosNueva,
           compraRetencio: compraRetencio ? parseFloat(compraRetencio) : 0,
+          ...(flete !== undefined && { compraFlete: flete }),
           compraEn,
           compraDescripcion: compraDescripcion || "",
         },

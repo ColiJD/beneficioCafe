@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Table, Button, Modal, Input, message, Space, Tag, Alert, Descriptions } from "antd";
+import { Table, Button, Modal, Input, InputNumber, message, Space, Tag, Alert, Descriptions } from "antd";
 import ProtectedPage from "@/components/ProtectedPage";
 import EncabezadoPagina from "@/components/EncabezadoPagina";
 
@@ -14,6 +14,7 @@ export default function CosechasPage() {
   const [modal, setModal] = useState(null); // "abrir" | "cerrar"
   const [form, setForm] = useState({});
   const [msg, ctx] = message.useMessage();
+  const [modalApi, modalCtx] = Modal.useModal();
 
   const cargar = async () => {
     const r = await fetch("/api/cosechas");
@@ -43,21 +44,40 @@ export default function CosechasPage() {
     cargar();
   };
 
+  // Tarifa del servicio de secado de la cosecha abierta (L por quintal oro)
+  const editarTarifa = () => {
+    let valor = actual?.tarifaSecadoQQ != null ? Number(actual.tarifaSecadoQQ) : 250;
+    modalApi.confirm({
+      title: `Tarifa de secado — cosecha ${actual?.nombre}`,
+      content: <><p>Lempiras por quintal oro del café que se recibe para secar.</p><InputNumber min={0} step={10} defaultValue={valor} onChange={(v) => (valor = v)} style={{ width: 160 }} addonBefore="L." /></>,
+      okText: "Guardar",
+      onOk: async () => {
+        const res = await fetch("/api/cosechas", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tarifaSecadoQQ: valor }) });
+        if (!res.ok) return msg.error((await res.json()).error || "Error");
+        msg.success("Tarifa guardada");
+        cargar();
+      },
+    });
+  };
+
   const columnas = [
     { title: "Cosecha", dataIndex: "nombre" },
     { title: "Inicio", dataIndex: "fechaInicio", render: dia },
     { title: "Fin", dataIndex: "fechaFin", render: (v) => (v ? dia(v) : "En curso") },
     { title: "Duración", render: (_, c) => `${dias(c.fechaInicio, c.fechaFin)} días` },
     { title: "Estado", dataIndex: "estado", render: (e) => <Tag color={e === "Abierta" ? "green" : "default"}>{e}</Tag> },
+    { title: "Tarifa secado (L/QQ oro)", dataIndex: "tarifaSecadoQQ", align: "right", render: (v) => (v == null ? "—" : `L. ${Number(v).toFixed(2)}`) },
     { title: "Notas", dataIndex: "notas" },
   ];
 
   return (
     <ProtectedPage allowedRoles={["ADMIN"]}>
       {ctx}
+      {modalCtx}
       <div>
         <EncabezadoPagina titulo="Cosechas">
           <Button type="primary" disabled={!!actual} onClick={() => abrirModal("abrir")}>Abrir cosecha</Button>
+          <Button disabled={!actual} onClick={editarTarifa}>Tarifa de secado</Button>
           <Button danger disabled={!actual} onClick={() => abrirModal("cerrar")}>Cerrar cosecha actual</Button>
         </EncabezadoPagina>
         {actual ? (

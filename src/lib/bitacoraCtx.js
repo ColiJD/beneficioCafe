@@ -7,7 +7,7 @@ export const MODULO_ETIQUETA = {
   cierrecontrato: "Cierre de contrato", contratoSalida: "Contratos (salidas)", detalleContratoSalida: "Entregas de contrato (salidas)",
   salida: "Confirmación de ventas", liqsalida: "Liquidaciones de salida", detalleliqsalida: "Detalle de liquidación de salida",
   cliente: "Clientes", compradores: "Compradores", producto: "Productos", secado: "Secado", secadora: "Secadoras",
-  caja_chica: "Caja chica", prestamos: "Préstamos clientes", anticipo: "Anticipos clientes",
+  caja_chica: "Caja chica", servicio_secado: "Servicio de secado", prestamos: "Préstamos clientes", anticipo: "Anticipos clientes",
   movimientos_prestamo: "Abonos de préstamos", movimientos_anticipos: "Movimientos de anticipos",
   prestamos_compradores: "Préstamos compradores", anticipo_compradores: "Anticipos compradores",
   movimientos_prestamo_compradores: "Abonos de préstamos (compradores)", movimientos_anticipos_compradores: "Movimientos de anticipos (compradores)",

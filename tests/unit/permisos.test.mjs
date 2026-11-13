@@ -19,8 +19,8 @@ import { limpiarPermisos } from "@/lib/permisos";
 
 const acc = (permisos, admin = false) => ({ admin, permisos });
 
-test("hay 41 módulos únicos y 4 acciones", () => {
-  assert.equal(MODULOS.length, 41);
+test("hay 46 módulos únicos y 4 acciones", () => {
+  assert.equal(MODULOS.length, 46);
   assert.equal(new Set(MODULOS).size, MODULOS.length);
   assert.deepEqual(ACCIONES, ["ver", "crear", "editar", "eliminar"]);
   assert.equal(col("eliminar"), "puedeEliminar");
