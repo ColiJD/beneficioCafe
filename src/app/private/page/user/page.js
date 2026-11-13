@@ -12,13 +12,20 @@ import {
   Space,
   Drawer,
   Descriptions,
-  Tag,
 } from "antd";
 import PermisosMatriz from "@/components/PermisosMatriz";
 import ProtectedPage from "@/components/ProtectedPage";
 import { BotonEditar, BotonEliminar, BotonVer } from "@/components/BotonesAccion";
 import EncabezadoPagina from "@/components/EncabezadoPagina";
 import { useSession } from "next-auth/react";
+import { MODULOS, ACCIONES, col } from "@/lib/modulos";
+
+// { modulo: { ver, crear, editar, eliminar } } → filas de la tabla (solo módulos con alguna acción)
+const filasDe = (mapa = {}) =>
+  Object.entries(mapa)
+    .filter(([, p]) => ACCIONES.some((a) => p[a]))
+    .map(([modulo, p]) => ({ modulo, ...Object.fromEntries(ACCIONES.map((a) => [col(a), !!p[a]])) }));
+const filaVacia = (modulo) => ({ modulo, ...Object.fromEntries(ACCIONES.map((a) => [col(a), false])) });
 
 export default function UsersPage() {
   const { data: session, update } = useSession();
@@ -134,18 +141,23 @@ export default function UsersPage() {
     setFicha({
       ...d,
       roleIds: d.user.user_roles.map((x) => x.roleId),
-      permisos: d.user.user_permissions,
+      // La tabla muestra lo que el usuario puede hacer hoy (rol + ajustes) y se edita sobre eso.
+      permisos: filasDe(d.efectivo.permisos),
     });
   };
 
   const guardarFicha = async () => {
+    const base = ficha.base || {};
+    // Solo se guardan las pantallas que difieren del rol: ahí el ajuste reemplaza lo que da el rol.
+    const ajustes = MODULOS.map((modulo) => ficha.permisos.find((p) => p.modulo === modulo) || filaVacia(modulo)).filter((p) => ACCIONES.some((a) => !!p[col(a)] !== !!base[p.modulo]?.[a]));
+
     const r = await fetch("/api/auth/acceso", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: ficha.user.userId,
         roleIds: ficha.roleIds,
-        permisos: ficha.permisos,
+        permisos: ajustes,
       }),
     });
     if (!r.ok) return messageApi.error("Error al guardar");
@@ -234,35 +246,20 @@ export default function UsersPage() {
                 options={roles.map((r) => ({ value: r.roleId, label: r.roleName }))}
               />
 
-              <h3 className="mt-4 mb-1 font-bold">Permisos directos (extra a sus roles)</h3>
+              <div className="mt-4 mb-1 flex items-center justify-between">
+                <h3 className="font-bold m-0">Accesos de este usuario</h3>
+                <Button size="small" onClick={() => setFicha({ ...ficha, permisos: filasDe(ficha.base) })}>
+                  Restablecer a lo de su rol
+                </Button>
+              </div>
+              <p className="mb-2" style={{ color: "#57534E" }}>
+                Parte de lo que le da su rol. Marca para darle más acceso y desmarca para quitarle. Las pantallas que difieren del rol salen con la etiqueta ajustado.
+              </p>
               <PermisosMatriz
                 value={ficha.permisos}
+                base={filasDe(ficha.base)}
                 onChange={(permisos) => setFicha({ ...ficha, permisos })}
               />
-
-              <h3 className="mt-4 mb-1 font-bold">Acceso efectivo (al guardar)</h3>
-              {Object.entries(ficha.efectivo.permisos)
-                .filter(([, p]) => p.ver)
-                .map(([m, p]) => (
-                  <div key={m} className="mb-1">
-                    <b>{m}</b>: {["ver","crear","editar","eliminar"].filter((a) => p[a]).map((a) => ({ ver: "Ver", crear: "Registrar", editar: "Actualizar", eliminar: "Eliminar" })[a]).join(" · ")}{" "}
-                    {[...new Set(p.origen)].map((o) => (
-                      <Tag key={o}>{o}</Tag>
-                    ))}
-                  </div>
-                ))}
-              {Object.entries(ficha.efectivo.permisos).some(([, p]) => !p.ver && p.datosDe?.length) && (
-                <>
-                  <h3 className="mt-4 mb-1 font-bold">Solo datos de apoyo (sin pantalla)</h3>
-                  {Object.entries(ficha.efectivo.permisos)
-                    .filter(([, p]) => !p.ver && p.datosDe?.length)
-                    .map(([m, p]) => (
-                      <div key={m} className="mb-1">
-                        <b>{m}</b> <Tag>por {[...new Set(p.datosDe)].join(", ")}</Tag>
-                      </div>
-                    ))}
-                </>
-              )}
             </>
           )}
         </Drawer>

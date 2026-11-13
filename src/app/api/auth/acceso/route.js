@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { MODULOS, getPermisos, limpiarPermisos, requireAdmin } from "@/lib/permisos";
+import { MODULOS, getPermisos, limpiarDirectos, requireAdmin } from "@/lib/permisos";
 
 // GET ?userId= → ficha: permisos efectivos (con origen), roles extra y permisos directos
 export async function GET(req) {
@@ -20,6 +20,7 @@ export async function GET(req) {
   return NextResponse.json({
     user,
     efectivo: await getPermisos(userId),
+    base: (await getPermisos(userId, { sinDirectos: true }))?.permisos ?? {}, // solo lo que dan sus roles
     modulos: MODULOS,
   });
 }
@@ -36,7 +37,7 @@ export async function PUT(req) {
     }),
     prisma.user_permissions.deleteMany({ where: { userId } }),
     prisma.user_permissions.createMany({
-      data: limpiarPermisos(permisos).map((p) => ({ ...p, userId })),
+      data: limpiarDirectos(permisos).map((p) => ({ ...p, userId })),
     }),
   ]);
   return NextResponse.json({ ok: true });
