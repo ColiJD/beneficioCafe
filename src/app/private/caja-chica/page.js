@@ -20,6 +20,7 @@ import {
 import { formatNumber } from "@/components/Formulario";
 
 import ProtectedPage from "@/components/ProtectedPage";
+import { BotonEditar, BotonEliminar } from "@/components/BotonesAccion";
 import ProtectedButton from "@/components/ProtectedButton";
 import EstadisticasCards from "@/components/ReportesElement/DatosEstadisticos";
 
@@ -318,22 +319,14 @@ export default function CajaChicaPage() {
       key: "acciones",
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            onClick={() => handleEdit(record)}
-          >
-            Editar
-          </Button>
+          <BotonEditar onClick={() => handleEdit(record)} />
           <ProtectedButton accion="eliminar"><Popconfirm
             title="¿Eliminar movimiento?"
             okText="Sí"
             cancelText="No"
             onConfirm={() => handleDelete(record.id)}
           >
-            <Button danger size="small">
-              Eliminar
-            </Button>
+            <BotonEliminar />
           </Popconfirm></ProtectedButton>
         </Space>
       ),
@@ -344,22 +337,22 @@ export default function CajaChicaPage() {
     {
       titulo: "Saldo Inicial",
       valor: formatNumber(totales.saldoInicialView),
-      color: "#1677ff",
+      color: "#4A2E16",
     },
     {
       titulo: "Entradas",
       valor: formatNumber(totales.entradas),
-      color: "#52c41a",
+      color: "#1F6B4A",
     },
     {
       titulo: "Salidas",
       valor: formatNumber(totales.salidas),
-      color: "#ff4d4f",
+      color: "#8A4B1F",
     },
     {
       titulo: "Balance Actual",
       valor: formatNumber(totales.balance),
-      color: totales.balance >= 0 ? "#52c41a" : "#ff4d4f",
+      color: totales.balance >= 0 ? "#1F6B4A" : "#B42318", // negativo: rojo de error
     },
   ];
 

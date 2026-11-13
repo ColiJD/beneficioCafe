@@ -64,7 +64,7 @@ export default function TarjetaMobile({
                   <div
                     key={j}
                     style={{
-                      borderTop: "1px dashed #ccc",
+                      borderTop: "1px dashed #E2DFDA",
                       padding: 4,
                       marginTop: 4,
                     }}

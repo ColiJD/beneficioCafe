@@ -355,7 +355,7 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
             okText="Sí"
             cancelText="No"
           >
-            <Button size="small" type="primary" icon={<FilePdfOutlined />} />
+            <Button size="small" type="primary" icon={<FilePdfOutlined />} title="Exportar PDF" aria-label="Exportar PDF" />
           </Popconfirm>
           <ProtectedButton accion="editar" modulo={moduloActual}>
             <Popconfirm
@@ -370,7 +370,7 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" type="default" icon={<EditFilled />} />
+              <Button size="small" type="default" icon={<EditFilled />} title="Editar" aria-label="Editar" />
             </Popconfirm>
           </ProtectedButton>
           <ProtectedButton accion="eliminar" modulo={moduloRegistro}>
@@ -380,7 +380,7 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" danger icon={<DeleteFilled />} />
+              <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
             </Popconfirm>
           </ProtectedButton>
         </div>
@@ -422,8 +422,6 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
         {contextHolder}
         <div
           style={{
-            padding: isDesktop ? "24px" : "12px",
-            background: "#f5f5f5",
             minHeight: "100vh",
           }}
         >

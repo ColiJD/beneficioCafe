@@ -89,7 +89,7 @@ export default function ReporteClientes() {
     {
       title: "Nombre",
       dataIndex: "nombre",
-      render: (v) => <Text style={{ color: "#1677ff" }}>{v}</Text>,
+      render: (v) => <Text style={{ color: "#4A2E16" }}>{v}</Text>,
     },
     {
       title: "Préstamos",
@@ -190,8 +190,6 @@ export default function ReporteClientes() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
           minHeight: "100vh",
         }}
       >
@@ -251,37 +249,37 @@ export default function ReporteClientes() {
                     titulo: "Activos Prestamo",
                     valor: formatNumber(estadisticas.totalActivoPrestamo),
                     prefix: "L.",
-                    color: "#52c41a",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Abonos Prestamo",
                     valor: formatNumber(estadisticas.totalAbonoPrestamo),
                     prefix: "L.",
-                    color: "#1890ff",
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Saldo Prestamo",
                     valor: formatNumber(estadisticas.totalSaldoPrestamo),
                     prefix: "L.",
-                    color: "#faad14",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Activos Anticipo",
                     valor: formatNumber(estadisticas.totalActivoAnticipo),
                     prefix: "L.",
-                    color: "#52c41a",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Abonos Anticipo",
                     valor: formatNumber(estadisticas.totalAbonoAnticipo),
                     prefix: "L.",
-                    color: "#1890ff",
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Saldo Anticipo",
                     valor: formatNumber(estadisticas.totalSaldoAnticipo),
                     prefix: "L.",
-                    color: "#faad14",
+                    color: "#B54708",
                   },
                 ]}
               />

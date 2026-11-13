@@ -96,7 +96,7 @@ export default function Formulario({
                   {f.label}{" "}
                   {f.tooltip && (
                     <Tooltip title={f.tooltip}>
-                      <InfoCircleOutlined style={{ color: "#1890ff" }} />
+                      <InfoCircleOutlined style={{ color: "#4A2E16" }} />
                     </Tooltip>
                   )}
                 </span>
@@ -142,9 +142,9 @@ export default function Formulario({
                   }}
                   inputStyle={{
                     width: "100%",
-                    borderColor: f.error ? "red" : "#d9d9d9",
+                    borderColor: f.error ? "red" : "#E2DFDA",
                     boxShadow: f.error ? "0 0 0 2px rgba(255,0,0,0.2)" : "none",
-                    backgroundColor: f.readOnly ? "#f5f5f5" : "white",
+                    backgroundColor: f.readOnly ? "#E7E4DF" : "#FFFFFF",
                     cursor: f.readOnly ? "not-allowed" : "text",
                   }}
                 />
@@ -169,7 +169,7 @@ export default function Formulario({
                   onBlur={() => handleNumberBlur(f.label, f.value, f.type)}
                   readOnly={f.readOnly}
                   style={{
-                    backgroundColor: f.readOnly ? "#f5f5f5" : "white",
+                    backgroundColor: f.readOnly ? "#E7E4DF" : "#FFFFFF",
                     cursor: f.readOnly ? "not-allowed" : "text",
                   }}
                 />
@@ -183,7 +183,7 @@ export default function Formulario({
                   }
                   readOnly={f.readOnly}
                   style={{
-                    backgroundColor: f.readOnly ? "#f5f5f5" : "white",
+                    backgroundColor: f.readOnly ? "#E7E4DF" : "#FFFFFF",
                     cursor: f.readOnly ? "not-allowed" : "text",
                   }}
                 />

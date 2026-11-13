@@ -1,0 +1,55 @@
+/* Login "cuaderno de beneficio": panel de granos + tarjeta de acceso. Solo estilo. */
+.lg-raiz { display: flex; flex-wrap: wrap; min-height: 100vh; background: var(--papel); }
+
+.lg-escena {
+  flex: 1.25 1 480px; min-width: 0; min-height: 420px; position: relative; overflow: hidden;
+  background: radial-gradient(ellipse at 75% 20%, #5A3A22 0%, #2E1B0E 55%, #1B0F07 100%);
+  color: #F3E9D2; display: flex; flex-direction: column; justify-content: flex-end;
+  padding: clamp(24px, 5vw, 56px); padding-top: 120px;
+}
+.lg-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lg-vineta {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 38%, transparent 42%, rgba(0, 0, 0, .6) 100%), linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, .5));
+}
+.lg-marca { position: relative; max-width: 460px; }
+.lg-marca h1 { font-size: clamp(36px, 5.2vw, 58px); line-height: 1.05; letter-spacing: -0.015em; text-wrap: balance; overflow-wrap: anywhere; color: #F3E9D2; }
+.lg-marca p { margin-top: 18px; font-size: 18px; line-height: 1.5; color: #D8CBB0; }
+.lg-marca small { display: block; margin-top: 24px; font-family: var(--font-mono), monospace; font-size: 13px; color: #B8A98C; }
+
+.lg-sello { position: absolute; top: 36px; left: 40px; width: 100px; height: 100px; color: #E8C98B; transform: rotate(-9deg); }
+
+.lg-form {
+  flex: 1 1 420px; min-width: 0; position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 40px);
+  background: var(--fondo);
+  box-shadow: -22px 0 40px -14px rgba(0, 0, 0, .55);
+}
+.lg-tarjeta {
+  width: 100%; max-width: 400px; text-align: center; background: var(--papel); border: 1px solid var(--linea);
+  border-radius: 14px; padding: clamp(28px, 6vw, 40px) clamp(20px, 5vw, 36px);
+  box-shadow: 0 28px 50px -26px rgba(30, 16, 8, .55), 0 6px 14px -6px rgba(30, 16, 8, .25);
+}
+.lg-tarjeta h2 { font-size: 30px; margin-bottom: 24px; }
+.lg-tarjeta .ant-form { text-align: left; }
+.lg-olvido { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--primario); background: none; border: none; cursor: pointer; text-underline-offset: 3px; }
+.lg-olvido:hover { text-decoration: underline; }
+
+/* Animación (se desactiva con "reducir movimiento") */
+@keyframes lg-entra { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes lg-cae { from { transform: translateY(-130px) rotate(0); } to { transform: translateY(940px) rotate(var(--r)); } }
+@keyframes lg-flota { from { transform: translateY(-9px) rotate(-3deg); } to { transform: translateY(9px) rotate(3deg); } }
+@keyframes lg-monton { from { opacity: 0; transform: translateY(-60px) rotate(-30deg); } to { opacity: 1; transform: none; } }
+@keyframes lg-sello { from { opacity: 0; transform: rotate(-2deg) scale(1.3); } to { opacity: .95; transform: rotate(-9deg) scale(1); } }
+.lg-tarjeta { animation: lg-entra .7s cubic-bezier(.22, 1, .36, 1) .15s both; }
+.lg-marca { animation: lg-entra .7s cubic-bezier(.22, 1, .36, 1) .3s both; }
+.lg-cae { animation: lg-cae var(--t) linear infinite; animation-delay: var(--d); }
+.lg-flota { animation: lg-flota 6s ease-in-out infinite alternate; }
+.lg-monton { animation: lg-monton .9s cubic-bezier(.22, 1, .36, 1) both; animation-delay: var(--d); }
+.lg-sello { animation: lg-sello .6s cubic-bezier(.22, 1, .36, 1) 1.2s both; }
+@media (prefers-reduced-motion: reduce) {
+  .lg-tarjeta, .lg-marca, .lg-flota, .lg-monton { animation: none; }
+  .lg-cae { animation: none; transform: translateY(var(--y0)); }
+  .lg-sello { animation: none; opacity: .95; }
+}

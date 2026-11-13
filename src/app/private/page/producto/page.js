@@ -10,6 +10,7 @@ import {
 } from "@/config/validacionesForm";
 import { validarDatos } from "@/lib/validacionesForm";
 import ProtectedPage from "@/components/ProtectedPage";
+import { BotonEditar, BotonEliminar } from "@/components/BotonesAccion";
 import ProtectedButton from "@/components/ProtectedButton";
 export default function FormProducto() {
   const [productos, setProductos] = useState([]);
@@ -208,16 +209,14 @@ export default function FormProducto() {
       key: "acciones",
       render: (_, record) => (
         <Space size="middle">
-          <Button type="primary" onClick={() => handleEdit(record)}>
-            Editar
-          </Button>
+          <BotonEditar onClick={() => handleEdit(record)} />
           <ProtectedButton accion="eliminar"><Popconfirm
             title="¿Seguro que deseas eliminar este producto?"
             onConfirm={() => handleDelete(record.value)}
             okText="Sí"
             cancelText="No"
           >
-            <Button danger>Eliminar</Button>
+            <BotonEliminar />
           </Popconfirm></ProtectedButton>
         </Space>
       ),

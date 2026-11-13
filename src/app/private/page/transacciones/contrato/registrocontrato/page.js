@@ -87,7 +87,7 @@ export default function ReporteRegistroContrato() {
       title: "Cliente",
       dataIndex: "nombreCliente",
       width: 200,
-      render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+      render: (text) => <Text style={{ color: "#4A2E16" }}>{text}</Text>,
     },
     {
       title: "Tipo de Café",
@@ -128,10 +128,10 @@ export default function ReporteRegistroContrato() {
         let color;
         switch (estado) {
           case "Pendiente":
-            color = "#faad14";
+            color = "#B54708";
             break;
           case "Liquidado":
-            color = "#52c41a";
+            color = "#1F6B4A";
             break;
           case "Anulado":
             color = "#f5222d";
@@ -201,7 +201,7 @@ export default function ReporteRegistroContrato() {
             okText="Sí"
             cancelText="No"
           >
-            <Button size="small" type="primary" icon={<FilePdfOutlined />} />
+            <Button size="small" type="primary" icon={<FilePdfOutlined />} title="Exportar PDF" aria-label="Exportar PDF" />
           </Popconfirm>
           <ProtectedButton accion="editar" modulo="contratos">
             <Popconfirm
@@ -214,7 +214,7 @@ export default function ReporteRegistroContrato() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" type="default" icon={<EditFilled />} />
+              <Button size="small" type="default" icon={<EditFilled />} title="Editar" aria-label="Editar" />
             </Popconfirm>
           </ProtectedButton>
           <ProtectedButton accion="eliminar">
@@ -224,7 +224,7 @@ export default function ReporteRegistroContrato() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" danger icon={<DeleteFilled />} />
+              <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
             </Popconfirm>
           </ProtectedButton>
         </div>
@@ -308,8 +308,6 @@ export default function ReporteRegistroContrato() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
           minHeight: "100vh",
         }}
       >
@@ -379,18 +377,18 @@ export default function ReporteRegistroContrato() {
                   {
                     titulo: "Registros",
                     valor: estadisticas.totalRegistros,
-                    icon: <UserOutlined style={{ color: "#1890ff" }} />,
-                    color: "#1890ff",
+                    icon: <UserOutlined style={{ color: "#4A2E16" }} />,
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ,
-                    color: "#fa8c16",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps,
-                    color: "#52c41a",
+                    color: "#1F6B4A",
                   },
                 ]}
               />

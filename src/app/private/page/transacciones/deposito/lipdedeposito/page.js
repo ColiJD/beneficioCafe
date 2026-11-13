@@ -92,7 +92,7 @@ export default function ReporteLiquidacionDeposito() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" type="primary" icon={<FilePdfOutlined />} />
+              <Button size="small" type="primary" icon={<FilePdfOutlined />} title="Exportar PDF" aria-label="Exportar PDF" />
             </Popconfirm>
 
             <ProtectedButton accion="eliminar">
@@ -110,7 +110,7 @@ export default function ReporteLiquidacionDeposito() {
                 okText="Sí"
                 cancelText="No"
               >
-                <Button size="small" danger icon={<DeleteFilled />} />
+                <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
               </Popconfirm>
             </ProtectedButton>
           </div>
@@ -162,7 +162,7 @@ export default function ReporteLiquidacionDeposito() {
       title: "Cliente",
       dataIndex: "nombreCliente",
       render: (text) => (
-        <Text style={{ color: "#1890ff", fontWeight: 500 }}>{text}</Text>
+        <Text style={{ color: "#4A2E16", fontWeight: 500 }}>{text}</Text>
       ),
       width: 180,
     },
@@ -252,7 +252,7 @@ export default function ReporteLiquidacionDeposito() {
             okText="Sí"
             cancelText="No"
           >
-            <Button size="small" type="primary" icon={<FilePdfOutlined />} />
+            <Button size="small" type="primary" icon={<FilePdfOutlined />} title="Exportar PDF" aria-label="Exportar PDF" />
           </Popconfirm>
 
           <ProtectedButton accion="eliminar">
@@ -279,7 +279,7 @@ export default function ReporteLiquidacionDeposito() {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" danger icon={<DeleteFilled />} />
+              <Button size="small" danger icon={<DeleteFilled />} title="Eliminar" aria-label="Eliminar" />
             </Popconfirm>
           </ProtectedButton>
         </div>
@@ -308,8 +308,6 @@ export default function ReporteLiquidacionDeposito() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
           minHeight: "100vh",
         }}
       >
@@ -379,18 +377,18 @@ export default function ReporteLiquidacionDeposito() {
                   {
                     titulo: "Registros",
                     valor: estadisticas.totalRegistros,
-                    icon: <UserOutlined style={{ color: "#1890ff" }} />,
-                    color: "#1890ff",
+                    icon: <UserOutlined style={{ color: "#4A2E16" }} />,
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Total QQ",
                     valor: estadisticas.totalQQ.toFixed(2),
-                    color: "#fa8c16",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Lps",
                     valor: estadisticas.totalLps.toFixed(2),
-                    color: "#52c41a",
+                    color: "#1F6B4A",
                   },
                 ]}
               />

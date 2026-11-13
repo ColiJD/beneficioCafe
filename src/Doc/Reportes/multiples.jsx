@@ -1,6 +1,7 @@
 "use client";
 
 import jsPDF from "jspdf";
+import { blancoYNegro } from "./impresionBN";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 import { logoSync } from "@/lib/empresa-cliente";
@@ -10,11 +11,11 @@ export const generarPDFMultiplesSecciones = (
   filtros = {},
   opciones = {}
 ) => {
-  const doc = new jsPDF({
+  const doc = blancoYNegro(new jsPDF({
     orientation: opciones.orientation || "landscape",
     unit: "mm",
     format: "a4",
-  });
+  }));
 
   const pageWidth = doc.internal.pageSize.width;
   const margin = 15;

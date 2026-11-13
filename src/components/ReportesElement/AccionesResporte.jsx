@@ -13,7 +13,7 @@ const { Title, Text } = Typography;
 /** Componente del título */
 const HeaderTitle = ({ isDesktop, icon, titulo, subtitulo }) => (
   <Col flex="auto">
-    <Title level={isDesktop ? 2 : 3} style={{ margin: 0, color: "#1890ff" }}>
+    <Title level={isDesktop ? 2 : 3} style={{ margin: 0, color: "#4A2E16" }}>
       <Space>
         {icon}
         {titulo}

@@ -221,11 +221,11 @@ export default function PrestamosGeneral() {
       dataIndex: "descripcion",
       width: 250,
       render: (t, r) => {
-        if (r.tipo === "TOTAL") return <Text strong style={{ color: "#1e1b4b" }}>{t}</Text>;
+        if (r.tipo === "TOTAL") return <Text strong style={{ color: "#33200F" }}>{t}</Text>;
         const esInicial = r.tipo?.includes("INICIAL");
         return (
           <Space direction="vertical" size={0}>
-            <Text strong={esInicial} style={{ fontSize: "13px", color: esInicial ? "#4f46e5" : "inherit" }}>{t}</Text>
+            <Text strong={esInicial} style={{ fontSize: "13px", color: esInicial ? "#8A4B1F" : "inherit" }}>{t}</Text>
             {r.dias && <Text type="secondary" style={{ fontSize: "11px" }}><Badge status="warning" /> {r.dias} das acumulados</Text>}
           </Space>
         );
@@ -248,7 +248,7 @@ export default function PrestamosGeneral() {
         if (!val) return "";
         const esInteres = !!r.intCargo;
         return (
-          <Text strong={r.esTotal} style={{ color: esInteres ? "#ef4444" : "#111827" }}>
+          <Text strong={r.esTotal} style={{ color: esInteres ? "#8A4B1F" : "#1C1917" }}>
             {val.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
           </Text>
         );
@@ -263,7 +263,7 @@ export default function PrestamosGeneral() {
         const val = r.abono || r.intAbono;
         if (!val) return "";
         return (
-          <Text strong={r.esTotal} style={{ color: "#10b981" }}>
+          <Text strong={r.esTotal} style={{ color: "#1F6B4A" }}>
             {val.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
           </Text>
         );
@@ -279,8 +279,8 @@ export default function PrestamosGeneral() {
         if (v == null) return "";
         const esNegativo = v > 0; // En este sistema v > 0 significa deuda?
         return (
-          <div style={{ padding: "4px 8px", background: r.esTotal ? "#1e1b4b" : "transparent", borderRadius: "6px" }}>
-            <Text strong style={{ fontSize: r.esTotal ? "16px" : "14px", color: r.esTotal ? "#fff" : (esNegativo ? "#ef4444" : "#111827") }}>
+          <div style={{ padding: "4px 8px", background: r.esTotal ? "#33200F" : "transparent", borderRadius: "6px" }}>
+            <Text strong style={{ fontSize: r.esTotal ? "16px" : "14px", color: r.esTotal ? "#fff" : (esNegativo ? "#8A4B1F" : "#1C1917") }}>
               L {v.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
             </Text>
           </div>
@@ -397,25 +397,25 @@ export default function PrestamosGeneral() {
 
   return (
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES", "AUDITORES"]}>
-      <div style={{ padding: "16px", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ padding: "16px", background: "#FFFFFF", minHeight: "100vh" }}>
         {contextHolder}
         
         <Row gutter={[16, 16]}>
           <Col span={24}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <Title level={2} style={{ margin: 0, fontWeight: 900, color: "#1e1b4b" }}>
+              <Title level={2} style={{ margin: 0, fontWeight: 900, color: "#33200F" }}>
                 <AuditOutlined style={{ marginRight: "8px" }} /> Prstamos y Anticipos
               </Title>
               <Space>
                 <ProtectedButton accion="crear"><Button icon={<CalculatorOutlined />} disabled={!clienteSeleccionado} onClick={() => setOpenDrawerInteres(true)}>CALCULAR INTERES</Button></ProtectedButton>
-                <ProtectedButton accion="crear"><Button type="primary" icon={<PlusOutlined />} disabled={!clienteSeleccionado} onClick={() => setOpenDrawer(true)} style={{ background: "#4f46e5" }}>NUEVO MOVIMIENTO</Button></ProtectedButton>
+                <ProtectedButton accion="crear"><Button type="primary" icon={<PlusOutlined />} disabled={!clienteSeleccionado} onClick={() => setOpenDrawer(true)} style={{ background: "#8A4B1F" }}>NUEVO MOVIMIENTO</Button></ProtectedButton>
               </Space>
             </div>
           </Col>
 
           {/* Buscador de Cliente */}
           <Col span={24}>
-            <Card size="small" style={{ borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+            <Card size="small" style={{ borderRadius: "12px", border: "1px solid #E7E4DF" }}>
               <Row gutter={16} align="middle">
                 <Col xs={24} md={12}>
                   <Text strong style={{ display: "block", marginBottom: "4px" }}>Seleccione un Cliente:</Text>
@@ -430,8 +430,8 @@ export default function PrestamosGeneral() {
                 </Col>
                 <Col xs={24} md={12}>
                    {clienteSeleccionado && (
-                     <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px", background: "#f1f5f9", borderRadius: "10px" }}>
-                       <Avatar icon={<UserOutlined />} style={{ background: "#1e1b4b" }} />
+                     <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px", background: "#F0EEEA", borderRadius: "10px" }}>
+                       <Avatar icon={<UserOutlined />} style={{ background: "#33200F" }} />
                        <div>
                          <Text strong style={{ fontSize: "15px" }}>{clienteSeleccionado.clienteNombre} {clienteSeleccionado.clienteApellido}</Text>
                          <Text type="secondary" style={{ display: "block", fontSize: "11px" }}>RTN: {clienteSeleccionado.clienteRTN || "N/A"}</Text>
@@ -450,17 +450,17 @@ export default function PrestamosGeneral() {
                 <Row gutter={[12, 12]}>
                   <Col xs={24} sm={8}>
                     <Card size="small" style={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                      <Statistic title="DEUDA PRSTAMOS" value={totals.prestamos} prefix="L" precision={2} valueStyle={{ color: "#ef4444", fontWeight: 800 }} />
+                      <Statistic title="DEUDA PRSTAMOS" value={totals.prestamos} prefix="L" precision={2} valueStyle={{ color: "#8A4B1F", fontWeight: 800 }} />
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Card size="small" style={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                      <Statistic title="DEUDA ANTICIPOS" value={totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#f59e0b", fontWeight: 800 }} />
+                      <Statistic title="DEUDA ANTICIPOS" value={totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#B54708", fontWeight: 800 }} />
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
-                    <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#1e1b4b" }}>
-                      <Statistic title={<span style={{ color: "#94a3b8" }}>SALDO TOTAL PENDIENTE</span>} value={totals.prestamos + totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#fff", fontWeight: 900 }} />
+                    <Card size="small" style={{ borderRadius: "15px", border: "none", background: "#33200F" }}>
+                      <Statistic title={<span style={{ color: "#6E6862" }}>SALDO TOTAL PENDIENTE</span>} value={totals.prestamos + totals.anticipos} prefix="L" precision={2} valueStyle={{ color: "#fff", fontWeight: 900 }} />
                     </Card>
                   </Col>
                 </Row>

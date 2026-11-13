@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Modal, message } from "antd";
 
 export default function SessionTimeout({ warnBeforeSeconds = 60 }) {
-  const { data: session, update } = useSession(); // Agregar update
+  const { data: session, update, status } = useSession(); // Agregar update
   const [visible, setVisible] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -18,6 +18,12 @@ export default function SessionTimeout({ warnBeforeSeconds = 60 }) {
     clearTimeout(warnTimeoutRef.current);
     clearInterval(intervalRef.current);
 
+    // Sesión ya vencida en el servidor: cerrar el aviso y volver al login (antes quedaba pegado en 0 segundos)
+    if (status === "unauthenticated") {
+      setVisible(false);
+      window.location.assign("/login");
+      return;
+    }
     if (!session?.expires) return;
 
     const expiresAt = new Date(session.expires).getTime();
@@ -36,13 +42,16 @@ export default function SessionTimeout({ warnBeforeSeconds = 60 }) {
           Math.ceil((expiresAt - Date.now()) / 1000)
         );
         setCountdown(secondsLeft);
-        if (secondsLeft <= 0) clearInterval(intervalRef.current);
+        if (secondsLeft <= 0) {
+          clearInterval(intervalRef.current);
+          setVisible(false);
+        }
       }, 1000);
     }, warnMs);
 
     // Auto signOut al expirar
     signOutTimeoutRef.current = setTimeout(() => {
-      signOut({ callbackUrl: "/login" });
+      signOut({ callbackUrl: "/login" }).catch(() => window.location.assign("/login"));
     }, msUntilExpire);
 
     return () => {
@@ -50,7 +59,7 @@ export default function SessionTimeout({ warnBeforeSeconds = 60 }) {
       clearTimeout(warnTimeoutRef.current);
       clearInterval(intervalRef.current);
     };
-  }, [session, warnBeforeSeconds]);
+  }, [session, status, warnBeforeSeconds]);
 
   const keepAlive = async () => {
     if (isRefreshing) return; // Prevenir múltiples llamadas

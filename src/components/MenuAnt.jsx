@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }) {
   const [drawerVisible, setDrawerVisible] = useState(false); // mobile
 
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { colorBgLayout },
   } = theme.useToken();
 
   useEffect(() => {
@@ -114,6 +114,7 @@ export default function DashboardLayout({ children }) {
                 gap: collapsed ? 4 : 8,
                 color: "#fff",
                 margin: "16px 0",
+                padding: "0 12px",
                 transition: "all 0.2s",
               }}
             >
@@ -167,7 +168,7 @@ export default function DashboardLayout({ children }) {
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "12px 16px",
-                background: "#001529",
+                background: "#33200F",
               }}
             >
               <h1
@@ -195,7 +196,7 @@ export default function DashboardLayout({ children }) {
               style={{
                 alignItems: "center",
 
-                background: "#001529",
+                background: "#33200F",
               }}
             >
               <CajaChicaBalanceWidget collapsed={false} />
@@ -210,9 +211,8 @@ export default function DashboardLayout({ children }) {
             style={{
               height: "100vh",
               overflowY: "auto",
-              padding: 24,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
+              padding: isMobile ? 12 : 24,
+              background: colorBgLayout, // fondo neutro: las tarjetas blancas se distinguen sin marcos extra
             }}
             className="scroll-hidden"
           >

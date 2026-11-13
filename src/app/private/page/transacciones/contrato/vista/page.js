@@ -109,7 +109,7 @@ export default function ReporteContratosPendientes() {
       title: "Cliente",
       dataIndex: "cliente",
       width: 200,
-      render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+      render: (text) => <Text style={{ color: "#4A2E16" }}>{text}</Text>,
     },
 
     {
@@ -131,7 +131,7 @@ export default function ReporteContratosPendientes() {
       render: (_, r) => (
         <Text
           strong
-          style={{ color: r.totalPendienteQQ > 0 ? "#faad14" : "#52c41a" }}
+          style={{ color: r.totalPendienteQQ > 0 ? "#B54708" : "#1F6B4A" }}
         >
           {formatNumber(r.totalPendienteQQ)}
         </Text>
@@ -192,7 +192,7 @@ export default function ReporteContratosPendientes() {
       dataIndex: "pendiente",
       align: "right",
       render: (_, r) => (
-        <Text strong style={{ color: r.pendiente > 0 ? "#faad14" : "#52c41a" }}>
+        <Text strong style={{ color: r.pendiente > 0 ? "#B54708" : "#1F6B4A" }}>
           {formatNumber(r.pendiente)}
         </Text>
       ),
@@ -213,8 +213,6 @@ export default function ReporteContratosPendientes() {
     >
       <div
         style={{
-          padding: isDesktop ? 24 : 12,
-          background: "#f5f5f5",
           minHeight: "100vh",
         }}
       >
@@ -324,25 +322,25 @@ export default function ReporteContratosPendientes() {
                     titulo: "Total Pendiente (QQ)",
                     valor: formatNumber(estadisticas.totalPendienteQQ),
                     prefix: "QQ.",
-                    color: "#faad14",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Pendiente (Lps)",
                     valor: formatNumber(estadisticas.totalPendienteLps),
                     prefix: "L.",
-                    color: "#faad14",
+                    color: "#B54708",
                   },
                   {
                     titulo: "Total Entregado (Lps)",
                     valor: formatNumber(estadisticas.totalEntregadoLps),
                     prefix: "L.",
-                    color: "#52c41a",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Total Contratos (Lps)",
                     valor: formatNumber(estadisticas.totalContratoLps),
                     prefix: "L.",
-                    color: "#1890ff",
+                    color: "#4A2E16",
                   },
                 ]}
               />

@@ -1,6 +1,7 @@
 "use client";
 
 import jsPDF from "jspdf";
+import { blancoYNegro } from "./impresionBN";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 import { formatNumber } from "@/components/Formulario";
@@ -20,11 +21,11 @@ export const exportPDFMovimientosComprador = ({
   rangoFechas = {},
   options = {},
 }) => {
-  const doc = new jsPDF({
+  const doc = blancoYNegro(new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "letter",
-  });
+  }));
 
   const colorPrimario = options.colorPrimario || [41, 128, 185];
   const colorSecundario = options.colorSecundario || [236, 240, 241];

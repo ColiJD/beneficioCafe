@@ -126,7 +126,7 @@ export default function ReporteCompradoresSalidas() {
   // ---------------------------------------
 
   const headerStyle = {
-    backgroundColor: "#1890ff",
+    backgroundColor: "#4A2E16",
     color: "#fff",
     fontWeight: "bold",
     textAlign: "center",
@@ -148,7 +148,7 @@ export default function ReporteCompradoresSalidas() {
       title: "Nombre Comprador",
       dataIndex: "nombre",
       width: 200,
-      render: (text) => <Text style={{ color: "#1890ff" }}>{text}</Text>,
+      render: (text) => <Text style={{ color: "#4A2E16" }}>{text}</Text>,
       onHeaderCell,
     },
     {
@@ -260,7 +260,7 @@ export default function ReporteCompradoresSalidas() {
           ),
           onHeaderCell,
           onCell: () => ({
-            style: { backgroundColor: "#fff0f6", fontWeight: "bold" },
+            style: { backgroundColor: "#F0EEEA", fontWeight: "bold" },
           }),
         },
       ],
@@ -334,8 +334,6 @@ export default function ReporteCompradoresSalidas() {
     >
       <div
         style={{
-          padding: isDesktop ? "24px" : "12px",
-          background: "#f5f5f5",
           minHeight: "100vh",
         }}
       >
@@ -402,26 +400,26 @@ export default function ReporteCompradoresSalidas() {
                   {
                     titulo: "Compradores",
                     valor: formatNumber(estadisticas.totalCompradores),
-                    icon: <UserOutlined style={{ color: "#1890ff" }} />,
-                    color: "#1890ff",
+                    icon: <UserOutlined style={{ color: "#4A2E16" }} />,
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Total Quintales",
                     valor: formatNumber(estadisticas.totalQQ),
                     prefix: "QQ.",
-                    color: "#52c41a",
+                    color: "#1F6B4A",
                   },
                   {
                     titulo: "Total Lempiras",
                     valor: formatNumber(estadisticas.totalLps),
                     prefix: "L.",
-                    color: "#1890ff",
+                    color: "#4A2E16",
                   },
                   {
                     titulo: "Promedio General",
                     valor: formatNumber(estadisticas.promedioGeneral),
                     prefix: "L.",
-                    color: "#faad14",
+                    color: "#B54708",
                   },
                 ]}
               />
