@@ -12,6 +12,7 @@ import { signOut } from "next-auth/react";
 
 // Ilustraciones de las tarjetas del menú (SVG propios, tema café)
 import img_admin from "@/img/tarjetas/admin.svg";
+import img_bitacora from "@/img/tarjetas/bitacora.svg";
 import img_clientes from "@/img/tarjetas/clientes.svg";
 import img_compra from "@/img/tarjetas/compra.svg";
 import img_compradores from "@/img/tarjetas/compradores.svg";
@@ -248,6 +249,7 @@ export const menuItems = [
       { id: 507, name: "Roles y permisos", href: Ruta + "/roles", image: img_admin },
       { id: 508, name: "Cosechas", href: Ruta + "/cosechas", image: img_cosecha },
       { id: 509, name: "Empresa", href: Ruta + "/empresa", image: img_empresa },
+      { id: 510, name: "Bitácora", href: Ruta + "/bitacora", image: img_bitacora },
     ],
   },
 ];

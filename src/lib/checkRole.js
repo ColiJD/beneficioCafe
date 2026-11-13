@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { getPermisos } from "@/lib/permisos";
 import { modulosDeApi, modulosDeModulo } from "@/lib/modulos";
 import prisma from "@/lib/prisma";
+import { registrar } from "@/lib/bitacora";
 
 // /api/compras/[id] sirve compras y ventas: el módulo depende del tipo de registro
 export async function moduloDeCompra(id) {
@@ -45,6 +46,11 @@ export async function checkRole(req, allowedRoles = [], moduloForzado) {
     });
 
   if (!ok) {
+    await registrar({
+      evento: "DENEGADO", modulo: mods[0], ruta: new URL(req.url).pathname,
+      usuario: { userId: Number(session.user.id), usuario: session.user.name || session.user.email, rol: session.user.role },
+      detalle: { metodo: req.method, accion, modulos: mods },
+    });
     return new Response(JSON.stringify({ error: "No autorizado" }), {
       status: 403,
     });

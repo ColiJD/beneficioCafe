@@ -593,3 +593,23 @@ model cosecha_inventario {
 
   @@index([cosechaID], map: "cosecha_inventario_cosecha")
 }
+
+// Bitácora de actividad: quién hizo qué y cuándo. Sin llaves foráneas: el historial se conserva aunque se borre el usuario.
+model bitacora {
+  bitacoraID Int      @id @default(autoincrement())
+  fecha      DateTime @default(now()) @db.DateTime(0)
+  userId     Int?
+  usuario    String?  @db.VarChar(100)
+  rol        String?  @db.VarChar(50)
+  evento     String   @db.VarChar(20)
+  modulo     String?  @db.VarChar(60)
+  registroId String?  @db.VarChar(40)
+  ruta       String?  @db.VarChar(200)
+  ip         String?  @db.VarChar(45)
+  detalle    Json?
+
+  @@index([fecha], map: "bitacora_fecha")
+  @@index([userId, fecha], map: "bitacora_usuario")
+  @@index([evento, fecha], map: "bitacora_evento")
+  @@index([modulo, fecha], map: "bitacora_modulo")
+}
