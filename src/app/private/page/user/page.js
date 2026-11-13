@@ -253,7 +253,7 @@ export default function UsersPage() {
                 </Button>
               </div>
               <p className="mb-2" style={{ color: "#57534E" }}>
-                Parte de lo que le da su rol. Marca para darle más acceso y desmarca para quitarle. Las pantallas que difieren del rol salen como "ajustado".
+                Parte de lo que le da su rol. Marca para darle más acceso y desmarca para quitarle. Las pantallas que difieren del rol salen con la etiqueta ajustado.
               </p>
               <PermisosMatriz
                 value={ficha.permisos}
