@@ -44,6 +44,30 @@ test("suma permisos del rol principal, del rol extra y directos", async () => {
   assert.ok(p.permisos.compras.origen.includes(rolA.roleName));
 });
 
+test("un permiso directo reemplaza al del rol en ese módulo: quita o da más", async () => {
+  const dir = (data) => prisma.user_permissions.upsert({
+    where: { userId_modulo: { userId: user.userId, modulo: "compras" } },
+    create: { userId: user.userId, modulo: "compras", ...data },
+    update: { puedeVer: false, puedeCrear: false, puedeEditar: false, puedeEliminar: false, ...data },
+  });
+  try {
+    await dir({}); // fila sin acciones: se le quita compras aunque sus roles la den
+    let p = await getPermisos(user.userId);
+    assert.equal(p.permisos.compras?.ver ?? false, false);
+    assert.equal(p.permisos.clientes.eliminar, true); // lo demás no cambia
+    assert.equal(p.permisos.secado.ver, true);
+    const base = await getPermisos(user.userId, { sinDirectos: true });
+    assert.equal(base.permisos.compras.crear, true); // lo de sus roles se sigue pudiendo consultar
+
+    await dir({ puedeVer: true, puedeEliminar: true }); // más acceso, y deja de tener lo que daba el rol
+    p = await getPermisos(user.userId);
+    assert.equal(p.permisos.compras.eliminar, true);
+    assert.equal(p.permisos.compras.crear, false);
+  } finally {
+    await prisma.user_permissions.deleteMany({ where: { userId: user.userId, modulo: "compras" } });
+  }
+});
+
 test("las dependencias dan acceso solo a datos, no a la pantalla", async () => {
   const p = await getPermisos(user.userId);
   assert.ok(p.permisos.productos.datosDe.includes("compras"));

@@ -6,12 +6,13 @@ import { MODULOS, ACCIONES, col, DEPENDENCIAS, aplica } from "@/lib/modulos";
 export { MODULOS };
 
 /**
- * Permisos efectivos = roles del usuario (principal + extras) ∪ permisos directos.
- * Solo suma, no hay "denegar". El rol ADMIN siempre incluye Administración (admin = true); sus demás módulos
+ * Permisos efectivos = los de los roles del usuario (principal + extras), ajustados por módulo con sus permisos directos:
+ * si el usuario tiene una fila directa de un módulo, esa fila REEMPLAZA lo que dan los roles en ese módulo
+ * (sirve para darle más o para quitarle; una fila sin ninguna acción lo deja sin acceso). El rol ADMIN siempre incluye Administración (admin = true); sus demás módulos
  * se configuran como los de cualquier rol (por defecto ninguno).
  * Devuelve { admin, roles, permisos: { modulo: { ver, editar, origen: [] } } }
  */
-export async function getPermisos(userId) {
+export async function getPermisos(userId, { sinDirectos = false } = {}) {
   const id = Number(userId);
   // Una sola consulta (se ejecuta en cada petición a la API): permisos de cada rol del usuario
   // (principal + extras; un rol sin permisos viene con modulo NULL) y sus permisos directos.
@@ -39,7 +40,10 @@ export async function getPermisos(userId) {
     for (const x of ACCIONES) if (fila[col(x)]) (p[x] = true), (alguno = true);
     if (alguno) (p.ver = true), p.origen.push(origen); // cualquier acción implica ver
   };
-  for (const f of filas) if (f.modulo) add(f.modulo, f, f.nombre);
+  const directas = sinDirectos ? [] : filas.filter((f) => f.tipo === "directo" && f.modulo);
+  const ajustados = new Set(directas.map((f) => f.modulo));
+  for (const f of filas) if (f.modulo && f.tipo === "rol" && !ajustados.has(f.modulo)) add(f.modulo, f, f.nombre);
+  for (const f of directas) add(f.modulo, f, f.nombre);
   // Datos de apoyo: lo que consultan los módulos con acceso. Solo lectura de API; sin pantalla ni menú.
   for (const m of Object.keys(permisos))
     if (permisos[m].ver)
@@ -64,6 +68,16 @@ export async function requireAdmin() {
   if (!acc?.admin)
     return Response.json({ error: "No autorizado" }, { status: 403 });
   return session;
+}
+
+/** Permisos directos de un usuario: igual que limpiarPermisos pero conserva las filas sin ninguna acción (= quitarle ese módulo). */
+export function limpiarDirectos(permisos = []) {
+  return permisos
+    .filter((p) => MODULOS.includes(p.modulo))
+    .map((p) => {
+      const acc = Object.fromEntries(ACCIONES.map((a) => [col(a), aplica(p.modulo, a) && !!p[col(a)]]));
+      return { modulo: p.modulo, ...acc, [col("ver")]: ACCIONES.some((a) => acc[col(a)]) };
+    });
 }
 
 /** Normaliza lo que manda la UI: módulos válidos, solo filas con alguna acción, y toda acción implica ver. */

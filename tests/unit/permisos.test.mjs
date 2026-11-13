@@ -15,7 +15,7 @@ import {
   puedeEnModulo,
   necesitan,
 } from "@/lib/modulos";
-import { limpiarPermisos } from "@/lib/permisos";
+import { limpiarPermisos, limpiarDirectos } from "@/lib/permisos";
 
 const acc = (permisos, admin = false) => ({ admin, permisos });
 
@@ -102,6 +102,18 @@ test("limpiarPermisos descarta módulos inválidos, acciones que no aplican y fu
   ]);
   assert.deepEqual(r, [
     { modulo: "compras", puedeVer: true, puedeCrear: true, puedeEditar: false, puedeEliminar: false },
+  ]);
+});
+
+test("limpiarDirectos conserva las filas sin acciones (quitar el módulo) y descarta inválidos", () => {
+  const r = limpiarDirectos([
+    { modulo: "compras" },
+    { modulo: "clientes", puedeEliminar: true },
+    { modulo: "inexistente", puedeVer: true },
+  ]);
+  assert.deepEqual(r, [
+    { modulo: "compras", puedeVer: false, puedeCrear: false, puedeEditar: false, puedeEliminar: false },
+    { modulo: "clientes", puedeVer: true, puedeCrear: false, puedeEditar: false, puedeEliminar: true },
   ]);
 });
 
