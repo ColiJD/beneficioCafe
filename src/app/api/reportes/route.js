@@ -67,6 +67,7 @@ export async function GET(req) {
       secadoFinalizado,
       totalSalidasRaw,
       totalLiquidadoRaw,
+      inicialRaw,
     ] = await Promise.all([
       // 🔹 Compras
       prisma.compra.aggregate({
@@ -137,6 +138,12 @@ export async function GET(req) {
         _sum: { cantidadQQ: true },
         where: { OR: [{ movimiento: null }, { movimiento: { not: "Anulado" } }] },
       }),
+      // Existencia cargada al empezar a usar el sistema (no es compra). Una anulada cambia de tipo y no entra.
+      // No lleva rango de fechas: es parte del inventario actual, como el saldo que se compara.
+      prisma.movimientoinventario.aggregate({
+        _sum: { cantidadQQ: true },
+        where: { tipoMovimiento: "Entrada", referenciaTipo: "Inventario inicial" },
+      }),
     ]);
 
     const totalSalidas = Number(totalSalidasRaw._sum.salidaCantidadQQ ?? 0);
@@ -159,7 +166,10 @@ export async function GET(req) {
           totalAnticiposActivos: Number(anticiposActivos._sum.monto ?? 0),
           movimientos: resumirTipos(movimientosAnticipo, ["CARGO_ANTICIPO", "INTERES_ANTICIPO", "ABONO_ANTICIPO"]),
         },
-        inventario: { disponibleQQ: Number(inventario._sum.cantidadQQ ?? 0) },
+        inventario: {
+          disponibleQQ: Number(inventario._sum.cantidadQQ ?? 0),
+          inicialQQ: Number(inicialRaw._sum.cantidadQQ ?? 0),
+        },
         secado: {
           enProcesoQQ: Number(secadoEnProceso._sum.cantidadEntradaQQ ?? 0),
           mermaQQ:
