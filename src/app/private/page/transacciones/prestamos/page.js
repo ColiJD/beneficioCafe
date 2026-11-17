@@ -14,6 +14,7 @@ import {
   WarningOutlined, AuditOutlined
 } from "@ant-design/icons";
 import DrawerPrestamo from "@/components/Prestamos/DrawerPrestamo.jsx";
+import { guardarMovimiento } from "@/components/Prestamos/OperacionRapida";
 import useClientAndDesktop from "@/hook/useClientAndDesktop";
 import DrawerCalculoInteres from "@/components/Prestamos/calculoInteres";
 import ProtectedPage from "@/components/ProtectedPage";
@@ -367,23 +368,14 @@ export default function PrestamosGeneral() {
   const handleAgregarPrestamo = async (v) => {
     try {
       setLoading(true);
-      let url = "";
-      const body = { ...v, clienteID: clienteSeleccionado.clienteID };
-      
-      if (v.tipo === "PRESTAMO") url = "/api/prestamos";
-      else if (v.tipo === "ANTICIPO") url = "/api/anticipos";
-      else if (["ABONO_ANTICIPO", "INTERES_ANTICIPO", "CARGO_ANTICIPO"].includes(v.tipo)) url = "/api/anticipos/movimiento";
-      else if (["ABONO", "PAGO_INTERES", "Int-Cargo"].includes(v.tipo)) url = "/api/prestamos/movimiento";
-      
-      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (res.ok) {
+      const r = await guardarMovimiento(v, clienteSeleccionado.clienteID);
+      if (r.ok) {
         messageApi.success("Registro guardado");
         cargarPrestamos(clienteSeleccionado.clienteID);
         setOpenDrawer(false);
       } else {
-        const err = await res.json();
-        messageApi.error(err.error || "Error");
-        throw new Error(err.error || "Error");
+        messageApi.error(r.error);
+        throw new Error(r.error);
       }
     } finally {
       setLoading(false);

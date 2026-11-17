@@ -20,8 +20,11 @@ import {
   verificarPrestamosPendientes,
   verificarAnticiposPendientes,
 } from "@/lib/consultas";
-import { BellOutlined } from "@ant-design/icons";
+import { BellOutlined, DollarOutlined } from "@ant-design/icons";
 import NotificationDrawer from "@/components/NotificationDrawer";
+import OperacionRapida from "@/components/Prestamos/OperacionRapida";
+import usePermisos from "@/components/usePermisos";
+import { puedeEnModulo } from "@/lib/modulos";
 
 import {
   limpiarFormulario,
@@ -44,6 +47,12 @@ export default function CompraForm({ compraId }) {
   const [loadingCompra, setLoadingCompra] = useState(false); // 🔹 loading para editar
 
   const [cliente, setCliente] = useState(null);
+  const [operacionAbierta, setOperacionAbierta] = useState(false);
+  const [recargaNotif, setRecargaNotif] = useState(0); // sube al registrar una operación para refrescar saldos
+  const acc = usePermisos();
+  const puedeOperar =
+    !!cliente?.value &&
+    (puedeEnModulo(acc, "prestamos", "crear") || puedeEnModulo(acc, "anticipos", "crear"));
   const [producto, setProducto] = useState(null);
   const [compraTipoDocumento, setCompraTipoDocumento] = useState("");
   const [compraEn, setCompraEn] = useState("");
@@ -100,7 +109,7 @@ export default function CompraForm({ compraId }) {
     }
 
     cargarNotificaciones();
-  }, [cliente]);
+  }, [cliente, recargaNotif]);
 
   // Carga clientes y productos
   useEffect(() => {
@@ -546,7 +555,15 @@ export default function CompraForm({ compraId }) {
               title="Notificaciones"
               subtitle={cliente?.label}
               notifications={notifications}
+              onItemClick={puedeOperar ? () => setOperacionAbierta(true) : undefined}
               actions={[
+                ...(puedeOperar
+                  ? [{
+                      label: "Registrar abono / anticipo",
+                      icon: <DollarOutlined />,
+                      onClick: () => setOperacionAbierta(true),
+                    }]
+                  : []),
                 {
                   tooltip: "Ir a Registro de Compras",
                   icon: <SolutionOutlined />,
@@ -555,6 +572,13 @@ export default function CompraForm({ compraId }) {
                 route: "/private/page/transacciones/compra/vista",
               },
               ]}
+            />
+
+            <OperacionRapida
+              open={operacionAbierta}
+              onClose={() => setOperacionAbierta(false)}
+              cliente={cliente?.value ? { clienteID: cliente.value, clienteNombre: cliente.label, clienteApellido: "" } : null}
+              onGuardado={() => setRecargaNotif((n) => n + 1)}
             />
 
             <Formulario
