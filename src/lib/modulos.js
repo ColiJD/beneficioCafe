@@ -19,7 +19,8 @@ export const GRUPOS = [
   { grupo: "Registros", items: [
     ["productos", "Productos"], ["clientes", "Clientes"], ["compradores", "Compradores"] ] },
   { grupo: "Inventario y secado", items: [
-    ["inventario", "Inventario"], ["transferencias", "Conversión / transferencia de café"],
+    ["inventario", "Inventario"], ["inventario-inicial", "Inventario inicial (cargar existencia sin compra)"],
+    ["transferencias", "Conversión / transferencia de café"],
     ["secado", "Control de secado"], ["secadoras", "Secadoras"],
     ["servicio-secado", "Servicio de secado (recibir, cobrar y ver los activos)"],
     ["reg-servicio-pagado", "Servicios de secado pagados (ver)"], ["reg-servicio-vendido", "Servicios de secado con compra (ver)"],
@@ -56,6 +57,7 @@ export const DEPENDENCIAS = {
   "reg-entregaContratos": ["contratos"],
   "reg-entregaContratoSalida": ["contratoSalida", "contratos"],
   transferencias: ["productos"],
+  "inventario-inicial": ["productos"],
   secado: ["productos", "secadoras"],
   "servicio-secado": ["clientes", "productos", "secadoras"],
   "reg-servicio-pagado": ["clientes", "productos", "secadoras"], "reg-servicio-vendido": ["clientes", "productos", "secadoras"],
@@ -170,6 +172,7 @@ const API_INFORMES = {
 export const modulosDeApi = (pathname = "", method = "GET") => {
   const [, , a, sub] = pathname.split("/");
   if (a === "inventario" && sub === "transferir") return ["transferencias"];
+  if (a === "inventario" && sub === "inicial") return ["inventario-inicial"];
   if (a === "reportes") return [API_INFORMES[sub] || "informe-general"];
   if (a === "secado" && sub === "reporte") return ["reg-secado"];
   if (a === "contratos" && sub === "vista") return ["informe-saldoContrato"];

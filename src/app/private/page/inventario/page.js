@@ -4,9 +4,10 @@ import { useEffect, useState, useMemo } from "react";
 import {
   Table, Row, Col, message, Button, Divider,
   Card, Typography, Statistic, Space, Tag,
-  Input, Grid, Avatar, Tooltip
+  Input, Grid, Avatar, Tooltip, Modal, Form, Select, InputNumber, Popconfirm
 } from "antd";
 import {
+  EditOutlined, DeleteOutlined, UnorderedListOutlined,
   CalendarOutlined, SearchOutlined, ReloadOutlined,
   PlusOutlined, AppstoreOutlined, ShoppingCartOutlined,
   ArrowRightOutlined, HistoryOutlined, DropboxOutlined,
@@ -15,6 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import useClientAndDesktop from "@/hook/useClientAndDesktop";
 import ProtectedPage from "@/components/ProtectedPage";
+import ProtectedButton from "@/components/ProtectedButton";
 import TarjetaMobile from "@/components/TarjetaMobile";
 
 const { Title, Text } = Typography;
@@ -29,6 +31,82 @@ export default function InventarioActualPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
+
+  // Inventario inicial: cada botón y su API exigen el permiso del módulo inventario-inicial
+  // (ver la lista, crear, editar, eliminar)
+  const [modalInicial, setModalInicial] = useState(false);
+  const [editando, setEditando] = useState(null); // carga que se está editando; null = carga nueva
+  const [modalLista, setModalLista] = useState(false);
+  const [cargas, setCargas] = useState([]);
+  const [productos, setProductos] = useState([]);
+  const [guardando, setGuardando] = useState(false);
+  const [formInicial] = Form.useForm();
+
+  const cargarCargas = async () => {
+    try {
+      const res = await fetch("/api/inventario/inicial");
+      if (!res.ok) throw new Error();
+      setCargas(await res.json());
+    } catch {
+      messageApi.error("No se pudieron cargar las cargas iniciales");
+    }
+  };
+
+  const abrirLista = () => {
+    setModalLista(true);
+    cargarCargas();
+  };
+
+  const anularCarga = async (carga) => {
+    try {
+      const res = await fetch(`/api/inventario/inicial/${carga.movimientoID}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Error al anular");
+      messageApi.success("Carga anulada");
+      cargarCargas();
+      cargarDatos();
+    } catch (error) {
+      messageApi.error(error.message);
+    }
+  };
+
+  const abrirInicial = async (carga = null) => {
+    setEditando(carga);
+    setModalInicial(true);
+    try {
+      const res = await fetch("/api/productos");
+      if (!res.ok) throw new Error();
+      setProductos(await res.json());
+    } catch {
+      messageApi.error("No se pudieron cargar los productos");
+    }
+  };
+
+  const guardarInicial = async (values) => {
+    setGuardando(true);
+    try {
+      const res = await fetch(
+        editando ? `/api/inventario/inicial/${editando.movimientoID}` : "/api/inventario/inicial",
+        {
+          method: editando ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        },
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Error al guardar");
+      messageApi.success(editando ? "Carga actualizada" : "Inventario inicial registrado");
+      setModalInicial(false);
+      setEditando(null);
+      formInicial.resetFields();
+      if (modalLista) cargarCargas();
+      cargarDatos();
+    } catch (error) {
+      messageApi.error(error.message);
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -163,6 +241,88 @@ export default function InventarioActualPage() {
       <div style={{ padding: "16px", background: "#FFFFFF", minHeight: "100vh" }}>
         {contextHolder}
 
+        <Modal
+          title="Cargas del inventario inicial"
+          open={modalLista}
+          onCancel={() => setModalLista(false)}
+          footer={null}
+          width={720}
+          destroyOnHidden
+        >
+          <Table
+            size="small"
+            rowKey="movimientoID"
+            dataSource={cargas}
+            pagination={{ pageSize: 8 }}
+            columns={[
+              { title: "Fecha", dataIndex: "fecha", render: (f) => new Date(f).toLocaleDateString("es-HN") },
+              { title: "Café", dataIndex: "productName" },
+              { title: "QQ", dataIndex: "cantidadQQ", align: "right", render: (v) => v.toLocaleString("es-HN", { minimumFractionDigits: 2 }) },
+              { title: "Nota", dataIndex: "nota", ellipsis: true },
+              {
+                title: "",
+                key: "acc",
+                align: "right",
+                render: (_, c) => (
+                  <Space>
+                    <ProtectedButton accion="editar" modulo="inventario-inicial">
+                      <Tooltip title="Editar"><Button size="small" icon={<EditOutlined />} onClick={() => abrirInicial(c)} /></Tooltip>
+                    </ProtectedButton>
+                    <ProtectedButton accion="eliminar" modulo="inventario-inicial">
+                      <Popconfirm
+                        title="¿Anular esta carga?"
+                        description="Se resta del inventario. Si ese café ya se usó, no se podrá anular."
+                        okText="Anular"
+                        cancelText="Cancelar"
+                        onConfirm={() => anularCarga(c)}
+                      >
+                        <Button size="small" danger icon={<DeleteOutlined />} />
+                      </Popconfirm>
+                    </ProtectedButton>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </Modal>
+
+        <Modal
+          title={editando ? "Editar carga inicial" : "Inventario inicial"}
+          open={modalInicial}
+          onCancel={() => { setModalInicial(false); setEditando(null); }}
+          onOk={() => formInicial.submit()}
+          okText={editando ? "Guardar" : "Registrar"}
+          cancelText="Cancelar"
+          confirmLoading={guardando}
+          destroyOnHidden
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+            Suma café que ya existe en el almacén, sin crear una compra. Registra el peso real y en el estado en que está hoy.
+          </Text>
+          <Form
+            form={formInicial}
+            layout="vertical"
+            onFinish={guardarInicial}
+            initialValues={editando ? { productoID: editando.productoID, cantidadQQ: editando.cantidadQQ, nota: editando.nota } : undefined}
+          >
+            <Form.Item name="productoID" label="Tipo de café" rules={[{ required: true, message: "Seleccione el tipo de café" }]}>
+              <Select
+                disabled={!!editando}
+                showSearch
+                optionFilterProp="label"
+                placeholder="Seleccione"
+                options={productos.map((p) => ({ value: p.productID, label: p.productName }))}
+              />
+            </Form.Item>
+            <Form.Item name="cantidadQQ" label="Cantidad (QQ)" rules={[{ required: true, message: "Ingrese la cantidad" }]}>
+              <InputNumber min={0.01} step={0.01} precision={2} style={{ width: "100%" }} />
+            </Form.Item>
+            <Form.Item name="nota" label="Nota (opcional)">
+              <Input maxLength={200} />
+            </Form.Item>
+          </Form>
+        </Modal>
+
         <Row gutter={[16, 16]}>
           <Col span={24}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
@@ -172,6 +332,12 @@ export default function InventarioActualPage() {
               <Space>
                 <Button icon={<FilePdfOutlined />} onClick={handleExport} disabled={loading}>EXPORTAR INFO</Button>
                 <Button icon={<ReloadOutlined />} onClick={cargarDatos} loading={loading}>ACTUALIZAR</Button>
+                <ProtectedButton accion="crear" modulo="inventario-inicial">
+                  <Button icon={<PlusOutlined />} onClick={() => abrirInicial()}>INVENTARIO INICIAL</Button>
+                </ProtectedButton>
+                <ProtectedButton accion="ver" modulo="inventario-inicial">
+                  <Button icon={<UnorderedListOutlined />} onClick={abrirLista}>CARGAS INICIALES</Button>
+                </ProtectedButton>
                 <Button 
                   type="primary" 
                   icon={<HistoryOutlined />} 

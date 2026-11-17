@@ -405,16 +405,21 @@ export default function ResumenMovimientos() {
   const datosInventario = useMemo(() => {
     if (!data) return [];
 
-    // Cuadre: Entradas - Salidas - café en secado - merma = Inventario
+    // Cuadre: Entradas + Inventario inicial - Salidas - café en secado - merma = Inventario
     const entradasQQ = datosTabla.find((f) => f.key === "entradas")?.totalQQ ?? 0;
     const salidasQQ = datosTabla.find((f) => f.key === "salidas")?.totalQQ ?? 0;
     const enProcesoQQ = Number(data?.secado?.enProcesoQQ ?? 0);
     const mermaQQ = Number(data?.secado?.mermaQQ ?? 0);
     const inventarioQQ = Number(data?.inventario?.disponibleQQ ?? 0);
-    const diferenciaQQ = entradasQQ - salidasQQ - enProcesoQQ - mermaQQ - inventarioQQ;
+    const inicialQQ = Number(data?.inventario?.inicialQQ ?? 0);
+    const diferenciaQQ = entradasQQ + inicialQQ - salidasQQ - enProcesoQQ - mermaQQ - inventarioQQ;
 
     return [
       { key: "ent", descripcion: "Total de Entradas", signo: "+", cantidad: entradasQQ },
+      // Solo aparece si se cargó existencia inicial
+      ...(inicialQQ > 0
+        ? [{ key: "ini", descripcion: "Inventario inicial: café que ya estaba en el almacén al empezar a usar el sistema", signo: "+", cantidad: inicialQQ }]
+        : []),
       { key: "sal", descripcion: "Total de Salidas", signo: "−", cantidad: salidasQQ },
       {
         key: "secProc",
