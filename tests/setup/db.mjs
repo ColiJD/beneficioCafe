@@ -1,7 +1,8 @@
-// Guardia: las pruebas solo corren contra la base de desarrollo beneficioCafe_copia.
+// Guardia: las pruebas solo corren contra la base de desarrollo (por defecto beneficioCafe_copia).
+// Para otra base de desarrollo hay que decirlo a propósito: BASE_DESARROLLO=<nombre> en el comando.
 import { PrismaClient } from "@prisma/client";
 
-export const BASE_DESARROLLO = "beneficioCafe_copia";
+export const BASE_DESARROLLO = process.env.BASE_DESARROLLO || "beneficioCafe_copia";
 
 export function verificarBaseDesarrollo() {
   const url = process.env.DATABASE_URL || "";

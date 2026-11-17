@@ -19,8 +19,8 @@ import { limpiarPermisos, limpiarDirectos } from "@/lib/permisos";
 
 const acc = (permisos, admin = false) => ({ admin, permisos });
 
-test("hay 46 módulos únicos y 4 acciones", () => {
-  assert.equal(MODULOS.length, 46);
+test("hay 47 módulos únicos y 4 acciones", () => {
+  assert.equal(MODULOS.length, 47);
   assert.equal(new Set(MODULOS).size, MODULOS.length);
   assert.deepEqual(ACCIONES, ["ver", "crear", "editar", "eliminar"]);
   assert.equal(col("eliminar"), "puedeEliminar");
@@ -120,4 +120,21 @@ test("limpiarDirectos conserva las filas sin acciones (quitar el módulo) y desc
 test("cada módulo pertenece a un grupo", () => {
   const enGrupos = GRUPOS.flatMap((g) => g.items.map(([k]) => k));
   assert.deepEqual(enGrupos, MODULOS);
+});
+
+test("inventario inicial: módulo propio con las 4 acciones, mapeo de API y dependencia de productos", () => {
+  assert.ok(MODULOS.includes("inventario-inicial"));
+  for (const a of ACCIONES) assert.equal(aplica("inventario-inicial", a), true, a);
+  assert.deepEqual(modulosDeApi("/api/inventario/inicial", "GET"), ["inventario-inicial"]);
+  assert.deepEqual(modulosDeApi("/api/inventario/inicial", "POST"), ["inventario-inicial"]);
+  assert.deepEqual(modulosDeApi("/api/inventario/inicial/7", "PUT"), ["inventario-inicial"]);
+  assert.deepEqual(modulosDeApi("/api/inventario/inicial/7", "DELETE"), ["inventario-inicial"]);
+  // no cambia el mapeo de las rutas vecinas
+  assert.deepEqual(modulosDeApi("/api/inventario/transferir", "POST"), ["transferencias"]);
+  assert.deepEqual(modulosDeApi("/api/inventario/Actual", "GET"), ["inventario"]);
+  assert.ok(DEPENDENCIAS["inventario-inicial"].includes("productos"));
+  assert.ok(necesitan("productos").includes("inventario-inicial"));
+  const u = acc({ "inventario-inicial": { ver: true, crear: true } });
+  assert.equal(puedeEnModulo(u, "inventario-inicial", "crear"), true);
+  assert.equal(puedeEnModulo(u, "inventario-inicial", "eliminar"), false);
 });
