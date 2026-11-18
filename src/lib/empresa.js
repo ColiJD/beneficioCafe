@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { ErrorNegocio } from "@/lib/inventarioMov";
-import { funcionHabilitada, POR_DEFECTO } from "@/lib/empresa-cliente";
+import { funcionHabilitada, POR_DEFECTO, OPCIONES, TODAS } from "@/lib/empresa-cliente";
 
 // Todo lo de la empresa vive en su base de datos; las imágenes se sirven desde /api/empresa/imagen/<logo|icono>.
 // ?v= cambia cuando cambia la imagen, para que el navegador no muestre la anterior.
@@ -78,7 +78,7 @@ export async function guardarEmpresa(b, modulosValidos) {
   };
   if (b.funciones === null) data.funciones = Prisma.DbNull; // todas las funciones
   else if (Array.isArray(b.funciones)) {
-    if (!b.funciones.every((f) => modulosValidos.includes(f))) throw new ErrorNegocio("Hay funciones que no existen");
+    if (!b.funciones.every((f) => f === TODAS || modulosValidos.includes(f) || OPCIONES.some(([k]) => k === f))) throw new ErrorNegocio("Hay funciones que no existen");
     data.funciones = b.funciones;
   }
   if (b.logo) Object.assign(data, (({ datos, tipo }) => ({ logoDatos: datos, logoTipo: tipo }))(leerImagen(b.logo, "El logo")));
