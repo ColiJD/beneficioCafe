@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import NotificationDrawer from "@/components/NotificationDrawer";
 import FloatingNotificationButton from "@/components/FloatingNotificationButton";
 // Props solo cuando se abre dentro de otra pantalla (PanelOperacion): cliente ya elegido, sin campana propia y aviso al terminar.
-export default function DepositoForm({ clienteInicial = null, embebido = false, onCompleto } = {}) {
+export default function DepositoForm({ clienteInicial = null, documentoInicial = null, embebido = false, onCompleto } = {}) {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
   const [formState, setFormState] = useState({
@@ -143,6 +143,7 @@ export default function DepositoForm({ clienteInicial = null, embebido = false, 
 
         setProductos(productosConSaldo);
 
+
         if (productosConSaldo.length === 0) {
           messageRef.current.warning(
             "El cliente no tiene saldo disponible en ningún café.",
@@ -153,6 +154,15 @@ export default function DepositoForm({ clienteInicial = null, embebido = false, 
         if (!productosConSaldo.some((p) => p.value === producto?.value)) {
           handleChange("producto", null);
           handleChange("saldoPendiente", 0);
+        }
+
+        // Desde una notificación: dejar elegido el café de ese depósito
+        if (documentoInicial) {
+          const resDep = await fetch(`/api/liqDeposito/clienteConDeposito?clienteID=${cliente.value}`);
+          const deps = await resDep.json();
+          const cafe = deps.find((d) => d.depositoID === documentoInicial)?.depositoTipoCafe;
+          const elegido = productosConSaldo.find((p) => p.value === cafe);
+          if (elegido) handleChange("producto", elegido);
         }
       } catch (err) {
         console.error(err);
@@ -411,8 +421,8 @@ export default function DepositoForm({ clienteInicial = null, embebido = false, 
         )}
 
         {ops.modales}
-        {ops.barra}
         <Formulario
+          extra={ops.barra}
           key={cliente?.value || "empty"}
           title="Liquidar Depósito"
           fields={fields}

@@ -561,9 +561,9 @@ export default function CompraForm({ compraId }) {
             />
 
             {ops.modales}
-            {ops.barra}
 
             <Formulario
+          extra={ops.barra}
               title={
                 compraId ? "Editar Compra Directa" : "Registrar Compra Directa"
               }

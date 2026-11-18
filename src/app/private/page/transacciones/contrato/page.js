@@ -402,8 +402,8 @@ export default function ContratoForm({ contratoID, clienteInicial = null, embebi
             )}
             {/* Componente de formulario principal */}
             {ops.modales}
-        {ops.barra}
         <Formulario
+          extra={ops.barra}
               key={formState.cliente?.value || "empty"}
               title={contratoID ? "Editar Contrato" : "Registrar Contrato"}
               fields={fields}

@@ -15,14 +15,26 @@ const URL_POR_TIPO = {
   "Int-Cargo": "/api/prestamos/movimiento",
 };
 
-/** Registra un préstamo, anticipo o movimiento de un cliente. Devuelve { ok, error }. */
-export async function guardarMovimiento(v, clienteID) {
-  const url = URL_POR_TIPO[v.tipo];
+const URL_COMPRADOR = {
+  PRESTAMO: "/api/prestamosCompradores",
+  ANTICIPO: "/api/anticiposCompradores",
+  ABONO: "/api/prestamosCompradores/movimiento",
+  PAGO_INTERES: "/api/prestamosCompradores/movimiento",
+  "Int-Cargo": "/api/prestamosCompradores/movimiento",
+  ABONO_ANTICIPO: "/api/anticiposCompradores/movimiento",
+  INTERES_ANTICIPO: "/api/anticiposCompradores/movimiento",
+  CARGO_ANTICIPO: "/api/anticiposCompradores/movimiento",
+};
+
+/** Registra un préstamo, anticipo o movimiento de un cliente o comprador. Devuelve { ok, error }. */
+export async function guardarMovimiento(v, id, tipoPersona = "cliente") {
+  const url = (tipoPersona === "comprador" ? URL_COMPRADOR : URL_POR_TIPO)[v.tipo];
   if (!url) return { ok: false, error: "Tipo de movimiento no válido" };
+  const persona = tipoPersona === "comprador" ? { compradorID: id, tipo_movimiento: v.tipo } : { clienteID: id };
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...v, clienteID }),
+    body: JSON.stringify({ ...v, ...persona }),
   });
   if (res.ok) return { ok: true };
   const data = await res.json().catch(() => ({}));
@@ -31,12 +43,14 @@ export async function guardarMovimiento(v, clienteID) {
 
 /**
  * Formulario de préstamo/anticipo/abono en un panel, para usarlo desde cualquier pantalla
- * sin cambiar de página. cliente: { clienteID, clienteNombre, clienteApellido }.
+ * sin cambiar de página. cliente: { clienteID, clienteNombre, clienteApellido };
+ * con tipoPersona="comprador", cliente es { compradorId, compradorNombre }.
  */
 export default function OperacionRapida({
   open,
   onClose,
   cliente,
+  tipoPersona = "cliente",
   onGuardado,
   interesOpen = false,
   onCloseInteres,
@@ -44,7 +58,7 @@ export default function OperacionRapida({
   const [messageApi, contextHolder] = message.useMessage();
 
   const onFinish = async (v) => {
-    const r = await guardarMovimiento(v, cliente?.clienteID);
+    const r = await guardarMovimiento(v, tipoPersona === "comprador" ? cliente?.compradorId : cliente?.clienteID, tipoPersona);
     if (!r.ok) {
       messageApi.error(r.error);
       throw new Error(r.error); // DrawerPrestamo conserva lo escrito si falla
@@ -66,7 +80,8 @@ export default function OperacionRapida({
         onClose={onClose}
         onFinish={onFinishPrestamo}
         clienteSeleccionado={cliente}
-        tipoPersona="cliente"
+        compradorSeleccionado={cliente}
+        tipoPersona={tipoPersona}
         zIndex={1100}
       />
       <DrawerCalculoInteres
@@ -74,7 +89,8 @@ export default function OperacionRapida({
         onClose={onCloseInteres}
         onSubmit={onFinish}
         clienteSeleccionado={cliente}
-        tipoPersona="cliente"
+        compradorSeleccionado={cliente}
+        tipoPersona={tipoPersona}
         zIndex={1100}
       />
     </>

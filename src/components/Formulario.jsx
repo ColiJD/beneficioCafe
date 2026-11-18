@@ -27,6 +27,7 @@ export default function Formulario({
   submitting,
   button,
   buttons,
+  extra, // contenido a la derecha del título (por ejemplo, la barra de operaciones rápidas)
 }) {
   const [rawValues, setRawValues] = React.useState({});
   const acc = usePermisos();
@@ -84,8 +85,11 @@ export default function Formulario({
 
   return (
     <Form layout="vertical" onSubmitCapture={onSubmit}>
-      {title && (
-        <h2 style={{ textAlign: "left", marginBottom: "1rem" }}>{title}</h2>
+      {(title || extra) && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: "1rem" }}>
+          {title ? <h2 style={{ textAlign: "left", marginBottom: 0 }}>{title}</h2> : <span />}
+          {extra}
+        </div>
       )}
       <Row gutter={16}>
         {fields.map((f, idx) => (

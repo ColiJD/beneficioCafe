@@ -328,8 +328,8 @@ export default function FormDeposito({ clienteInicial = null, embebido = false, 
         )}
 
         {ops.modales}
-        {ops.barra}
         <Formulario
+          extra={ops.barra}
           title="Registrar Depósito"
           fields={fields}
           onSubmit={handleRegistrarClick}

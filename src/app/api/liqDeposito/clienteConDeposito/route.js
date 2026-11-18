@@ -85,6 +85,7 @@ export async function GET(req) {
 
           return {
             depositoID: d.depositoID,
+            depositoTipoCafe: d.depositoTipoCafe,
             clienteNombreCompleto: `${d.cliente?.clienteNombre || ""} ${
               d.cliente?.clienteApellido || ""
             }`.trim(),

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { message, Spin } from "antd";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import { obtenerProductosSelect, obtenerSelectData } from "@/lib/consultas";
@@ -143,6 +144,8 @@ export default function VentaForm({ compraId }) {
   ];
 
   // 🔹 Cargar compradores y productos
+  const ops = useOperacionesRapidas(comprador, { tipoPersona: "comprador" });
+
   useEffect(() => {
     async function cargarDatos() {
       setLoadingDatos(true);
@@ -196,7 +199,7 @@ export default function VentaForm({ compraId }) {
       }
     }
     cargarNotificaciones();
-  }, [comprador]);
+  }, [comprador, ops.recarga]);
 
   // 🔹 Cálculo de total y oro
   useEffect(() => {
@@ -387,7 +390,7 @@ export default function VentaForm({ compraId }) {
       <>
         {contextHolder}
         <FloatingNotificationButton
-          notifications={notifications}
+          notifications={ops.filtrar(notifications)}
           onClick={() => setDrawerVisible(true)}
         />
         <NotificationDrawer
@@ -395,7 +398,8 @@ export default function VentaForm({ compraId }) {
           onClose={() => setDrawerVisible(false)}
           title="Notificaciones"
           subtitle={comprador?.label}
-          notifications={notifications}
+          notifications={ops.filtrar(notifications)}
+          onItemClick={comprador?.value ? ops.abrirDesde : undefined}
           actions={[
             {
               tooltip: "Ir a Salidas",
@@ -434,7 +438,9 @@ export default function VentaForm({ compraId }) {
           </div>
         ) : (
           <>
-            <Formulario
+            {ops.modales}
+        <Formulario
+          extra={ops.barra}
               title={
                 compraId ? "Editar Venta Directa" : "Registrar Venta Directa"
               }

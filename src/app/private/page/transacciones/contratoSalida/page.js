@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"; // Hooks de React
 import { message, Spin, Button } from "antd"; // Componente de mensajes de Ant Design
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario"; // Componente genérico de formulario
 import PreviewModal from "@/components/Modal"; // Modal para previsualización
 import {
@@ -25,7 +26,8 @@ import {
 } from "@/lib/consultas";
 import { useRouter } from "next/navigation";
 
-export default function ContratoForm({ contratoID }) {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): comprador ya elegido, sin campana propia y aviso al terminar.
+export default function ContratoForm({ contratoID, clienteInicial = null, embebido = false, onCompleto }) {
   // 🔹 Estados de datos seleccionables
   const [compradores, setCompradores] = useState([]); // Lista de compradores para el select
   const [productos, setProductos] = useState([]); // Lista de productos para el select
@@ -37,7 +39,7 @@ export default function ContratoForm({ contratoID }) {
 
   // 🔹 Estado centralizado del formulario
   const [formState, setFormState] = useState({
-    comprador: null,
+    comprador: clienteInicial,
     producto: null,
     contratoPrecio: "",
     contratoCantidadQQ: "",
@@ -55,6 +57,8 @@ export default function ContratoForm({ contratoID }) {
 
   // 🔹 API de mensajes de Ant Design
   const [messageApi, contextHolder] = message.useMessage();
+
+  const ops = useOperacionesRapidas(formState.comprador, { tipoPersona: "comprador", ocultar: embebido });
 
   useEffect(() => {
     async function cargarNotificaciones() {
@@ -85,7 +89,7 @@ export default function ContratoForm({ contratoID }) {
       }
     }
     cargarNotificaciones();
-  }, [formState.comprador]);
+  }, [formState.comprador, ops.recarga]);
 
   // 🔹 useEffect para calcular automáticamente el total (precio x cantidad)
   useEffect(() => {
@@ -265,6 +269,8 @@ export default function ContratoForm({ contratoID }) {
         messageApi.error("Error generando documento PDF");
       }
 
+      onCompleto?.();
+
       // 🔹 Limpieza del formulario
       limpiarFormulario(
         Object.fromEntries(fieldsConfig.map((f) => [f.key, formState[f.key]])),
@@ -351,8 +357,10 @@ export default function ContratoForm({ contratoID }) {
           </div>
         ) : (
           <>
+        {!embebido && (
+          <>
             <FloatingNotificationButton
-              notifications={notifications}
+              notifications={ops.filtrar(notifications)}
               onClick={() => setDrawerVisible(true)}
             />
             <NotificationDrawer
@@ -360,7 +368,8 @@ export default function ContratoForm({ contratoID }) {
               onClose={() => setDrawerVisible(false)}
               title="Notificaciones"
               subtitle={formState.comprador?.label}
-              notifications={notifications}
+              notifications={ops.filtrar(notifications)}
+              onItemClick={formState.comprador?.value ? ops.abrirDesde : undefined}
               actions={[
                 {
                   tooltip: "Ir a Registro",
@@ -373,8 +382,12 @@ export default function ContratoForm({ contratoID }) {
               },
               ]}
             />
+          </>
+        )}
             {/* Componente de formulario principal */}
-            <Formulario
+            {ops.modales}
+        <Formulario
+          extra={ops.barra}
               key={formState.comprador?.value || "empty"}
               title={contratoID ? "Editar Contrato" : "Registrar Contrato"}
               fields={fields}

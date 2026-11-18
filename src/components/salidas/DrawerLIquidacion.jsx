@@ -8,6 +8,7 @@ export default function LiquidacionDrawer({
   detalles = [],
   onLiquidar,
   messageApi,
+  zIndex,
 }) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -72,6 +73,7 @@ export default function LiquidacionDrawer({
       width={450}
       onClose={onClose}
       open={visible}
+      zIndex={zIndex}
       forceRender
       footer={
         <div style={{ textAlign: "right" }}>

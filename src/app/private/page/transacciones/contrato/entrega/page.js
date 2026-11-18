@@ -30,7 +30,7 @@ import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
 import { useRouter } from "next/navigation";
 
 // Props solo cuando se abre dentro de otra pantalla (PanelOperacion): cliente ya elegido, sin campana propia y aviso al terminar.
-export default function LiquidacionContratoForm({ clienteInicial = null, embebido = false, onCompleto } = {}) {
+export default function LiquidacionContratoForm({ clienteInicial = null, documentoInicial = null, embebido = false, onCompleto } = {}) {
   const [clientes, setClientes] = useState([]);
   const [contratos, setContratos] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -133,7 +133,8 @@ export default function LiquidacionContratoForm({ clienteInicial = null, embebid
         setContratos(contratosData);
         setFormState((prev) => ({
           ...prev,
-          contrato: null,
+          // si venimos de una notificación, el contrato ya queda elegido y su saldo y tipo de café se cargan solos
+          contrato: contratosData?.find((c) => c.value === documentoInicial) ?? null,
           totalSacos: "",
           cantidadLiquidar: "",
         }));
@@ -558,8 +559,8 @@ export default function LiquidacionContratoForm({ clienteInicial = null, embebid
         )}
 
         {ops.modales}
-        {ops.barra}
         <Formulario
+          extra={ops.barra}
           key={formState.cliente?.value || "empty"}
           title="Entrega de Contrato"
           fields={fields}

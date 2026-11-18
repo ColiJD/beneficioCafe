@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { message } from "antd";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import ProtectedPage from "@/components/ProtectedPage";
@@ -22,9 +23,10 @@ import {
 import LiquidacionDrawer from "@/components/salidas/DrawerLIquidacion";
 import { PDFComprobante } from "@/Doc/Documentos/generico";
 
-export default function FormSalida() {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): comprador ya elegido, sin campana propia y aviso al terminar.
+export default function FormSalida({ clienteInicial = null, embebido = false, onCompleto } = {}) {
   const [compradores, setCompradores] = useState([]);
-  const [comprador, setComprador] = useState(null);
+  const [comprador, setComprador] = useState(clienteInicial);
   const [productos, setProductos] = useState([]);
   const [producto, setProducto] = useState(null);
   const [salidaCantidadQQ, setSalidaCantidadQQ] = useState("");
@@ -40,6 +42,8 @@ export default function FormSalida() {
   const messageApiRef = useRef(messageApi);
   const [liqData, setLiqData] = useState({});
   const [liqDrawerVisible, setLiqDrawerVisible] = useState(false);
+
+  const ops = useOperacionesRapidas(comprador, { tipoPersona: "comprador", ocultar: embebido });
 
   useEffect(() => {
     async function cargarNotificaciones() {
@@ -69,7 +73,7 @@ export default function FormSalida() {
     }
 
     cargarNotificaciones();
-  }, [comprador]);
+  }, [comprador, ops.recarga]);
   // Cargar compradores
   useEffect(() => {
     async function cargarCompradores() {
@@ -195,6 +199,8 @@ export default function FormSalida() {
         messageApi.error("Error generando comprobante PDF");
       }
 
+      onCompleto?.();
+
       // Limpiar formulario
       setComprador(null);
       setProducto(null);
@@ -257,8 +263,10 @@ export default function FormSalida() {
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
+        {!embebido && (
+          <>
         <FloatingNotificationButton
-          notifications={notifications}
+          notifications={ops.filtrar(notifications)}
           onClick={() => setDrawerVisible(true)}
         />
         <NotificationDrawer
@@ -266,7 +274,8 @@ export default function FormSalida() {
           onClose={() => setDrawerVisible(false)}
           title="Notificaciones"
           subtitle={comprador?.label}
-          notifications={notifications}
+          notifications={ops.filtrar(notifications)}
+          onItemClick={comprador?.value ? ops.abrirDesde : undefined}
           actions={[
             {
               tooltip: "Ir a Registro de Confirmacion",
@@ -336,7 +345,11 @@ export default function FormSalida() {
           }}
         />
 
+          </>
+        )}
+        {ops.modales}
         <Formulario
+          extra={ops.barra}
           title="Registrar Salida"
           fields={fields}
           onSubmit={handleRegistrarClick}
