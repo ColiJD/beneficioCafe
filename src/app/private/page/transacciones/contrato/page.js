@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"; // Hooks de React
 import { message, Spin, Button } from "antd"; // Componente de mensajes de Ant Design
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario"; // Componente genérico de formulario
 import PreviewModal from "@/components/Modal"; // Modal para previsualización
 import { obtenerClientesSelect, obtenerProductosSelect } from "@/lib/consultas"; // Funciones para traer clientes/productos
@@ -24,7 +25,8 @@ import {
 } from "@/lib/consultas";
 import { useRouter } from "next/navigation";
 
-export default function ContratoForm({ contratoID }) {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): cliente ya elegido, sin campana propia y aviso al terminar.
+export default function ContratoForm({ contratoID, clienteInicial = null, embebido = false, onCompleto }) {
   // 🔹 Estados de datos seleccionables
   const [clientes, setClientes] = useState([]); // Lista de clientes para el select
   const [productos, setProductos] = useState([]); // Lista de productos para el select
@@ -36,7 +38,7 @@ export default function ContratoForm({ contratoID }) {
 
   // 🔹 Estado centralizado del formulario
   const [formState, setFormState] = useState({
-    cliente: null,
+    cliente: clienteInicial,
     producto: null,
     contratoPrecio: "",
     contratoCantidadQQ: "",
@@ -56,6 +58,8 @@ export default function ContratoForm({ contratoID }) {
 
   // 🔹 API de mensajes de Ant Design
   const [messageApi, contextHolder] = message.useMessage();
+
+  const ops = useOperacionesRapidas(formState.cliente, { ocultar: embebido });
 
   useEffect(() => {
     async function cargarNotificaciones() {
@@ -85,7 +89,7 @@ export default function ContratoForm({ contratoID }) {
     }
 
     cargarNotificaciones();
-  }, [formState.cliente]);
+  }, [formState.cliente, ops.recarga]);
 
   // 🔹 useEffect para calcular automáticamente el total (precio x cantidad)
   useEffect(() => {
@@ -277,6 +281,8 @@ export default function ContratoForm({ contratoID }) {
         messageApi.error("Error generando documento PDF");
       }
 
+      onCompleto?.();
+
       // 🔹 Limpieza del formulario
       limpiarFormulario(
         Object.fromEntries(fieldsConfig.map((f) => [f.key, formState[f.key]])),
@@ -367,30 +373,37 @@ export default function ContratoForm({ contratoID }) {
           </div>
         ) : (
           <>
-            <FloatingNotificationButton
-              notifications={notifications}
-              onClick={() => setDrawerVisible(true)}
-            />
-            <NotificationDrawer
-              visible={drawerVisible}
-              onClose={() => setDrawerVisible(false)}
-              title="Notificaciones"
-              subtitle={formState.cliente?.label}
-              notifications={notifications}
-              actions={[
-                {
-                  tooltip: "Ir a Registro",
-                  icon: <SolutionOutlined />,
-                  onClick: () =>
-                    router.push(
-                      "/private/page/transacciones/contrato/registrocontrato",
-                    ),
-                route: "/private/page/transacciones/contrato/registrocontrato",
-              },
-              ]}
-            />
+            {!embebido && (
+              <>
+                <FloatingNotificationButton
+                  notifications={ops.filtrar(notifications)}
+                  onClick={() => setDrawerVisible(true)}
+                />
+                <NotificationDrawer
+                  visible={drawerVisible}
+                  onClose={() => setDrawerVisible(false)}
+                  title="Notificaciones"
+                  subtitle={formState.cliente?.label}
+                  notifications={ops.filtrar(notifications)}
+                  onItemClick={formState.cliente?.value ? ops.abrirDesde : undefined}
+                  actions={[
+                    {
+                      tooltip: "Ir a Registro",
+                      icon: <SolutionOutlined />,
+                      onClick: () =>
+                        router.push(
+                          "/private/page/transacciones/contrato/registrocontrato",
+                        ),
+                      route: "/private/page/transacciones/contrato/registrocontrato",
+                    },
+                  ]}
+                />
+              </>
+            )}
             {/* Componente de formulario principal */}
-            <Formulario
+            {ops.modales}
+        {ops.barra}
+        <Formulario
               key={formState.cliente?.value || "empty"}
               title={contratoID ? "Editar Contrato" : "Registrar Contrato"}
               fields={fields}

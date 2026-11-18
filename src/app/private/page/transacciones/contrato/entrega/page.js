@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { message } from "antd";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import { limpiarFormulario } from "@/config/validacionesForm";
@@ -28,7 +29,8 @@ import {
 import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
 import { useRouter } from "next/navigation";
 
-export default function LiquidacionContratoForm() {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): cliente ya elegido, sin campana propia y aviso al terminar.
+export default function LiquidacionContratoForm({ clienteInicial = null, embebido = false, onCompleto } = {}) {
   const [clientes, setClientes] = useState([]);
   const [contratos, setContratos] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -37,7 +39,7 @@ export default function LiquidacionContratoForm() {
   const router = useRouter();
 
   const [formState, setFormState] = useState({
-    cliente: null,
+    cliente: clienteInicial,
     contrato: null,
     tipoCafeID: "",
     tipoCafeNombre: "",
@@ -59,6 +61,8 @@ export default function LiquidacionContratoForm() {
   const [messageApi, contextHolder] = message.useMessage();
   const messageRef = useRef(messageApi);
   const [previewVisible, setPreviewVisible] = useState(false);
+
+  const ops = useOperacionesRapidas(formState.cliente, { ocultar: embebido });
 
   useEffect(() => {
     async function cargarNotificaciones() {
@@ -84,7 +88,7 @@ export default function LiquidacionContratoForm() {
     }
 
     cargarNotificaciones();
-  }, [formState.cliente]);
+  }, [formState.cliente, ops.recarga]);
 
   const handleChange = (key, value) =>
     setFormState((prev) => ({ ...prev, [key]: value }));
@@ -343,6 +347,7 @@ export default function LiquidacionContratoForm() {
           ),
         });
         await cargarClientes();
+        onCompleto?.();
       } else {
         messageApi.error(result.error || "No se pudo registrar la liquidación");
       }
@@ -524,29 +529,36 @@ export default function LiquidacionContratoForm() {
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
-        <FloatingNotificationButton
-          notifications={notifications}
-          onClick={() => setDrawerVisible(true)}
-        />
-        <NotificationDrawer
-          visible={drawerVisible}
-          onClose={() => setDrawerVisible(false)}
-          title="Notificaciones"
-          subtitle={formState.cliente?.label}
-          notifications={notifications}
-          actions={[
-            {
-              tooltip: "Ir a Registro",
-              icon: <SolutionOutlined />,
-              onClick: () =>
-                router.push(
-                  "/private/page/transacciones/contrato/detallecontrato",
-                ),
-                route: "/private/page/transacciones/contrato/detallecontrato",
-              },
-          ]}
-        />
+        {!embebido && (
+          <>
+            <FloatingNotificationButton
+              notifications={ops.filtrar(notifications)}
+              onClick={() => setDrawerVisible(true)}
+            />
+            <NotificationDrawer
+              visible={drawerVisible}
+              onClose={() => setDrawerVisible(false)}
+              title="Notificaciones"
+              subtitle={formState.cliente?.label}
+              notifications={ops.filtrar(notifications)}
+              onItemClick={formState.cliente?.value ? ops.abrirDesde : undefined}
+              actions={[
+                {
+                  tooltip: "Ir a Registro",
+                  icon: <SolutionOutlined />,
+                  onClick: () =>
+                    router.push(
+                      "/private/page/transacciones/contrato/detallecontrato",
+                    ),
+                  route: "/private/page/transacciones/contrato/detallecontrato",
+                },
+              ]}
+            />
+          </>
+        )}
 
+        {ops.modales}
+        {ops.barra}
         <Formulario
           key={formState.cliente?.value || "empty"}
           title="Entrega de Contrato"

@@ -20,11 +20,9 @@ import {
   verificarPrestamosPendientes,
   verificarAnticiposPendientes,
 } from "@/lib/consultas";
-import { BellOutlined, DollarOutlined } from "@ant-design/icons";
+import { BellOutlined } from "@ant-design/icons";
 import NotificationDrawer from "@/components/NotificationDrawer";
-import OperacionRapida from "@/components/Prestamos/OperacionRapida";
-import usePermisos from "@/components/usePermisos";
-import { puedeEnModulo } from "@/lib/modulos";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 
 import {
   limpiarFormulario,
@@ -47,12 +45,7 @@ export default function CompraForm({ compraId }) {
   const [loadingCompra, setLoadingCompra] = useState(false); // 🔹 loading para editar
 
   const [cliente, setCliente] = useState(null);
-  const [operacionAbierta, setOperacionAbierta] = useState(false);
-  const [recargaNotif, setRecargaNotif] = useState(0); // sube al registrar una operación para refrescar saldos
-  const acc = usePermisos();
-  const puedeOperar =
-    !!cliente?.value &&
-    (puedeEnModulo(acc, "prestamos", "crear") || puedeEnModulo(acc, "anticipos", "crear"));
+  const ops = useOperacionesRapidas(cliente);
   const [producto, setProducto] = useState(null);
   const [compraTipoDocumento, setCompraTipoDocumento] = useState("");
   const [compraEn, setCompraEn] = useState("");
@@ -109,7 +102,7 @@ export default function CompraForm({ compraId }) {
     }
 
     cargarNotificaciones();
-  }, [cliente, recargaNotif]);
+  }, [cliente, ops.recarga]);
 
   // Carga clientes y productos
   useEffect(() => {
@@ -538,7 +531,7 @@ export default function CompraForm({ compraId }) {
                 zIndex: 1000,
               }}
             >
-              <Badge count={notifications.length} offset={[0, 0]}>
+              <Badge count={ops.filtrar(notifications).length} offset={[0, 0]}>
                 <Button
                   type="primary"
                   shape="circle"
@@ -554,16 +547,9 @@ export default function CompraForm({ compraId }) {
               onClose={() => setDrawerVisible(false)}
               title="Notificaciones"
               subtitle={cliente?.label}
-              notifications={notifications}
-              onItemClick={puedeOperar ? () => setOperacionAbierta(true) : undefined}
+              notifications={ops.filtrar(notifications)}
+              onItemClick={cliente?.value ? ops.abrirDesde : undefined}
               actions={[
-                ...(puedeOperar
-                  ? [{
-                      label: "Registrar abono / anticipo",
-                      icon: <DollarOutlined />,
-                      onClick: () => setOperacionAbierta(true),
-                    }]
-                  : []),
                 {
                   tooltip: "Ir a Registro de Compras",
                   icon: <SolutionOutlined />,
@@ -574,12 +560,8 @@ export default function CompraForm({ compraId }) {
               ]}
             />
 
-            <OperacionRapida
-              open={operacionAbierta}
-              onClose={() => setOperacionAbierta(false)}
-              cliente={cliente?.value ? { clienteID: cliente.value, clienteNombre: cliente.label, clienteApellido: "" } : null}
-              onGuardado={() => setRecargaNotif((n) => n + 1)}
-            />
+            {ops.modales}
+            {ops.barra}
 
             <Formulario
               title={

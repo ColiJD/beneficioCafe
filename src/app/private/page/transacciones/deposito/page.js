@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { message } from "antd";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import ProtectedPage from "@/components/ProtectedPage";
@@ -24,11 +25,12 @@ import {
 } from "@/lib/consultas";
 import NotificationDrawer from "@/components/NotificationDrawer";
 import FloatingNotificationButton from "@/components/FloatingNotificationButton";
-export default function FormDeposito() {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): cliente ya elegido, sin campana propia y aviso al terminar.
+export default function FormDeposito({ clienteInicial = null, embebido = false, onCompleto } = {}) {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
 
-  const [cliente, setCliente] = useState(null);
+  const [cliente, setCliente] = useState(clienteInicial);
   const [producto, setProducto] = useState(null);
   const [depositoCantidadQQ, setDepositoCantidadQQ] = useState("");
   const [depositoTotalSacos, setDepositoTotalSacos] = useState("");
@@ -46,6 +48,8 @@ export default function FormDeposito() {
 
   const [messageApi, contextHolder] = message.useMessage();
   const messageApiRef = useRef(messageApi);
+
+  const ops = useOperacionesRapidas(cliente, { ocultar: embebido });
 
   useEffect(() => {
     async function cargarNotificaciones() {
@@ -75,7 +79,7 @@ export default function FormDeposito() {
     }
 
     cargarNotificaciones();
-  }, [cliente]);
+  }, [cliente, ops.recarga]);
 
   // Carga clientes y productos
   useEffect(() => {
@@ -192,6 +196,8 @@ export default function FormDeposito() {
         messageApi.error("Error generando comprobante PDF");
       }
 
+      onCompleto?.();
+
       // 🔹 Limpiar formulario
       limpiarFormulario({
         setCliente,
@@ -295,27 +301,34 @@ export default function FormDeposito() {
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
-        <FloatingNotificationButton
-          notifications={notifications}
-          onClick={() => setDrawerVisible(true)}
-        />
-        <NotificationDrawer
-          visible={drawerVisible}
-          onClose={() => setDrawerVisible(false)}
-          title="Notificaciones"
-          subtitle={cliente?.label}
-          notifications={notifications}
-          actions={[
-            {
-              tooltip: "Ir a Registro",
-              icon: <SolutionOutlined />,
-              onClick: () =>
-                router.push("/private/page/informe/registrodeposito"),
-                route: "/private/page/informe/registrodeposito",
-              },
-          ]}
-        />
+        {!embebido && (
+          <>
+            <FloatingNotificationButton
+              notifications={ops.filtrar(notifications)}
+              onClick={() => setDrawerVisible(true)}
+            />
+            <NotificationDrawer
+              visible={drawerVisible}
+              onClose={() => setDrawerVisible(false)}
+              title="Notificaciones"
+              subtitle={cliente?.label}
+              notifications={ops.filtrar(notifications)}
+              onItemClick={cliente?.value ? ops.abrirDesde : undefined}
+              actions={[
+                {
+                  tooltip: "Ir a Registro",
+                  icon: <SolutionOutlined />,
+                  onClick: () =>
+                    router.push("/private/page/informe/registrodeposito"),
+                  route: "/private/page/informe/registrodeposito",
+                },
+              ]}
+            />
+          </>
+        )}
 
+        {ops.modales}
+        {ops.barra}
         <Formulario
           title="Registrar Depósito"
           fields={fields}

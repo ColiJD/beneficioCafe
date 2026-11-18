@@ -2,6 +2,7 @@
 
 import { message } from "antd";
 import DrawerPrestamo from "./DrawerPrestamo";
+import DrawerCalculoInteres from "./calculoInteres";
 
 const URL_POR_TIPO = {
   PRESTAMO: "/api/prestamos",
@@ -32,7 +33,14 @@ export async function guardarMovimiento(v, clienteID) {
  * Formulario de préstamo/anticipo/abono en un panel, para usarlo desde cualquier pantalla
  * sin cambiar de página. cliente: { clienteID, clienteNombre, clienteApellido }.
  */
-export default function OperacionRapida({ open, onClose, cliente, onGuardado }) {
+export default function OperacionRapida({
+  open,
+  onClose,
+  cliente,
+  onGuardado,
+  interesOpen = false,
+  onCloseInteres,
+}) {
   const [messageApi, contextHolder] = message.useMessage();
 
   const onFinish = async (v) => {
@@ -43,6 +51,10 @@ export default function OperacionRapida({ open, onClose, cliente, onGuardado }) 
     }
     messageApi.success("Registro guardado");
     onGuardado?.();
+  };
+  // El drawer de interés se cierra solo al terminar; el de préstamo lo cerramos aquí
+  const onFinishPrestamo = async (v) => {
+    await onFinish(v);
     onClose();
   };
 
@@ -52,9 +64,18 @@ export default function OperacionRapida({ open, onClose, cliente, onGuardado }) 
       <DrawerPrestamo
         open={open}
         onClose={onClose}
-        onFinish={onFinish}
+        onFinish={onFinishPrestamo}
         clienteSeleccionado={cliente}
         tipoPersona="cliente"
+        zIndex={1100}
+      />
+      <DrawerCalculoInteres
+        open={interesOpen}
+        onClose={onCloseInteres}
+        onSubmit={onFinish}
+        clienteSeleccionado={cliente}
+        tipoPersona="cliente"
+        zIndex={1100}
       />
     </>
   );
