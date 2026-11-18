@@ -1,6 +1,6 @@
 "use client";
 
-import { Drawer } from "antd";
+import { Drawer, message } from "antd";
 import EntregaContrato from "@/app/private/page/transacciones/contrato/entrega/page";
 import LiquidarDeposito from "@/app/private/page/transacciones/deposito/liqDeposito/page";
 import NuevoContrato from "@/app/private/page/transacciones/contrato/page";
@@ -28,7 +28,10 @@ const paneles = () => ({
  */
 export default function PanelOperacion({ tipo, onClose, cliente, documento, onCompleto }) {
   const panel = paneles()[tipo];
+  const [api, contextHolder] = message.useMessage();
   return (
+    <>
+      {contextHolder}
     <Drawer
       title={panel ? `${panel.titulo} - ${cliente?.label || ""}` : ""}
       open={!!panel}
@@ -43,11 +46,14 @@ export default function PanelOperacion({ tipo, onClose, cliente, documento, onCo
           documentoInicial={documento}
           embebido
           onCompleto={() => {
+            // los avisos del formulario se pierden al cerrar el panel, así que avisamos desde aquí
+            api.success(`${panel.titulo}: registrado correctamente`);
             onCompleto?.();
             onClose();
           }}
         />
       )}
     </Drawer>
+    </>
   );
 }
