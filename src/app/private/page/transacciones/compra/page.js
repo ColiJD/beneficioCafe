@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { message, Spin, Drawer, List, Button, Badge, Tooltip } from "antd";
+import { message, Spin, Drawer, List, Button, Badge, Tooltip, Checkbox } from "antd";
+import useEmpresa from "@/components/useEmpresa";
+import { OPCION_DESCUENTO_PRIMERO } from "@/lib/empresa-cliente";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import { obtenerClientesSelect, obtenerProductosSelect } from "@/lib/consultas";
@@ -22,6 +24,7 @@ import {
 } from "@/lib/consultas";
 import { BellOutlined } from "@ant-design/icons";
 import NotificationDrawer from "@/components/NotificationDrawer";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 
 import {
   limpiarFormulario,
@@ -44,6 +47,7 @@ export default function CompraForm({ compraId }) {
   const [loadingCompra, setLoadingCompra] = useState(false); // 🔹 loading para editar
 
   const [cliente, setCliente] = useState(null);
+  const ops = useOperacionesRapidas(cliente);
   const [producto, setProducto] = useState(null);
   const [compraTipoDocumento, setCompraTipoDocumento] = useState("");
   const [compraEn, setCompraEn] = useState("");
@@ -59,6 +63,9 @@ export default function CompraForm({ compraId }) {
   const [compraFlete, setCompraFlete] = useState(""); // cobro por flete (opcional): se debita del monto a pagar
 
   const router = useRouter();
+  const { tieneOpcion } = useEmpresa();
+  const [descuentoPrimero, setDescuentoPrimero] = useState(false); // solo se ofrece si la empresa activó la opción
+  const usaDescuentoPrimero = tieneOpcion(OPCION_DESCUENTO_PRIMERO) && descuentoPrimero;
 
   const [errors, setErrors] = useState({});
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -100,7 +107,7 @@ export default function CompraForm({ compraId }) {
     }
 
     cargarNotificaciones();
-  }, [cliente]);
+  }, [cliente, ops.recarga]);
 
   // Carga clientes y productos
   useEffect(() => {
@@ -133,6 +140,7 @@ export default function CompraForm({ compraId }) {
       compraTotalSacos,
       producto, // objeto con value, label y data
       compraPrecioQQ,
+      usaDescuentoPrimero,
     );
 
     const porc = parseFloat(compraPorcDano) || 0;
@@ -163,6 +171,7 @@ export default function CompraForm({ compraId }) {
     producto,
     compraPorcDano,
     compraFlete,
+    usaDescuentoPrimero,
   ]);
 
   // Validación
@@ -482,6 +491,7 @@ export default function CompraForm({ compraId }) {
           data.compraCantidadQQ,
           data.compraTotalSacos,
           productoMatch || { data: {} },
+          usaDescuentoPrimero,
         );
         setCompraCantidadQQ(pesoBruto.pesoBruto);
       } catch (err) {
@@ -529,7 +539,7 @@ export default function CompraForm({ compraId }) {
                 zIndex: 1000,
               }}
             >
-              <Badge count={notifications.length} offset={[0, 0]}>
+              <Badge count={ops.filtrar(notifications).length} offset={[0, 0]}>
                 <Button
                   type="primary"
                   shape="circle"
@@ -545,7 +555,8 @@ export default function CompraForm({ compraId }) {
               onClose={() => setDrawerVisible(false)}
               title="Notificaciones"
               subtitle={cliente?.label}
-              notifications={notifications}
+              notifications={ops.filtrar(notifications)}
+              onItemClick={cliente?.value ? ops.abrirDesde : undefined}
               actions={[
                 {
                   tooltip: "Ir a Registro de Compras",
@@ -557,7 +568,21 @@ export default function CompraForm({ compraId }) {
               ]}
             />
 
+            {ops.modales}
+
             <Formulario
+          extra={
+                <>
+                  {tieneOpcion(OPCION_DESCUENTO_PRIMERO) && (
+                    <Tooltip title="Aplica el descuento a todo el peso y después resta los sacos (en vez de restar los sacos primero).">
+                      <Checkbox checked={descuentoPrimero} onChange={(e) => setDescuentoPrimero(e.target.checked)}>
+                        Descuento antes de restar sacos
+                      </Checkbox>
+                    </Tooltip>
+                  )}
+                  {ops.barra}
+                </>
+              }
               title={
                 compraId ? "Editar Compra Directa" : "Registrar Compra Directa"
               }

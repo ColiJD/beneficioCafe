@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { message } from "antd";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import { limpiarFormulario } from "@/config/validacionesForm";
@@ -26,7 +27,8 @@ import { truncarDosDecimalesSinRedondear } from "@/lib/calculoCafe";
 import { useRouter } from "next/navigation";
 // Duplicate import removed
 
-export default function LiquidacionContratoForm() {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): comprador ya elegido, sin campana propia y aviso al terminar.
+export default function LiquidacionContratoForm({ clienteInicial = null, documentoInicial = null, embebido = false, onCompleto } = {}) {
   const [clientes, setClientes] = useState([]);
   const [contratos, setContratos] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -35,7 +37,7 @@ export default function LiquidacionContratoForm() {
   const router = useRouter();
 
   const [formState, setFormState] = useState({
-    cliente: null,
+    cliente: clienteInicial,
     contrato: null,
     tipoCafeID: "",
     tipoCafeNombre: "",
@@ -56,6 +58,8 @@ export default function LiquidacionContratoForm() {
   const [messageApi, contextHolder] = message.useMessage();
   const messageRef = useRef(messageApi);
   const [previewVisible, setPreviewVisible] = useState(false);
+
+  const ops = useOperacionesRapidas(formState.cliente, { tipoPersona: "comprador", ocultar: embebido });
 
   useEffect(() => {
     // Notifications logic removed for Compradores as requested/not implemented yet
@@ -85,7 +89,7 @@ export default function LiquidacionContratoForm() {
       }
     }
     cargarNotificaciones();
-  }, [formState.cliente]);
+  }, [formState.cliente, ops.recarga]);
 
   const handleChange = (key, value) =>
     setFormState((prev) => ({ ...prev, [key]: value }));
@@ -133,7 +137,8 @@ export default function LiquidacionContratoForm() {
         setContratos(contratosData);
         setFormState((prev) => ({
           ...prev,
-          contrato: null,
+          // si venimos de una notificación, el contrato ya queda elegido y su saldo y tipo de café se cargan solos
+          contrato: contratosData?.find((c) => c.value === documentoInicial) ?? null,
           totalSacos: "",
           cantidadLiquidar: "",
         }));
@@ -343,6 +348,7 @@ export default function LiquidacionContratoForm() {
           ),
         });
         await cargarClientes();
+        onCompleto?.();
       } else {
         messageApi.error(result.error || "No se pudo registrar la liquidación");
       }
@@ -517,8 +523,10 @@ export default function LiquidacionContratoForm() {
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
+        {!embebido && (
+          <>
         <FloatingNotificationButton
-          notifications={notifications}
+          notifications={ops.filtrar(notifications)}
           onClick={() => setDrawerVisible(true)}
         />
         <NotificationDrawer
@@ -526,7 +534,8 @@ export default function LiquidacionContratoForm() {
           onClose={() => setDrawerVisible(false)}
           title="Notificaciones"
           subtitle={formState.cliente?.label}
-          notifications={notifications}
+          notifications={ops.filtrar(notifications)}
+          onItemClick={formState.cliente?.value ? ops.abrirDesde : undefined}
           actions={[
             {
               tooltip: "Ir a Registro",
@@ -539,8 +548,12 @@ export default function LiquidacionContratoForm() {
               },
           ]}
         />
+          </>
+        )}
 
+        {ops.modales}
         <Formulario
+          extra={ops.barra}
           key={formState.cliente?.value || "empty"}
           title="Entrega de Contrato"
           fields={fields}

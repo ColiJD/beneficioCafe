@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { message } from "antd";
+import useOperacionesRapidas from "@/components/OperacionesRapidas";
 import Formulario from "@/components/Formulario";
 import PreviewModal from "@/components/Modal";
 import {
@@ -22,11 +23,12 @@ import { UnorderedListOutlined, SolutionOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import NotificationDrawer from "@/components/NotificationDrawer";
 import FloatingNotificationButton from "@/components/FloatingNotificationButton";
-export default function DepositoForm() {
+// Props solo cuando se abre dentro de otra pantalla (PanelOperacion): cliente ya elegido, sin campana propia y aviso al terminar.
+export default function DepositoForm({ clienteInicial = null, documentoInicial = null, embebido = false, onCompleto } = {}) {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
   const [formState, setFormState] = useState({
-    cliente: null,
+    cliente: clienteInicial,
     producto: null,
     depositoEn: "",
     depositoCantidadQQ: "",
@@ -53,6 +55,8 @@ export default function DepositoForm() {
     parseFloat(formState.depositoCantidadQQ || 0) *
     parseFloat(formState.depositoPrecioQQ || 0)
   ).toFixed(2);
+  const ops = useOperacionesRapidas(formState.cliente, { ocultar: embebido });
+
   useEffect(() => {
     async function cargarNotificaciones() {
       setNotifications([]); // limpiar notificaciones si cambia el cliente
@@ -79,7 +83,7 @@ export default function DepositoForm() {
     }
 
     cargarNotificaciones();
-  }, [formState.cliente]);
+  }, [formState.cliente, ops.recarga]);
 
   // ------------------------------
   // Cargar clientes
@@ -139,6 +143,7 @@ export default function DepositoForm() {
 
         setProductos(productosConSaldo);
 
+
         if (productosConSaldo.length === 0) {
           messageRef.current.warning(
             "El cliente no tiene saldo disponible en ningún café.",
@@ -149,6 +154,15 @@ export default function DepositoForm() {
         if (!productosConSaldo.some((p) => p.value === producto?.value)) {
           handleChange("producto", null);
           handleChange("saldoPendiente", 0);
+        }
+
+        // Desde una notificación: dejar elegido el café de ese depósito
+        if (documentoInicial) {
+          const resDep = await fetch(`/api/liqDeposito/clienteConDeposito?clienteID=${cliente.value}`);
+          const deps = await resDep.json();
+          const cafe = deps.find((d) => d.depositoID === documentoInicial)?.depositoTipoCafe;
+          const elegido = productosConSaldo.find((p) => p.value === cafe);
+          if (elegido) handleChange("producto", elegido);
         }
       } catch (err) {
         console.error(err);
@@ -289,6 +303,7 @@ export default function DepositoForm() {
           ),
         });
         await cargarClientes();
+        onCompleto?.();
       } else {
         const err = await res.json();
         messageApi.error(err.error || "No se pudo registrar la liquidación");
@@ -377,30 +392,37 @@ export default function DepositoForm() {
     <ProtectedPage allowedRoles={["ADMIN", "GERENCIA", "COLABORADORES"]}>
       <>
         {contextHolder}
-        <FloatingNotificationButton
-          notifications={notifications}
-          onClick={() => setDrawerVisible(true)}
-        />
-        <NotificationDrawer
-          visible={drawerVisible}
-          onClose={() => setDrawerVisible(false)}
-          title="Notificaciones"
-          subtitle={formState.cliente?.label}
-          notifications={notifications}
-          actions={[
-            {
-              tooltip: "Ir a Registro",
-              icon: <SolutionOutlined />,
-              onClick: () =>
-                router.push(
-                  "/private/page/transacciones/deposito/lipdedeposito",
-                ),
-                route: "/private/page/transacciones/deposito/lipdedeposito",
-              },
-          ]}
-        />
+        {!embebido && (
+          <>
+            <FloatingNotificationButton
+              notifications={ops.filtrar(notifications)}
+              onClick={() => setDrawerVisible(true)}
+            />
+            <NotificationDrawer
+              visible={drawerVisible}
+              onClose={() => setDrawerVisible(false)}
+              title="Notificaciones"
+              subtitle={formState.cliente?.label}
+              notifications={ops.filtrar(notifications)}
+              onItemClick={formState.cliente?.value ? ops.abrirDesde : undefined}
+              actions={[
+                {
+                  tooltip: "Ir a Registro",
+                  icon: <SolutionOutlined />,
+                  onClick: () =>
+                    router.push(
+                      "/private/page/transacciones/deposito/lipdedeposito",
+                    ),
+                  route: "/private/page/transacciones/deposito/lipdedeposito",
+                },
+              ]}
+            />
+          </>
+        )}
 
+        {ops.modales}
         <Formulario
+          extra={ops.barra}
           key={cliente?.value || "empty"}
           title="Liquidar Depósito"
           fields={fields}

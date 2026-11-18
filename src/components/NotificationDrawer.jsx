@@ -11,6 +11,7 @@ export default function NotificationDrawer({
   subtitle,
   notifications = [],
   actions = [],
+  onItemClick, // si se pasa, cada notificación es clicable
 }) {
   const acc = usePermisos();
   // action.route: solo si puede abrir esa pantalla; action.modulo + action.accion: solo si tiene ese permiso
@@ -133,7 +134,9 @@ export default function NotificationDrawer({
               renderItem={(item, idx) => (
                 <List.Item
                   key={idx}
+                  onClick={onItemClick ? () => onItemClick(item, group) : undefined}
                   style={{
+                    cursor: onItemClick ? "pointer" : "default",
                     background: "white",
                     marginBottom: 8,
                     borderRadius: 8,
@@ -160,7 +163,9 @@ export default function NotificationDrawer({
           renderItem={(item, idx) => (
             <List.Item
               key={idx}
+              onClick={onItemClick ? () => onItemClick(item) : undefined}
               style={{
+                cursor: onItemClick ? "pointer" : "default",
                 background: "white",
                 marginBottom: 8,
                 borderRadius: 8,

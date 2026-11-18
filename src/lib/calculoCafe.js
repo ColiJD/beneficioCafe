@@ -7,7 +7,8 @@ export function calcularCafeDesdeProducto(
   pesoBruto,
   sacosTotales,
   productoSeleccionado,
-  precioQQ
+  precioQQ,
+  descuentoPrimero = false // true: el descuento se aplica a todo el peso y después se restan los sacos
 ) {
   if (!productoSeleccionado || !productoSeleccionado.data) {
     return { oro: "0.00", total: "0.00", retencion: "0.00" };
@@ -20,9 +21,13 @@ export function calcularCafeDesdeProducto(
   precioQQ = Math.max(parseFloat(precioQQ) || 0, 0);
 
   const sacos = sacosTotales * tara;
-  let pesoNeto = Math.max(pesoBruto - sacos, 0);
-
-  if (descuento) pesoNeto = Math.max(pesoNeto * (1 - descuento), 0);
+  let pesoNeto;
+  if (descuentoPrimero) {
+    pesoNeto = Math.max(pesoBruto * (1 - descuento) - sacos, 0);
+  } else {
+    pesoNeto = Math.max(pesoBruto - sacos, 0);
+    if (descuento) pesoNeto = Math.max(pesoNeto * (1 - descuento), 0);
+  }
 
   let oro = pesoNeto / factorOro;
 
@@ -38,7 +43,8 @@ export function calcularCafeDesdeProducto(
 export function calcularPesoBrutoDesdeOro(
   oro,
   sacosTotales,
-  productoSeleccionado
+  productoSeleccionado,
+  descuentoPrimero = false
 ) {
   if (!productoSeleccionado || !productoSeleccionado.data) {
     return { pesoBruto: "0.00" };
@@ -52,13 +58,16 @@ export function calcularPesoBrutoDesdeOro(
   // Paso 1: Calcular peso neto necesario para obtener el oro deseado
   let pesoNetoNecesario = oro * factorOro;
 
-  // Paso 2: Revertir el descuento si existe
-  if (descuento) {
-    pesoNetoNecesario = pesoNetoNecesario / (1 - descuento);
+  let pesoBrutoNecesario;
+  if (descuentoPrimero) {
+    // neto = bruto×(1−d) − sacos  →  bruto = (neto + sacos) / (1−d)
+    pesoBrutoNecesario = (pesoNetoNecesario + sacosTotales * tara) / (1 - descuento);
+  } else {
+    // Paso 2: Revertir el descuento si existe
+    if (descuento) pesoNetoNecesario = pesoNetoNecesario / (1 - descuento);
+    // Paso 3: Calcular peso bruto (agregando tara por saco)
+    pesoBrutoNecesario = pesoNetoNecesario + sacosTotales * tara;
   }
-
-  // Paso 3: Calcular peso bruto (agregando tara por saco)
-  const pesoBrutoNecesario = pesoNetoNecesario + sacosTotales * tara;
 
   return { pesoBruto: Math.round(pesoBrutoNecesario * 100) / 100};
 }

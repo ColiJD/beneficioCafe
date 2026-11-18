@@ -41,6 +41,7 @@ export default function DrawerPrestamo({
   compradorSeleccionado,
   formRef,
   tipoPersona = "cliente",
+  zIndex, // para abrirlo encima de otro panel (forceRender lo monta antes que los demás)
 }) {
   const [form] = Form.useForm();
   const acc = usePermisos();
@@ -225,6 +226,7 @@ export default function DrawerPrestamo({
       placement="left"
       maskClosable
       mask={false}
+      zIndex={zIndex}
       forceRender
     >
       <Form

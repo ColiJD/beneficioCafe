@@ -4,6 +4,9 @@ import { Button, Card, Checkbox, Col, Collapse, Input, Row, Space, Switch, messa
 import ProtectedPage from "@/components/ProtectedPage";
 import EncabezadoPagina from "@/components/EncabezadoPagina";
 import { GRUPOS } from "@/lib/modulos";
+import { OPCIONES, TODAS } from "@/lib/empresa-cliente";
+
+const esOpcion = (k) => OPCIONES.some(([o]) => o === k);
 
 const CAMPOS = [
   ["nombre", "Nombre del beneficio", 120], ["propietario", "Propietario", 120],
@@ -45,9 +48,11 @@ export default function EmpresaPage() {
   useEffect(() => { cargar(); }, []);
   if (!e) return <ProtectedPage allowedRoles={["ADMIN"]}>{ctx}</ProtectedPage>;
 
-  const todas = e.funciones === null || e.funciones === undefined;
-  const activas = todas ? [] : e.funciones;
-  const cambiaFunciones = (lista) => setE({ ...e, funciones: lista });
+  const lista = e.funciones ?? [];
+  const todas = e.funciones == null || lista.includes(TODAS);
+  const activas = todas ? [] : lista;
+  const opcionesActivas = lista.filter(esOpcion);
+  const cambiaFunciones = (l) => setE({ ...e, funciones: l });
 
   const guardar = async () => {
     setGuardando(true);
@@ -96,7 +101,7 @@ export default function EmpresaPage() {
 
         <Card title="Funciones de este cliente" style={{ marginBottom: 16 }}>
           <Space>
-            <Switch checked={todas} onChange={(v) => cambiaFunciones(v ? null : GRUPOS.flatMap((g) => g.items.map(([k]) => k)))} />
+            <Switch checked={todas} onChange={(v) => cambiaFunciones(v ? (opcionesActivas.length ? [TODAS, ...opcionesActivas] : null) : [...GRUPOS.flatMap((g) => g.items.map(([k]) => k)), ...opcionesActivas])} />
             <span>{todas ? "Todas las funciones habilitadas" : "Solo las funciones marcadas"}</span>
           </Space>
           {!todas && (
@@ -109,6 +114,16 @@ export default function EmpresaPage() {
               ),
             }))} />
           )}
+        </Card>
+
+        <Card title="Opciones (apagadas por defecto)" style={{ marginBottom: 16 }}>
+          {OPCIONES.map(([k, nombre]) => (
+            <Checkbox key={k} checked={lista.includes(k)}
+              onChange={(ev) => {
+                const nueva = ev.target.checked ? [...(e.funciones == null ? [TODAS] : lista), k] : lista.filter((a) => a !== k);
+                cambiaFunciones(nueva.length === 1 && nueva[0] === TODAS ? null : nueva);
+              }}>{nombre}</Checkbox>
+          ))}
         </Card>
 
       </div>

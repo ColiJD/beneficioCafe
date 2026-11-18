@@ -22,6 +22,7 @@ export default function DrawerInteres({
   clienteSeleccionado,
   compradorSeleccionado,
   tipoPersona = "cliente",
+  zIndex,
 }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -119,6 +120,7 @@ export default function DrawerInteres({
       placement="left"
       maskClosable
       mask={false}
+      zIndex={zIndex}
       forceRender
     >
       <Form

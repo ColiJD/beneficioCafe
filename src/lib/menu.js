@@ -93,7 +93,7 @@ export const menuItems = [
         image: img_prestamo,
       },
       {
-        id: 803,
+        id: 804,
         name: "Reporte de Secado",
         href: Ruta + "/secado/reporte",
         image: img_secado,

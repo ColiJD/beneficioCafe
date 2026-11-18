@@ -1,5 +1,12 @@
 // Parte de empresa que corre en el navegador (sin Prisma): carga única de /api/empresa.
-export const funcionHabilitada = (funciones, nombre) => !Array.isArray(funciones) || funciones.includes(nombre);
+// "*" en la lista = todas las funciones (y las que se agreguen), pudiendo llevar además opciones encendidas.
+export const TODAS = "*";
+export const funcionHabilitada = (funciones, nombre) => !Array.isArray(funciones) || funciones.includes(TODAS) || funciones.includes(nombre);
+
+// Opciones que el cliente enciende a propósito (apagadas por defecto, aun con "todas las funciones"). Se guardan en el mismo arreglo de funciones.
+export const OPCION_DESCUENTO_PRIMERO = "opt:descuento-primero";
+export const OPCIONES = [[OPCION_DESCUENTO_PRIMERO, "Compra directa: permitir aplicar el descuento antes de restar los sacos"]];
+export const opcionActiva = (funciones, nombre) => Array.isArray(funciones) && funciones.includes(nombre);
 
 // Valores neutros si la tabla empresa no existe o falla la lectura (también los usa src/lib/empresa.js).
 export const POR_DEFECTO = { nombre: "Beneficio de Café", propietario: "", ciudad: "", pais: "", rtn: null, telefono: null, funciones: null };
