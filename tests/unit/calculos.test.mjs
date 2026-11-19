@@ -87,3 +87,29 @@ test("validación genérica junta el primer error por campo", () => {
   assert.deepEqual(Object.keys(r.errores).sort(), ["ced", "email"]);
   assert.equal(capitalizarNombre("  juan   PÉREZ "), "Juan Pérez");
 });
+
+test("descuento primero: (bruto×(1−d) − sacos×tara) / factor; sin la opción no cambia", () => {
+  const p = { data: { tara: 0.5, descuento: 0.51, factorOro: 120 } };
+  const normal = calcularCafeDesdeProducto(1000, 10, p, 100);
+  const primero = calcularCafeDesdeProducto(1000, 10, p, 100, true);
+  assert.equal(normal.oro, (1000 - 5) * 0.49 / 120);
+  assert.equal(calcularCafeDesdeProducto(1000, 10, p, 100, false).oro, normal.oro);
+  assert.ok(Math.abs(primero.oro - (1000 * 0.49 - 5) / 120) < 1e-12);
+  assert.ok(primero.oro < normal.oro, "descontar también los sacos da menos oro");
+  assert.ok(Math.abs(primero.total - primero.oro * 100) < 1e-9);
+});
+
+test("descuento primero: sin descuento da lo mismo, y nunca es negativo", () => {
+  const sinDesc = { data: { tara: 2, descuento: 0, factorOro: 1 } };
+  assert.equal(calcularCafeDesdeProducto(100, 5, sinDesc, 1, true).oro, calcularCafeDesdeProducto(100, 5, sinDesc, 1).oro);
+  const p = { data: { tara: 50, descuento: 0.5, factorOro: 1 } };
+  assert.equal(calcularCafeDesdeProducto(10, 5, p, 1, true).oro, 0);
+});
+
+test("descuento primero: el peso bruto desde oro es la inversa en ambos órdenes", () => {
+  const p = { data: { tara: 0.5, descuento: 0.51, factorOro: 120 } };
+  for (const dp of [false, true]) {
+    const { oro } = calcularCafeDesdeProducto(1000, 10, p, 1, dp);
+    assert.equal(calcularPesoBrutoDesdeOro(oro, 10, p, dp).pesoBruto, 1000, `descuentoPrimero=${dp}`);
+  }
+});

@@ -2,12 +2,16 @@ import prisma from "@/lib/prisma";
 import { checkRole, moduloDeCompra } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
 import { validarFlete } from "@/lib/flete";
+import { abonoDeCompra, anularAbonos, aplicarAbono, bloquearDeudas, moduloDeDeuda, validarAbono } from "@/lib/abonoDeuda";
+import { getPermisos } from "@/lib/permisos";
+import { puedeEnModulo } from "@/lib/modulos";
 import {
   ErrorNegocio,
   esAnulado,
   moverInventario,
   movimientoOriginal,
   respuestaError,
+  TX_ESPERA,
 } from "@/lib/inventarioMov";
 
 const refs = (id) => [`Compra directa #${id}`, `Venta directa #${id}`];
@@ -41,6 +45,8 @@ export async function DELETE(req, { params }) {
         data: { tipoMovimiento: "Anulado", nota: `${entrada ? "Compra" : "Venta"} anulada #${compraId}` },
       });
       await tx.compra.update({ where: { compraId }, data: { compraMovimiento: "Anulado" } });
+      // si la compra abonó a una deuda, esos movimientos (enlazados por compraId) se anulan con ella y la deuda vuelve a subir
+      await anularAbonos(tx, compraId);
       return entrada;
     });
 
@@ -68,6 +74,8 @@ export async function PUT(request, { params }) {
       compraTotalSacos,
       compraRetencio,
       compraFlete,
+      compraAbono,
+      compraAbonoTipo,
       compraDescripcion,
       compraEn,
     } = body;
@@ -82,11 +90,46 @@ export async function PUT(request, { params }) {
     // Solo las compras llevan flete (las ventas que usan esta ruta no lo envían y no se tocan)
     const flete = compraFlete === undefined ? undefined : validarFlete(compraFlete, compraTotal);
 
+    // Si el formulario manda el abono, se reemplaza por el nuevo (puede ser 0 = quitarlo); si no lo manda, el abono no se toca.
+    const cambiaAbono = compraAbono !== undefined;
+    const quiere = cambiaAbono ? validarAbono(compraAbono, compraAbonoTipo, compraTotal) : null;
+
     const updated = await prisma.$transaction(async (tx) => {
+      if (cambiaAbono) {
+        // lo primero de la transacción (antes de cualquier lectura normal): bloquea las deudas del cliente actual y del nuevo
+        const [fila] = await tx.$queryRaw`SELECT clienteID FROM compra WHERE compraId = ${compraId} FOR UPDATE`;
+        await bloquearDeudas(tx, [clienteID, fila?.clienteID]);
+      }
       const compraExistente = await tx.compra.findUnique({ where: { compraId } });
       if (!compraExistente) throw new ErrorNegocio("Compra no encontrada", 404);
       if (esAnulado(compraExistente.compraMovimiento)) {
         throw new ErrorNegocio("No se puede modificar un registro anulado");
+      }
+      const actual = await abonoDeCompra(tx, compraId);
+      const clienteCambia = Number(clienteID) !== compraExistente.clienteID;
+      let abonoFinal = actual;
+      if (!cambiaAbono) {
+        if (actual.abono > 0) {
+          // el abono ya bajó la deuda de ESTE cliente: cambiarlo dejaría el abono en el cliente equivocado
+          if (clienteCambia) {
+            throw new ErrorNegocio("Esta compra tiene un abono aplicado a la deuda del cliente: no se puede cambiar el cliente. Anule la compra y regístrela de nuevo.");
+          }
+          if (actual.abono > Number(compraTotal)) {
+            throw new ErrorNegocio("El nuevo total no alcanza para el abono ya aplicado a la deuda. Anule la compra y regístrela de nuevo.");
+          }
+        }
+      } else if (quiere.abono !== actual.abono || (quiere.tipo ?? null) !== (actual.tipo ?? null) || (clienteCambia && actual.abono > 0)) {
+        // el abono cambia: exige permiso sobre cada deuda que se toca (la anterior y la nueva)
+        const acc = await getPermisos(sessionOrResponse.user.id);
+        for (const tipo of new Set([actual.tipo, quiere.tipo].filter(Boolean))) {
+          if (!puedeEnModulo(acc, moduloDeDeuda(tipo), "crear")) {
+            throw new ErrorNegocio("No tiene permiso para modificar el abono de esta deuda.", 403);
+          }
+        }
+        // se anula el abono anterior (la deuda se restablece) y se aplica el nuevo a las deudas del cliente de la compra
+        if (actual.abono > 0) await anularAbonos(tx, compraId);
+        if (quiere.abono > 0) await aplicarAbono(tx, quiere.tipo, clienteID, quiere.abono, compraId);
+        abonoFinal = quiere;
       }
 
       const qqAnterior = parseFloat(compraExistente.compraCantidadQQ);
@@ -139,8 +182,8 @@ export async function PUT(request, { params }) {
         });
       }
 
-      return compraActualizada;
-    });
+      return { ...compraActualizada, compraAbono: abonoFinal.abono, compraAbonoTipo: abonoFinal.tipo };
+    }, TX_ESPERA);
 
     return Response.json(updated);
   } catch (error) {
@@ -188,7 +231,9 @@ export async function GET(req, context) {
       );
     }
 
-    return NextResponse.json(compra);
+    // abono vigente (suma de los movimientos de la deuda enlazados a esta compra)
+    const { abono, tipo } = await abonoDeCompra(prisma, compra.compraId);
+    return NextResponse.json({ ...compra, compraAbono: abono, compraAbonoTipo: tipo });
   } catch (error) {
     console.error("Error en GET /api/compras/[id]:", error);
     return NextResponse.json(

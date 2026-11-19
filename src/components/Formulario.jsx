@@ -55,15 +55,22 @@ export default function Formulario({
       [label]: formatNumber(value ?? "", type),
     }));
   };
+  // El texto mostrado de cada número (rawValues) se descarta cuando el valor real ya no coincide con él
+  // (por ejemplo, el formulario se limpió o se puso en 0): así no quedan datos de la operación anterior.
   React.useEffect(() => {
-    // Si todos los campos vienen vacíos después de limpiar
-    if (
-      fields.every(
-        (f) => f.value === "" || f.value === null || f.value === undefined
-      )
-    ) {
-      setRawValues({});
-    }
+    const num = (v) => Number(String(v ?? "").replace(/,/g, "")) || 0;
+    setRawValues((prev) => {
+      const next = { ...prev };
+      let cambio = false;
+      for (const k of Object.keys(prev)) {
+        const f = fields.find((x) => x.label === k);
+        if (!f || num(prev[k]) !== num(f.value)) {
+          delete next[k];
+          cambio = true;
+        }
+      }
+      return cambio ? next : prev;
+    });
   }, [fields]);
 
   const handlePhoneChange = (setter) => (phone) => {
@@ -72,28 +79,8 @@ export default function Formulario({
     setter(formatted);
   };
 
-  React.useEffect(() => {
-    // Si todos los campos vienen vacíos después de limpiar
-    if (
-      fields.every(
-        (f) => f.value === "" || f.value === null || f.value === undefined
-      )
-    ) {
-      setRawValues({});
-    }
-  }, [fields]);
-
-  return (
-    <Form layout="vertical" onSubmitCapture={onSubmit}>
-      {(title || extra) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: "1rem" }}>
-          {title ? <h2 style={{ textAlign: "left", marginBottom: 0 }}>{title}</h2> : <span />}
-          {extra}
-        </div>
-      )}
-      <Row gutter={16}>
-        {fields.map((f, idx) => (
-          <Col key={idx} xs={24} sm={12}>
+  // Un campo del formulario (etiqueta + control)
+  const campo = (f) => (
             <Form.Item
               label={
                 <span>
@@ -103,6 +90,7 @@ export default function Formulario({
                       <InfoCircleOutlined style={{ color: "#4A2E16" }} />
                     </Tooltip>
                   )}
+                  {f.accion}
                 </span>
               }
               required={f.required}
@@ -193,9 +181,55 @@ export default function Formulario({
                 />
               )}
             </Form.Item>
+  );
+
+  return (
+    <Form layout="vertical" onSubmitCapture={onSubmit}>
+      {(title || extra) && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: "1rem" }}>
+          {title ? <h2 style={{ textAlign: "left", marginBottom: 0 }}>{title}</h2> : <span />}
+          {extra}
+        </div>
+      )}
+      <Row gutter={16}>
+        {fields.filter((f) => !f.enResumen).map((f, idx) => (
+          <Col key={f.label || idx} xs={24} sm={12}>
+            {campo(f)}
           </Col>
         ))}
       </Row>
+      {/* Campos con enResumen: se muestran juntos como un bloque tipo factura (solo lectura); el último renglón va resaltado */}
+      {fields.some((f) => f.enResumen) && (
+        <div style={{ border: "1px solid #E2DFDA", borderRadius: 8, background: "#F7F5F2", padding: "4px 16px", marginBottom: 16 }}>
+          {fields.filter((f) => f.enResumen).map((f, i, arr) => {
+            const ultimo = i === arr.length - 1;
+            return (
+              <div
+                key={f.label}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "8px 0",
+                  borderTop: i === 0 ? "none" : ultimo ? "2px solid #4A2E16" : "1px solid #E2DFDA",
+                  fontWeight: ultimo || f.negrita ? 700 : 400,
+                  fontSize: ultimo ? 16 : 14,
+                }}
+              >
+                <span>
+                  {f.label}{" "}
+                  {f.tooltip && (
+                    <Tooltip title={f.tooltip}>
+                      <InfoCircleOutlined style={{ color: "#4A2E16" }} />
+                    </Tooltip>
+                  )}
+                </span>
+                <span>{f.resta ? "− " : ""}{formatNumber(f.value ?? "", f.type) || "0.00"}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {/* Botón genérico */}
       {(buttons?.length > 0
         ? buttons.map((btn, idx) =>

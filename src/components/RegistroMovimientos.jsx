@@ -22,7 +22,7 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import Link from "next/link";
 import useClientAndDesktop from "@/hook/useClientAndDesktop";
-import { exportCompraDirecta } from "@/Doc/Documentos/compra";
+import { exportCompraDirecta, datosReciboCompra } from "@/Doc/Documentos/compra";
 import { exportVentaDirecta } from "@/Doc/Documentos/venta";
 
 import ProtectedPage from "@/components/ProtectedPage";
@@ -259,6 +259,18 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
       key: "totalLps",
       render: (val) => formatNumber(val),
     },
+    ...(movimientoFiltro === "Salida"
+      ? []
+      : [
+          { title: "Flete (Lps)", dataIndex: "compraFlete", align: "center", key: "compraFlete", render: (val) => (Number(val) > 0 ? formatNumber(val) : "-") },
+          {
+            title: "Abono a deuda (Lps)",
+            dataIndex: "compraAbono",
+            align: "center",
+            key: "compraAbono",
+            render: (val, r) => (Number(val) > 0 ? `${formatNumber(val)} (${r.compraAbonoTipo === "ANTICIPO" ? "anticipo" : "préstamo"})` : "-"),
+          },
+        ]),
     {
       title: "Sacos",
       dataIndex: "compraTotalSacos",
@@ -328,15 +340,7 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
                   // ✅ COMPRA
                   await exportCompraDirecta({
                     cliente: { label: record.clienteNombreCompleto },
-                    productos: [
-                      {
-                        nombre: record.tipoCafeNombre,
-                        cantidad: parseFloat(record.compraCantidadQQ),
-                        precio: parseFloat(record.compraPrecioQQ),
-                        total: parseFloat(record.totalLps),
-                      },
-                    ],
-                    total: parseFloat(record.totalLps),
+                    ...datosReciboCompra(record),
                     observaciones: record.compraDescripcion,
                     comprobanteID: record.compraId,
                     fecha: record.compraFecha,
@@ -550,6 +554,16 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
                     key: "totalLps",
                     render: (val) => formatNumber(val),
                   },
+                  ...(movimientoFiltro === "Salida"
+                    ? []
+                    : [
+                        { label: "Flete (Lps)", key: "compraFlete", render: (val) => (Number(val) > 0 ? formatNumber(val) : "-") },
+                        {
+                          label: "Abono a deuda (Lps)",
+                          key: "compraAbono",
+                          render: (val, r) => (Number(val) > 0 ? `${formatNumber(val)} (${r?.compraAbonoTipo === "ANTICIPO" ? "anticipo" : "préstamo"})` : "-"),
+                        },
+                      ]),
                   {
                     label: "Sacos",
                     key: "compraTotalSacos",
@@ -617,21 +631,7 @@ export default function RegistroMovimientos({ movimiento = "Entrada" }) {
                                               label:
                                                 record.clienteNombreCompleto,
                                             },
-                                            productos: [
-                                              {
-                                                nombre: record.tipoCafeNombre,
-                                                cantidad: parseFloat(
-                                                  record.compraCantidadQQ,
-                                                ),
-                                                precio: parseFloat(
-                                                  record.compraPrecioQQ,
-                                                ),
-                                                total: parseFloat(
-                                                  record.totalLps,
-                                                ),
-                                              },
-                                            ],
-                                            total: parseFloat(record.totalLps),
+                                            ...datosReciboCompra(record),
                                             observaciones:
                                               record.compraDescripcion,
                                             comprobanteID: record.compraId,

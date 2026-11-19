@@ -143,6 +143,8 @@ model compra {
   cliente             cliente?     @relation(fields: [clienteID], references: [clienteID], onDelete: NoAction, onUpdate: NoAction, map: "compra_ibfk_1")
   producto            producto?    @relation(fields: [compraTipoCafe], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "compra_ibfk_2")
   compradores         compradores? @relation(fields: [compradorID], references: [compradorId], onDelete: NoAction, onUpdate: NoAction, map: "fk_compra_comprador")
+  movimientos_prestamo  movimientos_prestamo[]
+  movimientos_anticipos movimientos_anticipos[]
 
   @@index([clienteID], map: "clienteID")
   @@index([compraTipoCafe], map: "compraTipoCafe")
@@ -303,11 +305,14 @@ model movimientos_prestamo {
   descripcion     String?    @db.Text
   interes         Decimal?   @db.Decimal(5, 2)
   dias            Int?
+  compraId        Int?
+  compra          compra?  @relation(fields: [compraId], references: [compraId], onDelete: NoAction, onUpdate: NoAction, map: "fk_movprestamo_compra")
   prestamos       prestamos? @relation(fields: [prestamo_id], references: [prestamoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_prestamo_ibfk_1")
 
   @@index([prestamo_id], map: "prestamo_id")
   @@index([prestamo_id, fecha, tipo_movimiento])
   @@index([tipo_movimiento])
+  @@index([compraId], map: "fk_movprestamo_compra")
 }
 
 model prestamos {
@@ -353,11 +358,14 @@ model movimientos_anticipos {
   descripcion     String?   @db.Text
   interes         Decimal?  @db.Decimal(5, 2)
   dias            Int?
+  compraId        Int?
+  compra          compra?  @relation(fields: [compraId], references: [compraId], onDelete: NoAction, onUpdate: NoAction, map: "fk_movanticipo_compra")
   anticipo        anticipo? @relation(fields: [anticipoId], references: [anticipoId], onDelete: NoAction, onUpdate: NoAction, map: "movimientos_anticipos_ibfk_1")
 
   @@index([anticipoId], map: "anticipoId")
   @@index([anticipoId, fecha, tipo_movimiento])
   @@index([tipo_movimiento])
+  @@index([compraId], map: "fk_movanticipo_compra")
 }
 
 model detalleliqsalida {

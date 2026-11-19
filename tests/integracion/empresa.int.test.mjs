@@ -39,3 +39,12 @@ test("guarda datos, imagen y funciones; null deja todas las funciones", async ()
   const despues = await base.empresa.findFirst();
   assert.equal(Buffer.compare(Buffer.from(despues.logoDatos), Buffer.from(antes.logoDatos)), 0, "la imagen no cambió");
 });
+
+test("la opción descuento-primero y el marcador * se guardan y se leen; una opción inexistente se rechaza", async () => {
+  const { OPCION_DESCUENTO_PRIMERO: O, TODAS } = await import("@/lib/empresa-cliente");
+  const r = await guardarEmpresa({ ...datos, funciones: [TODAS, O] }, MODULOS);
+  assert.deepEqual(r.funciones, [TODAS, O]);
+  assert.deepEqual((await base.empresa.findFirst()).funciones, [TODAS, O]);
+  await assert.rejects(guardarEmpresa({ ...datos, funciones: [TODAS, "opt:no-existe"] }, MODULOS), /no existen/);
+  assert.equal((await guardarEmpresa({ ...datos, funciones: null }, MODULOS)).funciones, null);
+});

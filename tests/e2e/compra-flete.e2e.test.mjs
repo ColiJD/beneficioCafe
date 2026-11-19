@@ -5,18 +5,26 @@ import assert from "node:assert/strict";
 import { prisma } from "../setup/db.mjs";
 import { usuarioConPermisos, borrarUsuariosDePrueba, borrarCompras } from "./helpers.mjs";
 
-let u, clienteID, uva;
+let u, clienteID, uva, existiaInventario;
 const compras = [];
 
 before(async () => {
   u = await usuarioConPermisos("FLETE", [["compras", "crear,editar"]]);
   clienteID = (await prisma.cliente.findFirst({ select: { clienteID: true } })).clienteID;
-  uva = await prisma.producto.findFirst({ where: { productName: "Cafe Uva Maduro a 620" } }); // tiene inventario real: no se crea una fila nueva
+  uva = await prisma.producto.findFirst({ where: { productName: "Cafe Uva Maduro a 620" } });
+  existiaInventario = !!(await prisma.inventariocliente.findUnique({ where: { productoID: uva.productID } })); // si no existía, la compra la crea y hay que quitarla al final
 });
 after(async () => {
   await borrarCompras(compras); // quita la compra y su movimiento
   // cada compra de prueba sumó 2 QQ y 2 sacos al inventario del producto: se devuelven
   if (compras.length) await prisma.inventariocliente.updateMany({ where: { productoID: uva.productID }, data: { cantidadQQ: { decrement: 2 * compras.length }, cantidadSacos: { decrement: 2 * compras.length } } });
+  if (!existiaInventario) {
+    // la fila la creó la prueba: se borra solo si quedó en 0 y sin movimientos (si no, la vista vw_inventario_actual no la lista)
+    const inv = await prisma.inventariocliente.findUnique({ where: { productoID: uva.productID } });
+    if (inv && Number(inv.cantidadQQ) === 0 && (await prisma.movimientoinventario.count({ where: { inventarioClienteID: inv.inventarioClienteID } })) === 0) {
+      await prisma.inventariocliente.delete({ where: { inventarioClienteID: inv.inventarioClienteID } });
+    }
+  }
   await borrarUsuariosDePrueba();
   await prisma.$disconnect();
 });
