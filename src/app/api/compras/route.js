@@ -1,7 +1,19 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
-import { ErrorNegocio, respuestaError } from "@/lib/inventarioMov";
+import { ErrorNegocio, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 import { validarFlete } from "@/lib/flete";
+import { aplicarAbono, validarAbono } from "@/lib/abonoDeuda";
+import { getPermisos } from "@/lib/permisos";
+import { puedeEnModulo } from "@/lib/modulos";
+import { Prisma } from "@prisma/client";
+
+// Abono de cada compra: suma de los movimientos de préstamo/anticipo enlazados por compraId (los anulados no cuentan).
+const ABONO_SQL = Prisma.sql`
+  COALESCE((SELECT SUM(m.monto) FROM movimientos_prestamo m WHERE m.compraId = c.compraId AND m.tipo_movimiento = 'ABONO'), 0) +
+  COALESCE((SELECT SUM(m.monto) FROM movimientos_anticipos m WHERE m.compraId = c.compraId AND m.tipo_movimiento = 'ABONO_ANTICIPO'), 0) AS compraAbono,
+  CASE WHEN EXISTS (SELECT 1 FROM movimientos_prestamo m WHERE m.compraId = c.compraId AND m.tipo_movimiento = 'ABONO') THEN 'PRESTAMO'
+       WHEN EXISTS (SELECT 1 FROM movimientos_anticipos m WHERE m.compraId = c.compraId AND m.tipo_movimiento = 'ABONO_ANTICIPO') THEN 'ANTICIPO'
+  END AS compraAbonoTipo`;
 
 export async function POST(request, req) {
   const sessionOrResponse = await checkRole(request, [
@@ -23,6 +35,8 @@ export async function POST(request, req) {
       compraTotalSacos,
       compraRetencio,
       compraFlete,
+      compraAbono,
+      compraAbonoTipo,
       compraDescripcion,
       compraEn,
     } = body;
@@ -41,13 +55,22 @@ export async function POST(request, req) {
       );
     }
     const flete = validarFlete(compraFlete, compraTotal);
+    const { abono, tipo: tipoAbono } = validarAbono(compraAbono, compraAbonoTipo, compraTotal);
+    if (abono > 0) {
+      // el abono crea movimientos en préstamos/anticipos: exige también ese permiso
+      const acc = await getPermisos(sessionOrResponse.user.id);
+      if (!puedeEnModulo(acc, tipoAbono === "PRESTAMO" ? "prestamos" : "anticipos", "crear")) {
+        throw new ErrorNegocio("No tiene permiso para abonar a esta deuda.", 403);
+      }
+    }
     const hoy = new Date();
     const fechaSolo = new Date(
       Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()),
     );
 
-    // ✅ Crear la compra
-    const nuevaCompra = await prisma.compra.create({
+    // Compra, inventario y abono van juntos: si algo falla no se guarda nada.
+    const nuevaCompra = await prisma.$transaction(async (tx) => {
+    const nuevaCompra = await tx.compra.create({
       data: {
         clienteID: Number(clienteID),
         compraFecha: fechaSolo, // Fecha automática
@@ -70,7 +93,7 @@ export async function POST(request, req) {
     const cantidadQQ = parseFloat(compraCantidadQQ);
     const cantidadSacos = compraTotalSacos ? parseFloat(compraTotalSacos) : 0;
 
-    const inventarioGlobal = await prisma.inventariocliente.upsert({
+    const inventarioGlobal = await tx.inventariocliente.upsert({
       where: {
         productoID,
       },
@@ -86,7 +109,7 @@ export async function POST(request, req) {
     });
 
     // ✅ Registrar movimiento usando inventarioClienteID
-    await prisma.movimientoinventario.create({
+    await tx.movimientoinventario.create({
       data: {
         inventarioClienteID: inventarioGlobal.inventarioClienteID,
         tipoMovimiento: "Entrada",
@@ -97,6 +120,11 @@ export async function POST(request, req) {
         nota: "Entrada de café por compra directa",
       },
     });
+
+    // el abono no se guarda en la compra ni se descuenta de compraTotal: vive en los movimientos de la deuda, enlazados por compraId
+    if (abono > 0) await aplicarAbono(tx, tipoAbono, clienteID, abono, nuevaCompra.compraId);
+    return { ...nuevaCompra, compraAbono: abono, compraAbonoTipo: tipoAbono };
+    }, TX_ESPERA);
 
     return new Response(JSON.stringify(nuevaCompra), { status: 201 });
   } catch (error) {
@@ -133,16 +161,19 @@ export async function GET(req) {
 
     if (clienteID) {
       // 🔹 Consulta segura con parámetro
+      // flete y abono viven en la tabla compra (la vista no los trae)
       compras = await prisma.$queryRaw`
-        SELECT * 
-        FROM vw_comprascondetalle
-        WHERE clienteID = ${Number(clienteID)}
+        SELECT v.*, c.compraFlete, ${ABONO_SQL}
+        FROM vw_comprascondetalle v
+        LEFT JOIN compra c ON c.compraId = v.compraId
+        WHERE v.clienteID = ${Number(clienteID)}
       `;
     } else {
       // 🔹 Si no mandan clienteID, trae todo
       compras = await prisma.$queryRaw`
-        SELECT * 
-        FROM vw_comprascondetalle
+        SELECT v.*, c.compraFlete, ${ABONO_SQL}
+        FROM vw_comprascondetalle v
+        LEFT JOIN compra c ON c.compraId = v.compraId
       `;
     }
 

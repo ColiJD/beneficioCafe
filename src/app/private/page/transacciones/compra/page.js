@@ -35,6 +35,7 @@ import {
 
 // Rebaja fija por quintal oro para Café Uva y sus variaciones
 const REBAJA_UVA_POR_QQ = 100;
+const formatoLps = (n) => Number(n).toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esCafeUva = (producto) => /uva/i.test(producto?.data?.productName || "");
 
 export default function CompraForm({ compraId }) {
@@ -63,6 +64,16 @@ export default function CompraForm({ compraId }) {
   const [compraFlete, setCompraFlete] = useState(""); // cobro por flete (opcional): se debita del monto a pagar
 
   const router = useRouter();
+  // Abono a deuda: parte del pago se aplica al préstamo/anticipo del cliente (no cambia el total de la compra)
+  const [deuda, setDeuda] = useState({ prestamo: 0, anticipo: 0 });
+  const [compraAbono, setCompraAbono] = useState("");
+  const [abonoTipo, setAbonoTipo] = useState(null);
+  const opcionesDeuda = [
+    deuda.prestamo > 0 && { value: "PRESTAMO", label: `Préstamo (pendiente L. ${deuda.prestamo.toFixed(2)})` },
+    deuda.anticipo > 0 && { value: "ANTICIPO", label: `Anticipo (pendiente L. ${deuda.anticipo.toFixed(2)})` },
+  ].filter(Boolean);
+  const tipoAbono = opcionesDeuda.length === 1 ? opcionesDeuda[0].value : abonoTipo?.value;
+  const abonoNum = compraId ? 0 : parseFloat(compraAbono) || 0;
   const { tieneOpcion } = useEmpresa();
   const [descuentoPrimero, setDescuentoPrimero] = useState(false); // solo se ofrece si la empresa activó la opción
   const usaDescuentoPrimero = tieneOpcion(OPCION_DESCUENTO_PRIMERO) && descuentoPrimero;
@@ -108,6 +119,18 @@ export default function CompraForm({ compraId }) {
 
     cargarNotificaciones();
   }, [cliente, ops.recarga]);
+
+  // Deuda del cliente (solo lo que el usuario puede abonar); al editar una compra no se toca el abono
+  useEffect(() => {
+    setDeuda({ prestamo: 0, anticipo: 0 });
+    setCompraAbono("");
+    setAbonoTipo(null);
+    if (!cliente?.value || compraId) return;
+    fetch(`/api/compras/deuda?clienteID=${cliente.value}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setDeuda(d))
+      .catch(() => {});
+  }, [cliente, compraId, ops.recarga]);
 
   // Carga clientes y productos
   useEffect(() => {
@@ -187,6 +210,13 @@ export default function CompraForm({ compraId }) {
 
     if ((parseFloat(compraFlete) || 0) > 0 && compraTotal < 0) newErrors["Cobro por flete (Lps)"] = "El flete no puede ser mayor que el pago por el café";
 
+    if (abonoNum > 0) {
+      const pendiente = tipoAbono === "PRESTAMO" ? deuda.prestamo : tipoAbono === "ANTICIPO" ? deuda.anticipo : 0;
+      if (!tipoAbono) newErrors["Abonar a"] = "Elija a qué deuda se abona";
+      else if (abonoNum > pendiente) newErrors["Abonar a deuda (Lps)"] = `El abono excede el capital pendiente (L. ${pendiente.toFixed(2)})`;
+      if (abonoNum > compraTotal) newErrors["Abonar a deuda (Lps)"] = "El abono no puede ser mayor que el pago por el café";
+    }
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -214,6 +244,7 @@ export default function CompraForm({ compraId }) {
       compraRetencio: parseFloat(compraRetencio),
       compraTotal: parseFloat(compraTotal),
       compraFlete: parseFloat(compraFlete) || 0,
+      ...(abonoNum > 0 && { compraAbono: abonoNum, compraAbonoTipo: tipoAbono }),
       compraEn: compraEn || "Compra Directa",
       compraMovimiento: "Entrada",
       compraDescripcion,
@@ -253,24 +284,26 @@ export default function CompraForm({ compraId }) {
         await exportCompraDirecta({
           cliente,
           productos: [
+            // Subtotal (QQ oro × precio) y debajo cada rebaja o cobro, hasta el total a pagar
             {
               nombre: producto.label,
               cantidad: parseFloat(compraOro),
               precio: compraPrecioQQ,
-              total: compraTotal + (parseFloat(compraFlete) || 0),
+              total: compraTotal + compraRebajaUva + (parseFloat(compraFlete) || 0),
             },
+            ...(compraRebajaUva > 0 ? [{ nombre: `Menos rebaja Café Uva (L. ${REBAJA_UVA_POR_QQ} por QQ oro)`, cantidad: "", precio: "", total: -compraRebajaUva }] : []),
             ...((parseFloat(compraFlete) || 0) > 0 ? [{ nombre: "Menos flete", cantidad: "", precio: "", total: -parseFloat(compraFlete) }] : []),
+            ...(abonoNum > 0 ? [{ nombre: `Menos abono a ${tipoAbono === "PRESTAMO" ? "préstamo" : "anticipo"}`, cantidad: "", precio: "", total: -abonoNum }] : []),
           ],
-          total: compraTotal,
-          observaciones:
-            compraRebajaUva > 0
-              ? [
-                  compraDescripcion,
-                  `Rebaja Café Uva: L. ${compraRebajaUva.toFixed(2)} (L. ${REBAJA_UVA_POR_QQ} x ${parseFloat(compraOro).toFixed(2)} QQ oro)`,
-                ]
-                  .filter(Boolean)
-                  .join(" | ")
-              : compraDescripcion,
+          total: compraTotal - abonoNum, // lo que se le paga al cliente
+          filaTotal: true,
+          observaciones: [
+            compraDescripcion,
+            abonoNum > 0 &&
+              `Abono a ${tipoAbono === "PRESTAMO" ? "préstamo" : "anticipo"}: L. ${formatoLps(abonoNum)}. Saldo pendiente de capital: L. ${formatoLps((tipoAbono === "PRESTAMO" ? deuda.prestamo : deuda.anticipo) - abonoNum)}`,
+          ]
+            .filter(Boolean)
+            .join(" | "),
           comprobanteID: result.compraId,
         });
 
@@ -390,6 +423,39 @@ export default function CompraForm({ compraId }) {
       },
     },
 
+    // Primero lo que se escribe; los campos calculados (bloqueados) van juntos más abajo.
+    {
+      label: "Cobro por flete (Lps)",
+      value: compraFlete,
+      setter: setCompraFlete,
+      type: "Float",
+      error: errors["Cobro por flete (Lps)"],
+      tooltip: "Opcional. Se debita del monto a pagar por el café; varía según la zona y la cantidad que se traiga.",
+    },
+    ...(!compraId && opcionesDeuda.length > 0
+      ? [
+          ...(opcionesDeuda.length > 1
+            ? [{ label: "Abonar a", value: abonoTipo, setter: setAbonoTipo, type: "select", options: opcionesDeuda, error: errors["Abonar a"] }]
+            : []),
+          {
+            label: "Abonar a deuda (Lps)",
+            value: compraAbono,
+            setter: setCompraAbono,
+            type: "Float",
+            error: errors["Abonar a deuda (Lps)"],
+            tooltip: `Opcional. Parte del pago se aplica a la deuda del cliente (${opcionesDeuda.map((o) => o.label).join(" / ")}). No cambia el total de la compra: solo baja lo que se le paga y su deuda.`,
+          },
+        ]
+      : []),
+    {
+      label: "Descripción",
+      value: compraDescripcion,
+      setter: setCompraDescripcion,
+      type: "textarea",
+    },
+
+    // Calculados (solo lectura). Este orden deja Subtotal y Total lado a lado y sin huecos:
+    //   Oro | Retención  ·  Subtotal | Total  ·  A pagar | Rebaja Uva   (los opcionales se omiten y el resto sube)
     {
       label: "Quintales Oro",
       value: compraOro,
@@ -399,6 +465,40 @@ export default function CompraForm({ compraId }) {
       readOnly: true,
       error: errors["Quintales Oro"],
     },
+    {
+      label: "Retencion",
+      value: compraRetencio,
+      setter: setCompraRetencio,
+      type: "Float",
+      required: true,
+      readOnly: true,
+      error: errors["Retencion"],
+    },
+    ...((parseFloat(compraFlete) || 0) > 0
+      ? [
+          {
+            label: "Valor del café (Lps)",
+            value: compraTotal + (parseFloat(compraFlete) || 0),
+            setter: () => {},
+            type: "Float",
+            readOnly: true,
+            tooltip: "Valor del café (QQ oro × precio, menos la rebaja de Café Uva si aplica) antes del cobro por flete.",
+          },
+        ]
+      : []),
+    {
+      label: "Total de la compra (Lps)",
+      value: compraTotal,
+      setter: setCompraTotal,
+      type: "Float",
+      required: true,
+      readOnly: true,
+      tooltip: "Valor del café menos el flete. Es el monto que registran los reportes de compras.",
+      error: errors["Total"],
+    },
+    ...(abonoNum > 0
+      ? [{ label: "Total a pagar al cliente (Lps)", value: Math.max(compraTotal - abonoNum, 0), setter: () => {}, type: "Float", readOnly: true, tooltip: "Total de la compra menos el abono a la deuda: lo que se le entrega al cliente." }]
+      : []),
     ...(esCafeUva(producto)
       ? [
           {
@@ -411,39 +511,6 @@ export default function CompraForm({ compraId }) {
           },
         ]
       : []),
-    {
-      label: "Cobro por flete (Lps)",
-      value: compraFlete,
-      setter: setCompraFlete,
-      type: "Float",
-      error: errors["Cobro por flete (Lps)"],
-      tooltip: "Opcional. Se debita del monto a pagar por el café; varía según la zona y la cantidad que se traiga.",
-    },
-    {
-      label: "Total (Lps)",
-      value: compraTotal,
-      setter: setCompraTotal,
-      type: "Float",
-      required: true,
-      readOnly: true,
-      error: errors["Total"],
-    },
-
-    {
-      label: "Retencion",
-      value: compraRetencio,
-      setter: setCompraRetencio,
-      type: "Float",
-      required: true,
-      readOnly: true,
-      error: errors["Retencion"],
-    },
-    {
-      label: "Descripción",
-      value: compraDescripcion,
-      setter: setCompraDescripcion,
-      type: "textarea",
-    },
   ];
 
   useEffect(() => {

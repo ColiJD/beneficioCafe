@@ -27,6 +27,11 @@ export async function DELETE(req, props) {
       );
     }
 
+    // Un abono que nació de una compra solo se revierte anulando esa compra
+    if (movimiento.compraId) {
+      return Response.json({ error: `Este abono pertenece a la compra #${movimiento.compraId}. Anule la compra para revertirlo.` }, { status: 400 });
+    }
+
     // 🔹 Anular el movimiento dentro de una transacción
     await prisma.$transaction([
       prisma.movimientos_prestamo.update({

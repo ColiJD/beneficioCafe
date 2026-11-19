@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { checkRole, moduloDeCompra } from "@/lib/checkRole";
 import { NextResponse } from "next/server";
 import { validarFlete } from "@/lib/flete";
+import { abonoDeCompra, anularAbonos } from "@/lib/abonoDeuda";
 import {
   ErrorNegocio,
   esAnulado,
@@ -41,6 +42,8 @@ export async function DELETE(req, { params }) {
         data: { tipoMovimiento: "Anulado", nota: `${entrada ? "Compra" : "Venta"} anulada #${compraId}` },
       });
       await tx.compra.update({ where: { compraId }, data: { compraMovimiento: "Anulado" } });
+      // si la compra abonó a una deuda, esos movimientos (enlazados por compraId) se anulan con ella y la deuda vuelve a subir
+      await anularAbonos(tx, compraId);
       return entrada;
     });
 
@@ -87,6 +90,16 @@ export async function PUT(request, { params }) {
       if (!compraExistente) throw new ErrorNegocio("Compra no encontrada", 404);
       if (esAnulado(compraExistente.compraMovimiento)) {
         throw new ErrorNegocio("No se puede modificar un registro anulado");
+      }
+      const { abono } = await abonoDeCompra(tx, compraId);
+      if (abono > 0) {
+        // el abono ya bajó la deuda de ESTE cliente: cambiarlo dejaría el abono en el cliente equivocado
+        if (Number(clienteID) !== compraExistente.clienteID) {
+          throw new ErrorNegocio("Esta compra tiene un abono aplicado a la deuda del cliente: no se puede cambiar el cliente. Anule la compra y regístrela de nuevo.");
+        }
+        if (abono > Number(compraTotal)) {
+          throw new ErrorNegocio("El nuevo total no alcanza para el abono ya aplicado a la deuda. Anule la compra y regístrela de nuevo.");
+        }
       }
 
       const qqAnterior = parseFloat(compraExistente.compraCantidadQQ);

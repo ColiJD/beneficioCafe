@@ -11,6 +11,29 @@ import {
   getLogoScaled,
 } from "@/Doc/Documentos/funcionesdeDocumentos";
 
+// Arma las filas del recibo de una compra ya registrada (reimpresión desde el registro): café, rebaja, flete, abono y total a pagar.
+export const datosReciboCompra = (r) => {
+  const qq = parseFloat(r.compraCantidadQQ) || 0;
+  const precio = parseFloat(r.compraPrecioQQ) || 0;
+  const bruto = qq * precio;
+  const flete = Number(r.compraFlete) || 0;
+  const abono = Number(r.compraAbono) || 0;
+  const total = Number(r.compraTotal) || 0;
+  // compraTotal = QQ × precio − rebaja − flete: lo que sobre sin explicar es la rebaja de Café Uva
+  const rebaja = Math.round((bruto - flete - total) * 100) / 100;
+  const menos = (nombre, monto) => ({ nombre, cantidad: "", precio: "", total: -monto });
+  return {
+    productos: [
+      { nombre: r.tipoCafeNombre, cantidad: qq, precio, total: bruto },
+      ...(rebaja > 0.01 ? [menos("Menos rebaja Café Uva", rebaja)] : []),
+      ...(flete > 0 ? [menos("Menos flete", flete)] : []),
+      ...(abono > 0 ? [menos(`Menos abono a ${r.compraAbonoTipo === "ANTICIPO" ? "anticipo" : "préstamo"}`, abono)] : []),
+    ],
+    total: total - abono,
+    filaTotal: true,
+  };
+};
+
 export const exportCompraDirecta = async (formState) => {
   const empresa = await getEmpresaPDF();
   const doc = new JsPDF({ unit: "pt", format: "letter" });
@@ -138,6 +161,19 @@ export const exportCompraDirecta = async (formState) => {
       },
     ]);
 
+    // Fila final con lo que realmente se paga al cliente (después de rebajas, flete y abono)
+    if (formState?.filaTotal) {
+      const bold = { textColor: [255, 0, 0], fontStyle: "bold" };
+      bodyProductos.push([
+        { content: "TOTAL A PAGAR", colSpan: 3, styles: { ...bold, halign: "right" } },
+        { content: `L. ${formatNumber(formState.total || 0)}`, styles: bold },
+      ]);
+    }
+
+    // Con más filas la tabla se compacta y se acorta el espacio de las firmas: cada copia debe caber en su mitad de la hoja
+    const filas = bodyProductos.length;
+    const compacto = filas > 2;
+
     autoTable(doc, {
       startY,
       margin: { left: leftMargin, right: rightMargin },
@@ -145,7 +181,8 @@ export const exportCompraDirecta = async (formState) => {
       body: bodyProductos,
       styles: {
         font: "times",
-        fontSize: 10 * scale,
+        fontSize: (compacto ? 9 : 10) * scale,
+        cellPadding: compacto ? 3 : 5,
         lineColor: [0, 0, 0],
         lineWidth: 0.5,
       },
@@ -191,7 +228,7 @@ export const exportCompraDirecta = async (formState) => {
       maxWidth: pageWidth - leftMargin - rightMargin,
     });
 
-    startY += 80;
+    startY += filas <= 2 ? 70 : Math.max(80 - 20 * (filas - 2), 30);
 
     // Firmas y lugar/fecha
     const firmaWidth = 150;

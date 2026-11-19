@@ -55,15 +55,22 @@ export default function Formulario({
       [label]: formatNumber(value ?? "", type),
     }));
   };
+  // El texto mostrado de cada número (rawValues) se descarta cuando el valor real ya no coincide con él
+  // (por ejemplo, el formulario se limpió o se puso en 0): así no quedan datos de la operación anterior.
   React.useEffect(() => {
-    // Si todos los campos vienen vacíos después de limpiar
-    if (
-      fields.every(
-        (f) => f.value === "" || f.value === null || f.value === undefined
-      )
-    ) {
-      setRawValues({});
-    }
+    const num = (v) => Number(String(v ?? "").replace(/,/g, "")) || 0;
+    setRawValues((prev) => {
+      const next = { ...prev };
+      let cambio = false;
+      for (const k of Object.keys(prev)) {
+        const f = fields.find((x) => x.label === k);
+        if (!f || num(prev[k]) !== num(f.value)) {
+          delete next[k];
+          cambio = true;
+        }
+      }
+      return cambio ? next : prev;
+    });
   }, [fields]);
 
   const handlePhoneChange = (setter) => (phone) => {
@@ -72,28 +79,8 @@ export default function Formulario({
     setter(formatted);
   };
 
-  React.useEffect(() => {
-    // Si todos los campos vienen vacíos después de limpiar
-    if (
-      fields.every(
-        (f) => f.value === "" || f.value === null || f.value === undefined
-      )
-    ) {
-      setRawValues({});
-    }
-  }, [fields]);
-
-  return (
-    <Form layout="vertical" onSubmitCapture={onSubmit}>
-      {(title || extra) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: "1rem" }}>
-          {title ? <h2 style={{ textAlign: "left", marginBottom: 0 }}>{title}</h2> : <span />}
-          {extra}
-        </div>
-      )}
-      <Row gutter={16}>
-        {fields.map((f, idx) => (
-          <Col key={idx} xs={24} sm={12}>
+  // Un campo del formulario (etiqueta + control)
+  const campo = (f) => (
             <Form.Item
               label={
                 <span>
@@ -193,6 +180,20 @@ export default function Formulario({
                 />
               )}
             </Form.Item>
+  );
+
+  return (
+    <Form layout="vertical" onSubmitCapture={onSubmit}>
+      {(title || extra) && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: "1rem" }}>
+          {title ? <h2 style={{ textAlign: "left", marginBottom: 0 }}>{title}</h2> : <span />}
+          {extra}
+        </div>
+      )}
+      <Row gutter={16}>
+        {fields.map((f, idx) => (
+          <Col key={f.label || idx} xs={24} sm={12}>
+            {campo(f)}
           </Col>
         ))}
       </Row>
