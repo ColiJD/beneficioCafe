@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
 import { ErrorNegocio, respuestaError, TX_ESPERA } from "@/lib/inventarioMov";
 import { validarFlete } from "@/lib/flete";
-import { aplicarAbono, validarAbono } from "@/lib/abonoDeuda";
+import { aplicarAbono, bloquearDeudas, moduloDeDeuda, validarAbono } from "@/lib/abonoDeuda";
 import { getPermisos } from "@/lib/permisos";
 import { puedeEnModulo } from "@/lib/modulos";
 import { Prisma } from "@prisma/client";
@@ -59,7 +59,7 @@ export async function POST(request, req) {
     if (abono > 0) {
       // el abono crea movimientos en préstamos/anticipos: exige también ese permiso
       const acc = await getPermisos(sessionOrResponse.user.id);
-      if (!puedeEnModulo(acc, tipoAbono === "PRESTAMO" ? "prestamos" : "anticipos", "crear")) {
+      if (!puedeEnModulo(acc, moduloDeDeuda(tipoAbono), "crear")) {
         throw new ErrorNegocio("No tiene permiso para abonar a esta deuda.", 403);
       }
     }
@@ -70,6 +70,8 @@ export async function POST(request, req) {
 
     // Compra, inventario y abono van juntos: si algo falla no se guarda nada.
     const nuevaCompra = await prisma.$transaction(async (tx) => {
+    // con abono, lo primero es bloquear las deudas del cliente: dos abonos simultáneos no pueden pasarse del capital
+    if (abono > 0) await bloquearDeudas(tx, [clienteID]);
     const nuevaCompra = await tx.compra.create({
       data: {
         clienteID: Number(clienteID),

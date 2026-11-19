@@ -6,7 +6,9 @@ import { prisma } from "../setup/db.mjs";
 import { usuarioConPermisos, borrarUsuariosDePrueba, borrarCompras, saldo } from "./helpers.mjs";
 
 let todo, soloCompra, clienteID, producto, prestamo, anticipo;
-let cliente2ID, prestamoA, prestamoB; // cliente propio con dos préstamos: abono repartido y edición de compras
+let cliente2ID, prestamoA, prestamoB, anticipoX, soloEditar; // cliente propio con dos préstamos y un anticipo: abono repartido y edición de compras
+const extraPrestamos = []; // clientes y préstamos temporales de pruebas puntuales (deuda anulada, concurrencia)
+const extraClientes = [];
 const compras = [];
 
 before(async () => {
@@ -20,17 +22,19 @@ before(async () => {
   const dia = 24 * 3600 * 1000;
   prestamoA = await prisma.prestamos.create({ data: { clienteId: cliente2ID, fecha: new Date(Date.now() - 2 * dia), monto: 300, tasa_interes: 0, tipo: "PRESTAMO", estado: "ACTIVO" } });
   prestamoB = await prisma.prestamos.create({ data: { clienteId: cliente2ID, fecha: new Date(Date.now() - 1 * dia), monto: 500, tasa_interes: 0, tipo: "PRESTAMO", estado: "ACTIVO" } });
+  anticipoX = await prisma.anticipo.create({ data: { clienteId: cliente2ID, fecha: new Date(), monto: 400, tasa_interes: 0, tipo: "ANTICIPO", estado: "ACTIVO" } });
+  soloEditar = await usuarioConPermisos("ABO_EDIT", [["compras", "editar"]]); // puede editar compras, pero no tocar deudas
   anticipo = await prisma.anticipo.create({ data: { clienteId: clienteID, fecha: new Date(), monto: 500, tasa_interes: 0, tipo: "ANTICIPO", estado: "ACTIVO" } });
 });
 
 after(async () => {
-  await prisma.movimientos_prestamo.deleteMany({ where: { prestamo_id: { in: [prestamo.prestamoId, prestamoA.prestamoId, prestamoB.prestamoId] } } });
-  await prisma.movimientos_anticipos.deleteMany({ where: { anticipoId: anticipo.anticipoId } });
+  await prisma.movimientos_prestamo.deleteMany({ where: { prestamo_id: { in: [prestamo.prestamoId, prestamoA.prestamoId, prestamoB.prestamoId, ...extraPrestamos] } } });
+  await prisma.movimientos_anticipos.deleteMany({ where: { anticipoId: { in: [anticipo.anticipoId, anticipoX.anticipoId] } } });
   await borrarCompras(compras);
   await prisma.prestamos.delete({ where: { prestamoId: prestamo.prestamoId } });
-  await prisma.anticipo.delete({ where: { anticipoId: anticipo.anticipoId } });
-  await prisma.prestamos.deleteMany({ where: { prestamoId: { in: [prestamoA.prestamoId, prestamoB.prestamoId] } } });
-  await prisma.cliente.delete({ where: { clienteID: cliente2ID } });
+  await prisma.anticipo.deleteMany({ where: { anticipoId: { in: [anticipo.anticipoId, anticipoX.anticipoId] } } });
+  await prisma.prestamos.deleteMany({ where: { prestamoId: { in: [prestamoA.prestamoId, prestamoB.prestamoId, ...extraPrestamos] } } });
+  await prisma.cliente.deleteMany({ where: { clienteID: { in: [cliente2ID, ...extraClientes] } } });
   const inv = await prisma.inventariocliente.findUnique({ where: { productoID: producto.productID } });
   if (inv) {
     await prisma.movimientoinventario.deleteMany({ where: { inventarioClienteID: inv.inventarioClienteID } });
@@ -250,4 +254,146 @@ test("EDITAR compra sin abono: sí puede cambiar de cliente (el bloqueo es solo 
   const r = await todo.pedir(`/api/compras/${c.compraId}`, { method: "PUT", body: cuerpo({ clienteID }) });
   assert.equal(r.status, 200, r.texto);
   assert.equal((await prisma.compra.findUnique({ where: { compraId: c.compraId } })).clienteID, clienteID);
+});
+
+// ───────── editar el MONTO del abono (el formulario manda compraAbono) ─────────
+const vigente = async (compraId) => ({
+  prestamo: Number((await prisma.movimientos_prestamo.aggregate({ where: { compraId, tipo_movimiento: "ABONO" }, _sum: { monto: true } }))._sum.monto ?? 0),
+  anticipo: Number((await prisma.movimientos_anticipos.aggregate({ where: { compraId, tipo_movimiento: "ABONO_ANTICIPO" }, _sum: { monto: true } }))._sum.monto ?? 0),
+});
+const capitalAnticipoX = async () =>
+  400 - Number((await prisma.movimientos_anticipos.aggregate({ where: { anticipoId: anticipoX.anticipoId, tipo_movimiento: "ABONO_ANTICIPO" }, _sum: { monto: true } }))._sum.monto ?? 0);
+const editarAbono = (id, abono, tipo = "PRESTAMO", extra = {}, quien = todo) =>
+  quien.pedir(`/api/compras/${id}`, { method: "PUT", body: cuerpo({ clienteID: cliente2ID, compraAbono: abono, compraAbonoTipo: abono > 0 ? tipo : null, ...extra }) });
+const anular = async (id) => assert.equal((await todo.pedir(`/api/compras/${id}`, { method: "DELETE" })).status, 200);
+
+test("EDITAR ABONO: subir, bajar, quitar y volver a agregar el abono de una compra", async () => {
+  const { json: c } = await compra2({ compraAbono: 200, compraAbonoTipo: "PRESTAMO" });
+  const id = c.compraId;
+  // sube a 500: el abono anterior se anula y el nuevo se reparte (A 300 pagado + B 200)
+  let r = await editarAbono(id, 500);
+  assert.equal(r.status, 200, r.texto);
+  assert.equal(Number(r.json.compraAbono), 500);
+  assert.deepEqual(await vigente(id), { prestamo: 500, anticipo: 0 });
+  assert.equal(await capitalDe(prestamoA), 0);
+  assert.equal(await capitalDe(prestamoB), 300);
+  assert.equal(await estadoDe(prestamoA), "COMPLETADO");
+  assert.equal((await movsDe(id)).filter((m) => m.tipo_movimiento === "ANULADO").length, 1, "el abono anterior queda ANULADO en el historial, no se borra");
+  assert.equal(Number((await todo.pedir(`/api/compras/${id}`)).json.compraAbono), 500, "la compra lo informa al abrirla para editar");
+  // baja a 100: la deuda se restablece
+  r = await editarAbono(id, 100);
+  assert.equal(r.status, 200, r.texto);
+  assert.deepEqual(await vigente(id), { prestamo: 100, anticipo: 0 });
+  assert.equal(await capitalDe(prestamoA), 200);
+  assert.equal(await capitalDe(prestamoB), 500);
+  assert.equal(await estadoDe(prestamoA), "ACTIVO", "el préstamo que estaba pagado vuelve a activo");
+  // lo quita
+  r = await editarAbono(id, 0);
+  assert.equal(r.status, 200, r.texto);
+  assert.equal(r.json.compraAbonoTipo, null);
+  assert.deepEqual(await vigente(id), { prestamo: 0, anticipo: 0 });
+  assert.equal(await capitalDe(prestamoA), 300);
+  // lo vuelve a agregar
+  r = await editarAbono(id, 250);
+  assert.equal(r.status, 200, r.texto);
+  assert.deepEqual(await vigente(id), { prestamo: 250, anticipo: 0 });
+  const fila = (await todo.pedir(`/api/compras?clienteID=${cliente2ID}`)).json.find((x) => x.compraId === id);
+  assert.equal(Number(fila.compraAbono), 250, "el registro de compras muestra el abono nuevo");
+  assert.equal(Number(fila.compraTotal), 1500, "compraTotal no cambia");
+  await anular(id);
+  assert.equal(await capitalDe(prestamoA), 300);
+});
+
+test("EDITAR ABONO: cambiar de préstamo a anticipo mueve el abono de una deuda a la otra", async () => {
+  const { json: c } = await compra2({ compraAbono: 100, compraAbonoTipo: "PRESTAMO" });
+  const r = await editarAbono(c.compraId, 100, "ANTICIPO");
+  assert.equal(r.status, 200, r.texto);
+  assert.equal(r.json.compraAbonoTipo, "ANTICIPO");
+  assert.deepEqual(await vigente(c.compraId), { prestamo: 0, anticipo: 100 });
+  assert.equal(await capitalDe(prestamoA), 300, "el préstamo se restablece");
+  assert.equal(await capitalAnticipoX(), 300);
+  await anular(c.compraId);
+  assert.equal(await capitalAnticipoX(), 400);
+});
+
+test("EDITAR ABONO: si el nuevo abono no cabe, se rechaza y el abono anterior sigue intacto", async () => {
+  const { json: c } = await compra2({ compraAbono: 100, compraAbonoTipo: "PRESTAMO" });
+  const mayorQueDeuda = await editarAbono(c.compraId, 900); // el capital de los dos préstamos es 800
+  assert.equal(mayorQueDeuda.status, 400, mayorQueDeuda.texto);
+  assert.match(mayorQueDeuda.json.error, /capital pendiente/i);
+  const mayorQueTotal = await editarAbono(c.compraId, 100, "PRESTAMO", { compraTotal: 50, compraPrecioQQ: 25 });
+  assert.equal(mayorQueTotal.status, 400, mayorQueTotal.texto);
+  assert.deepEqual(await vigente(c.compraId), { prestamo: 100, anticipo: 0 }, "nada cambió (todo o nada)");
+  assert.equal(await capitalDe(prestamoA), 200);
+  await anular(c.compraId);
+});
+
+test("EDITAR ABONO: exige permiso sobre la deuda; si el abono no cambia, no lo exige", async () => {
+  const { json: c } = await compra2({ compraAbono: 100, compraAbonoTipo: "PRESTAMO" });
+  const sube = await editarAbono(c.compraId, 150, "PRESTAMO", {}, soloEditar);
+  assert.equal(sube.status, 403, sube.texto);
+  const quita = await editarAbono(c.compraId, 0, "PRESTAMO", {}, soloEditar);
+  assert.equal(quita.status, 403, quita.texto);
+  assert.deepEqual(await vigente(c.compraId), { prestamo: 100, anticipo: 0 });
+  const igual = await editarAbono(c.compraId, 100, "PRESTAMO", { compraDescripcion: "cambia solo la descripción" }, soloEditar);
+  assert.equal(igual.status, 200, igual.texto);
+  assert.deepEqual(await vigente(c.compraId), { prestamo: 100, anticipo: 0 });
+  await anular(c.compraId);
+});
+
+test("EDITAR ABONO: al cambiar de cliente el abono se mueve a las deudas del cliente nuevo", async () => {
+  const { json: c } = await compra2({ compraAbono: 100, compraAbonoTipo: "PRESTAMO" });
+  const antes = await capPrestamo(); // préstamo del cliente 1
+  const r = await todo.pedir(`/api/compras/${c.compraId}`, { method: "PUT", body: cuerpo({ clienteID, compraAbono: 100, compraAbonoTipo: "PRESTAMO" }) });
+  assert.equal(r.status, 200, r.texto);
+  assert.equal((await prisma.compra.findUnique({ where: { compraId: c.compraId } })).clienteID, clienteID);
+  assert.equal(await capitalDe(prestamoA), 300, "las deudas del cliente anterior se restablecen");
+  assert.equal(await capPrestamo(), antes - 100, "el abono bajó la deuda del cliente nuevo");
+  await anular(c.compraId);
+  assert.equal(await capPrestamo(), antes);
+});
+
+// ───────── deuda anulada y abonos simultáneos ─────────
+const clienteConPrestamo = async (monto) => {
+  const c = await prisma.cliente.create({ data: { clienteNombre: `QA_A3_${Date.now() % 1e9}${extraClientes.length}` } });
+  const p = await prisma.prestamos.create({ data: { clienteId: c.clienteID, fecha: new Date(), monto, tasa_interes: 0, tipo: "PRESTAMO", estado: "ACTIVO" } });
+  extraClientes.push(c.clienteID);
+  extraPrestamos.push(p.prestamoId);
+  return { cid: c.clienteID, p };
+};
+
+test("DEUDA ANULADA después del abono: no recibe abonos nuevos y anular la compra no la revive", async () => {
+  const { cid, p } = await clienteConPrestamo(300);
+  const { json: c } = await crear({ clienteID: cid, compraAbono: 300, compraAbonoTipo: "PRESTAMO" });
+  assert.equal(await estadoDe(p), "COMPLETADO");
+  await prisma.prestamos.update({ where: { prestamoId: p.prestamoId }, data: { estado: "ANULADO" } }); // lo mismo que hace la anulación de un préstamo
+  const nuevo = await crear({ clienteID: cid, compraAbono: 100, compraAbonoTipo: "PRESTAMO" });
+  assert.equal(nuevo.status, 400, "una deuda anulada no recibe abonos");
+  assert.match(nuevo.json.error, /capital pendiente/i);
+  const r = await todo.pedir(`/api/compras/${c.compraId}`, { method: "DELETE" });
+  assert.equal(r.status, 200, r.texto);
+  assert.ok((await movsDe(c.compraId)).every((m) => m.tipo_movimiento === "ANULADO"), "el abono quedó anulado");
+  assert.equal(await estadoDe(p), "ANULADO", "la deuda anulada sigue anulada");
+});
+
+test("ABONOS SIMULTÁNEOS a la misma deuda: nunca se pasan del capital (4 compras de 300 contra 1,000)", async () => {
+  const { cid, p } = await clienteConPrestamo(1000);
+  const resp = await Promise.all([1, 2, 3, 4].map(() => crear({ clienteID: cid, compraAbono: 300, compraAbonoTipo: "PRESTAMO" })));
+  const estados = resp.map((r) => r.status);
+  assert.equal(resp.filter((r) => r.status === 201).length, 3, `deben pasar exactamente 3 (900 de 1,000): ${estados}`);
+  assert.ok(resp.filter((r) => r.status !== 201).every((r) => r.status === 400), `la que no cabe se rechaza: ${estados}`);
+  assert.equal(await capitalDe(p), 100, "el capital nunca queda negativo");
+  assert.equal(await estadoDe(p), "ACTIVO");
+});
+
+test("EDICIONES SIMULTÁNEAS del abono de dos compras a la misma deuda: no se pasan del capital", async () => {
+  const { cid, p } = await clienteConPrestamo(1000);
+  const a = (await crear({ clienteID: cid, compraAbono: 100, compraAbonoTipo: "PRESTAMO" })).json.compraId;
+  const b = (await crear({ clienteID: cid, compraAbono: 100, compraAbonoTipo: "PRESTAMO" })).json.compraId;
+  assert.equal(await capitalDe(p), 800);
+  const editar = (id) => todo.pedir(`/api/compras/${id}`, { method: "PUT", body: cuerpo({ clienteID: cid, compraAbono: 600, compraAbonoTipo: "PRESTAMO", compraTotal: 1500 }) });
+  const resp = await Promise.all([editar(a), editar(b)]); // 600 + 600 no caben en 1,000: solo una puede subir
+  const estados = resp.map((r) => r.status).sort();
+  assert.deepEqual(estados, [200, 400], `una sube y la otra se rechaza: ${estados}`);
+  assert.equal(await capitalDe(p), 300, "1,000 − (600 de la que subió + 100 de la que no)");
 });

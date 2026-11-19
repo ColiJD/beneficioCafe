@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { ErrorNegocio, redondear } from "@/lib/inventarioMov";
 
 // Abono al capital de la deuda de un cliente (préstamos o anticipos) hecho desde una compra.
@@ -30,6 +31,22 @@ async function deudasConCapital(tx, tipo, clienteID) {
     .filter((x) => x.capital > 0);
 }
 
+/** Módulo de permisos que corresponde a cada tipo de deuda. */
+export const moduloDeDeuda = (tipo) => (tipo === "PRESTAMO" ? "prestamos" : "anticipos");
+
+/**
+ * Bloquea las deudas (préstamos y anticipos) de esos clientes hasta que termine la transacción, para que dos abonos
+ * simultáneos a la misma deuda no se pasen del capital. Debe ser lo PRIMERO que hace la transacción: si ya hubo una
+ * lectura normal, MySQL leería una foto anterior de los movimientos y no vería el abono que acaba de confirmarse el otro.
+ * Siempre bloquea en el mismo orden (préstamos, anticipos; por ID) para evitar bloqueos cruzados.
+ */
+export async function bloquearDeudas(tx, clienteIDs) {
+  const ids = [...new Set(clienteIDs.map(Number).filter(Boolean))].sort((a, b) => a - b);
+  if (!ids.length) return;
+  await tx.$queryRaw`SELECT prestamoId FROM prestamos WHERE clienteId IN (${Prisma.join(ids)}) ORDER BY prestamoId FOR UPDATE`;
+  await tx.$queryRaw`SELECT anticipoId FROM anticipo WHERE clienteId IN (${Prisma.join(ids)}) ORDER BY anticipoId FOR UPDATE`;
+}
+
 /** Capital pendiente total del cliente en ese tipo de deuda. */
 export async function capitalPendiente(tx, tipo, clienteID) {
   return redondear((await deudasConCapital(tx, tipo, clienteID)).reduce((s, x) => s + x.capital, 0));
@@ -38,6 +55,7 @@ export async function capitalPendiente(tx, tipo, clienteID) {
 async function actualizarEstado(tx, tipo, deudaId) {
   const t = config(tipo);
   const d = await tx[t.deuda].findUnique({ where: { [t.id]: deudaId } });
+  if (d.estado === "ANULADO") return; // una deuda anulada no vuelve a COMPLETADO/ACTIVO por mover sus abonos
   const movs = await tx[t.movs].findMany({ where: { [t.fk]: deudaId } });
   const saldo = redondear(Number(d.monto || 0) + suma(movs, t.cargo) - (suma(movs, t.abono) + suma(movs, t.interes)));
   const estado = saldo <= 0 ? "COMPLETADO" : d.estado === "COMPLETADO" ? "ACTIVO" : d.estado;

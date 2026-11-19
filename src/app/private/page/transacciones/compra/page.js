@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { message, Spin, Drawer, List, Button, Badge, Tooltip, Checkbox } from "antd";
 import useEmpresa from "@/components/useEmpresa";
 import { OPCION_DESCUENTO_PRIMERO } from "@/lib/empresa-cliente";
@@ -68,12 +68,20 @@ export default function CompraForm({ compraId }) {
   const [deuda, setDeuda] = useState({ prestamo: 0, anticipo: 0 });
   const [compraAbono, setCompraAbono] = useState("");
   const [abonoTipo, setAbonoTipo] = useState(null);
+  // Al editar: el abono que la compra ya tiene (se anula y se reemplaza por el nuevo) cuenta como capital disponible
+  const [abonoActual, setAbonoActual] = useState({ abono: 0, tipo: null });
+  const clienteOriginal = useRef(null);
+  const mismoCliente = !!compraId && cliente?.value === clienteOriginal.current;
+  const disponible = {
+    prestamo: deuda.prestamo + (mismoCliente && abonoActual.tipo === "PRESTAMO" ? abonoActual.abono : 0),
+    anticipo: deuda.anticipo + (mismoCliente && abonoActual.tipo === "ANTICIPO" ? abonoActual.abono : 0),
+  };
   const opcionesDeuda = [
-    deuda.prestamo > 0 && { value: "PRESTAMO", label: `Préstamo (pendiente L. ${deuda.prestamo.toFixed(2)})` },
-    deuda.anticipo > 0 && { value: "ANTICIPO", label: `Anticipo (pendiente L. ${deuda.anticipo.toFixed(2)})` },
+    disponible.prestamo > 0 && { value: "PRESTAMO", label: `Préstamo (pendiente L. ${disponible.prestamo.toFixed(2)})` },
+    disponible.anticipo > 0 && { value: "ANTICIPO", label: `Anticipo (pendiente L. ${disponible.anticipo.toFixed(2)})` },
   ].filter(Boolean);
   const tipoAbono = opcionesDeuda.length === 1 ? opcionesDeuda[0].value : abonoTipo?.value;
-  const abonoNum = compraId ? 0 : parseFloat(compraAbono) || 0;
+  const abonoNum = parseFloat(compraAbono) || 0;
   const { tieneOpcion } = useEmpresa();
   const [descuentoPrimero, setDescuentoPrimero] = useState(false); // solo se ofrece si la empresa activó la opción
   const usaDescuentoPrimero = tieneOpcion(OPCION_DESCUENTO_PRIMERO) && descuentoPrimero;
@@ -120,12 +128,15 @@ export default function CompraForm({ compraId }) {
     cargarNotificaciones();
   }, [cliente, ops.recarga]);
 
-  // Deuda del cliente (solo lo que el usuario puede abonar); al editar una compra no se toca el abono
+  // Deuda del cliente (solo lo que el usuario puede abonar). Al cambiar de cliente se limpia el abono; al editar
+  // una compra se conserva el que ya tiene mientras sea el mismo cliente.
   useEffect(() => {
     setDeuda({ prestamo: 0, anticipo: 0 });
-    setCompraAbono("");
-    setAbonoTipo(null);
-    if (!cliente?.value || compraId) return;
+    if (!(compraId && cliente?.value === clienteOriginal.current)) {
+      setCompraAbono("");
+      setAbonoTipo(null);
+    }
+    if (!cliente?.value) return;
     fetch(`/api/compras/deuda?clienteID=${cliente.value}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setDeuda(d))
@@ -210,8 +221,9 @@ export default function CompraForm({ compraId }) {
 
     if ((parseFloat(compraFlete) || 0) > 0 && compraTotal < 0) newErrors["Cobro por flete (Lps)"] = "El flete no puede ser mayor que el pago por el café";
 
-    if (abonoNum > 0) {
-      const pendiente = tipoAbono === "PRESTAMO" ? deuda.prestamo : tipoAbono === "ANTICIPO" ? deuda.anticipo : 0;
+    // solo se valida si el usuario ve los campos de abono (si no los ve, el abono que ya tenga la compra no se toca)
+    if (opcionesDeuda.length > 0 && abonoNum > 0) {
+      const pendiente = tipoAbono === "PRESTAMO" ? disponible.prestamo : tipoAbono === "ANTICIPO" ? disponible.anticipo : 0;
       if (!tipoAbono) newErrors["Abonar a"] = "Elija a qué deuda se abona";
       else if (abonoNum > pendiente) newErrors["Abonar a deuda (Lps)"] = `El abono excede el capital pendiente (L. ${pendiente.toFixed(2)})`;
       if (abonoNum > compraTotal) newErrors["Abonar a deuda (Lps)"] = "El abono no puede ser mayor que el pago por el café";
@@ -244,7 +256,8 @@ export default function CompraForm({ compraId }) {
       compraRetencio: parseFloat(compraRetencio),
       compraTotal: parseFloat(compraTotal),
       compraFlete: parseFloat(compraFlete) || 0,
-      ...(abonoNum > 0 && { compraAbono: abonoNum, compraAbonoTipo: tipoAbono }),
+      // al editar, con los campos de abono visibles se manda siempre (0 = quitar el abono); sin ellos, el abono no se toca
+      ...(opcionesDeuda.length > 0 && (compraId || abonoNum > 0) && { compraAbono: abonoNum, compraAbonoTipo: abonoNum > 0 ? tipoAbono : null }),
       compraEn: compraEn || "Compra Directa",
       compraMovimiento: "Entrada",
       compraDescripcion,
@@ -300,7 +313,7 @@ export default function CompraForm({ compraId }) {
           observaciones: [
             compraDescripcion,
             abonoNum > 0 &&
-              `Abono a ${tipoAbono === "PRESTAMO" ? "préstamo" : "anticipo"}: L. ${formatoLps(abonoNum)}. Saldo pendiente de capital: L. ${formatoLps((tipoAbono === "PRESTAMO" ? deuda.prestamo : deuda.anticipo) - abonoNum)}`,
+              `Abono a ${tipoAbono === "PRESTAMO" ? "préstamo" : "anticipo"}: L. ${formatoLps(abonoNum)}${opcionesDeuda.length > 0 ? `. Saldo pendiente de capital: L. ${formatoLps((tipoAbono === "PRESTAMO" ? disponible.prestamo : disponible.anticipo) - abonoNum)}` : ""}`,
           ]
             .filter(Boolean)
             .join(" | "),
@@ -432,7 +445,7 @@ export default function CompraForm({ compraId }) {
       error: errors["Cobro por flete (Lps)"],
       tooltip: "Opcional. Se debita del monto a pagar por el café; varía según la zona y la cantidad que se traiga.",
     },
-    ...(!compraId && opcionesDeuda.length > 0
+    ...(opcionesDeuda.length > 0
       ? [
           ...(opcionesDeuda.length > 1
             ? [{ label: "Abonar a", value: abonoTipo, setter: setAbonoTipo, type: "select", options: opcionesDeuda, error: errors["Abonar a"] }]
@@ -528,6 +541,15 @@ export default function CompraForm({ compraId }) {
         const productoMatch = productos.find(
           (p) => p.value === data.compraTipoCafe,
         );
+
+        // abono que la compra ya tiene (lo informa el servidor): se muestra para poder cambiarlo o quitarlo
+        const abonoDeLaCompra = Number(data.compraAbono) || 0;
+        clienteOriginal.current = data.clienteID; // antes de setCliente: el efecto de la deuda lo usa para no borrar el abono
+        setAbonoActual({ abono: abonoDeLaCompra, tipo: data.compraAbonoTipo || null });
+        if (abonoDeLaCompra > 0) {
+          setCompraAbono(String(abonoDeLaCompra));
+          setAbonoTipo({ value: data.compraAbonoTipo });
+        }
 
         setCliente(
           clienteMatch || {
