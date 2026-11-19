@@ -90,6 +90,7 @@ export default function Formulario({
                       <InfoCircleOutlined style={{ color: "#4A2E16" }} />
                     </Tooltip>
                   )}
+                  {f.accion}
                 </span>
               }
               required={f.required}
@@ -191,12 +192,44 @@ export default function Formulario({
         </div>
       )}
       <Row gutter={16}>
-        {fields.map((f, idx) => (
+        {fields.filter((f) => !f.enResumen).map((f, idx) => (
           <Col key={f.label || idx} xs={24} sm={12}>
             {campo(f)}
           </Col>
         ))}
       </Row>
+      {/* Campos con enResumen: se muestran juntos como un bloque tipo factura (solo lectura); el último renglón va resaltado */}
+      {fields.some((f) => f.enResumen) && (
+        <div style={{ border: "1px solid #E2DFDA", borderRadius: 8, background: "#F7F5F2", padding: "4px 16px", marginBottom: 16 }}>
+          {fields.filter((f) => f.enResumen).map((f, i, arr) => {
+            const ultimo = i === arr.length - 1;
+            return (
+              <div
+                key={f.label}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "8px 0",
+                  borderTop: i === 0 ? "none" : ultimo ? "2px solid #4A2E16" : "1px solid #E2DFDA",
+                  fontWeight: ultimo || f.negrita ? 700 : 400,
+                  fontSize: ultimo ? 16 : 14,
+                }}
+              >
+                <span>
+                  {f.label}{" "}
+                  {f.tooltip && (
+                    <Tooltip title={f.tooltip}>
+                      <InfoCircleOutlined style={{ color: "#4A2E16" }} />
+                    </Tooltip>
+                  )}
+                </span>
+                <span>{f.resta ? "− " : ""}{formatNumber(f.value ?? "", f.type) || "0.00"}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {/* Botón genérico */}
       {(buttons?.length > 0
         ? buttons.map((btn, idx) =>
