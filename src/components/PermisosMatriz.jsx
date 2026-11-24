@@ -2,6 +2,7 @@
 import { Checkbox, Tag, Tooltip, theme } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { GRUPOS, ACCIONES, col, DEPENDENCIAS, ETIQUETAS, aplica } from "@/lib/modulos";
+import useEmpresa from "@/components/useEmpresa";
 
 const TITULO = { ver: "Ver", crear: "Registrar", editar: "Actualizar", eliminar: "Eliminar" };
 const COLS = "minmax(0,1fr) repeat(5, 72px)"; // módulo | Todo | 4 acciones
@@ -12,6 +13,8 @@ const activo = (f = {}) => ACCIONES.some((a) => f[col(a)]);
 // base (opcional): lo que da el rol. Con ella, las pantallas cuyo acceso difiere del rol se marcan como "ajustado".
 export default function PermisosMatriz({ value = [], onChange, disabled, base }) {
   const { token } = theme.useToken();
+  // Funciones que la empresa no tiene (Empresa → funciones): su permiso no tiene efecto, así que la fila queda en gris y sin editar.
+  const { tieneFuncion } = useEmpresa();
   const get = (m) => value.find((p) => p.modulo === m) || {};
 
   // cambios: [{ modulo, accion | "todo", v }]
@@ -45,7 +48,7 @@ export default function PermisosMatriz({ value = [], onChange, disabled, base })
   const celda = { display: "flex", justifyContent: "center" };
   const acciones = ["todo", ...ACCIONES];
 
-  const checks = (mods, onCambio) =>
+  const checks = (mods, onCambio, apagado = false) =>
     acciones.map((a) => {
       const sinEfecto = a !== "todo" && mods.every((m) => !aplica(m, a));
       if (sinEfecto)
@@ -58,7 +61,7 @@ export default function PermisosMatriz({ value = [], onChange, disabled, base })
         );
       return (
         <div key={a} style={celda}>
-          <Checkbox disabled={disabled} {...estado(mods, a)} onChange={(e) => onCambio(a, e.target.checked)} />
+          <Checkbox disabled={disabled || apagado} {...estado(mods, a)} onChange={(e) => onCambio(a, e.target.checked)} />
         </div>
       );
     });
@@ -74,34 +77,44 @@ export default function PermisosMatriz({ value = [], onChange, disabled, base })
       </div>
 
       {GRUPOS.map((g) => {
-        const mods = g.items.map(([m]) => m);
+        const todos = g.items.map(([m]) => m);
+        const mods = todos.filter(tieneFuncion); // el "Todo" del grupo solo toca las funciones habilitadas
         return (
           <div key={g.grupo}>
             <div style={{ ...fila, background: token.colorFillQuaternary, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
               <b style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.3 }}>{g.grupo}</b>
-              {checks(mods, (a, v) => cambiar(mods.map((modulo) => ({ modulo, accion: a, v }))))}
+              {checks(mods.length ? mods : todos, (a, v) => cambiar(mods.map((modulo) => ({ modulo, accion: a, v }))), !mods.length)}
             </div>
-            {g.items.map(([modulo, label]) => (
+            {g.items.map(([modulo, label]) => {
+              const habilitada = tieneFuncion(modulo);
+              return (
               <div
                 key={modulo}
                 style={{
                   ...fila,
                   borderTop: `1px solid ${token.colorBorderSecondary}`,
-                  background: activo(get(modulo)) ? token.colorPrimaryBg : undefined,
+                  background: !habilitada ? token.colorFillTertiary : activo(get(modulo)) ? token.colorPrimaryBg : undefined,
+                  color: !habilitada ? token.colorTextQuaternary : undefined,
                 }}
               >
                 <span style={{ paddingLeft: 12 }}>
                   {label}
-                  {distinto(modulo) && <Tag color="gold" style={{ marginLeft: 6 }}>ajustado</Tag>}
+                  {!habilitada && (
+                    <Tooltip title="Esta empresa no tiene esta función: el permiso no tiene efecto. Se activa en Administración → Empresa.">
+                      <Tag style={{ marginLeft: 6 }}>No habilitada</Tag>
+                    </Tooltip>
+                  )}
+                  {habilitada && distinto(modulo) && <Tag color="gold" style={{ marginLeft: 6 }}>ajustado</Tag>}
                   {DEPENDENCIAS[modulo] && (
                     <Tooltip title={`También consulta datos de: ${DEPENDENCIAS[modulo].map((d) => ETIQUETAS[d]).join(", ")} (solo datos, sin dar su pantalla)`}>
                       <InfoCircleOutlined style={{ marginLeft: 6, color: token.colorTextTertiary }} />
                     </Tooltip>
                   )}
                 </span>
-                {checks([modulo], (a, v) => cambiar([{ modulo, accion: a, v }]))}
+                {checks([modulo], (a, v) => cambiar([{ modulo, accion: a, v }]), !habilitada)}
               </div>
-            ))}
+              );
+            })}
           </div>
         );
       })}

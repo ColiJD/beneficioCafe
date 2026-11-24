@@ -115,13 +115,6 @@ export const exportDeposito = async (formState) => {
     doc.text("COMPROBANTE DE DEPÓSITO", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
-    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 100 + offsetY, {
-      align: "center",
-    });
-    doc.setFontSize(12);
-    doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 115 + offsetY, {
-      align: "center",
-    });
 
     // Cosecha
     doc.setFont("times", "normal");
