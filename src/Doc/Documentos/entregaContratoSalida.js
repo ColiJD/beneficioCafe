@@ -105,12 +105,6 @@ export const exportEntregaContratoSalida = async (formState) => {
     doc.text("ENTREGA DE VENTA DE CAFÉ", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85 + offsetY, {
-      align: "center",
-    });
-    doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 100 + offsetY, {
-      align: "center",
-    });
 
     // Cosecha
     doc.setFont("times", "bold");

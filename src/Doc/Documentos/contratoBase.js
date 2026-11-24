@@ -92,14 +92,6 @@ export const generarContrato = async (tipo, formState) => {
   doc.setFontSize(11);
   doc.text(texto.titulo, pageWidth / 2, y, { align: "center" });
   y += 15;
-  if (empresa.propietario) {
-    doc.text(`Propietario: ${empresa.propietario}`, pageWidth / 2, y, { align: "center" });
-    y += 15;
-  }
-  if (empresa.telefono) {
-    doc.text(`Teléfono: ${empresa.telefono}`, pageWidth / 2, y, { align: "center" });
-    y += 15;
-  }
 
   y += 4;
   doc.setFontSize(10.5);

@@ -119,12 +119,6 @@ export const exportVentaDirecta = async (formState) => {
     doc.text("COMPROBANTE DE VENTA DIRECTA", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85 + offsetY, {
-      align: "center",
-    });
-    doc.text("Teléfono: (504) 9987-8789", pageWidth / 2, 100 + offsetY, {
-      align: "center",
-    });
 
     let startY = topMargin + 80 + offsetY;
     doc.setFont("times", "bold");

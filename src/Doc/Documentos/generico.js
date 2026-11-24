@@ -92,14 +92,6 @@ export const PDFComprobante = async ({
     doc.setFontSize(12 * scale);
     doc.text(tipoComprobante, pageWidth / 2, 70 + offsetY, { align: "center" });
 
-    // Propietario y contacto
-    doc.setFontSize(12 * scale);
-    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85 + offsetY, {
-      align: "center",
-    });
-    doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 100 + offsetY, {
-      align: "center",
-    });
 
     // Productor y comprobante en la misma línea
     let startY = topMargin + 80 + offsetY;

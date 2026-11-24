@@ -121,12 +121,6 @@ export const exportCompraDirecta = async (formState) => {
     doc.text("COMPROBANTE DE COMPRA DIRECTA", pageWidth / 2, 70 + offsetY, {
       align: "center",
     });
-    doc.text(`Propietario ${empresa.propietario}`, pageWidth / 2, 85 + offsetY, {
-      align: "center",
-    });
-    doc.text(`Teléfono: ${empresa.telefono ?? ""}`, pageWidth / 2, 100 + offsetY, {
-      align: "center",
-    });
 
     // Productor y Comprobante en la misma línea
     let startY = topMargin + 80 + offsetY;
