@@ -19,6 +19,7 @@ import { BotonEditar, BotonEliminar, BotonVer } from "@/components/BotonesAccion
 import EncabezadoPagina from "@/components/EncabezadoPagina";
 import { useSession } from "next-auth/react";
 import { MODULOS, ACCIONES, col } from "@/lib/modulos";
+import useEmpresa from "@/components/useEmpresa";
 
 // { modulo: { ver, crear, editar, eliminar } } → filas de la tabla (solo módulos con alguna acción)
 const filasDe = (mapa = {}) =>
@@ -29,6 +30,7 @@ const filaVacia = (modulo) => ({ modulo, ...Object.fromEntries(ACCIONES.map((a) 
 
 export default function UsersPage() {
   const { data: session, update } = useSession();
+  const { tieneFuncion } = useEmpresa();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -150,6 +152,9 @@ export default function UsersPage() {
     const base = ficha.base || {};
     // Solo se guardan las pantallas que difieren del rol: ahí el ajuste reemplaza lo que da el rol.
     const ajustes = MODULOS.map((modulo) => ficha.permisos.find((p) => p.modulo === modulo) || filaVacia(modulo)).filter((p) => ACCIONES.some((a) => !!p[col(a)] !== !!base[p.modulo]?.[a]));
+    // Funciones que la empresa no tiene no se ven en la tabla (ni se editan): se conservan sus ajustes guardados, para que reaparezcan si se activan.
+    const conservados = (ficha.user.user_permissions || []).filter((p) => !tieneFuncion(p.modulo)).map(({ userId, ...p }) => p);
+    const permisosGuardar = [...ajustes.filter((p) => tieneFuncion(p.modulo)), ...conservados];
 
     const r = await fetch("/api/auth/acceso", {
       method: "PUT",
@@ -157,7 +162,7 @@ export default function UsersPage() {
       body: JSON.stringify({
         userId: ficha.user.userId,
         roleIds: ficha.roleIds,
-        permisos: ajustes,
+        permisos: permisosGuardar,
       }),
     });
     if (!r.ok) return messageApi.error("Error al guardar");
