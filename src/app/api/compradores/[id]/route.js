@@ -42,7 +42,7 @@ export async function PUT(req, { params }) {
     // Validaciones
     const { valido, errores } = validarDatosGenerico(body, {
       compradorNombre: [(v) => validarRequerido(v, "Nombre")],
-      compradorEmail: [(v) => validarRequerido(v, "Email"), validarEmail],
+      compradorEmail: [(v) => (v ? validarEmail(v) : null)], // opcional
       compradorTelefono: [
         (v) => validarRequerido(v, "Teléfono"),
         validarTelefono,
@@ -78,7 +78,7 @@ export async function PUT(req, { params }) {
         compradorRTN: body.compradorRTN || null,
         compradorDireccion: body.compradorDireccion || null,
         compradorTelefono: body.compradorTelefono,
-        compradorEmail: body.compradorEmail?.toLowerCase(),
+        compradorEmail: body.compradorEmail?.toLowerCase() || "",
       },
     });
 

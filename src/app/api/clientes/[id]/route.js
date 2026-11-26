@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { checkRole } from "@/lib/checkRole";
+import { validarRTN } from "@/lib/validacionesBackend";
 
 export async function DELETE(req, { params }) {
   const sessionOrResponse = await checkRole(req, [
@@ -101,6 +102,11 @@ export async function PUT(req, context) {
 
     // 2️⃣ Obtener datos del body
     const body = await req.json();
+
+    const errorRTN = validarRTN(body.clienteRTN);
+    if (errorRTN) {
+      return new Response(JSON.stringify({ error: errorRTN }), { status: 400 });
+    }
 
     // 3️⃣ Verificar que el cliente exista
     const clienteExistente = await prisma.cliente.findUnique({
