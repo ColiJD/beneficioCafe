@@ -9,6 +9,8 @@ import {
   cleanText,
   processImageToGray,
   getLogoScaled,
+  matricial,
+  logoBlancoNegro,
 } from "@/Doc/Documentos/funcionesdeDocumentos";
 
 // Arma las filas del recibo de una compra ya registrada (reimpresión desde el registro): café, rebaja, flete, abono y total a pagar.
@@ -36,14 +38,19 @@ export const datosReciboCompra = (r) => {
 
 export const exportCompraDirecta = async (formState) => {
   const empresa = await getEmpresaPDF();
-  const doc = new JsPDF({ unit: "pt", format: "letter" });
+  // Impresora matricial (forma continua 9.5 x 5.5 pulg): un solo recibo por hoja, Courier en negro y sin fondo ni rejilla
+  const mat = matricial(empresa);
+  const fuente = mat ? "courier" : "times";
+  const peso = mat ? "bold" : "normal";
+  const rojo = mat ? [0, 0, 0] : [255, 0, 0];
+  const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
   const topMargin = 50;
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const fondoGray = await processImageToGray(empresa.logo, 0.15);
+  const fondoGray = mat ? null : await processImageToGray(empresa.logo, 0.15);
 
   // Fecha actual
   let fechaObj;
@@ -61,7 +68,8 @@ export const exportCompraDirecta = async (formState) => {
   const anio = fechaObj.getFullYear();
   const fecha = `${dia}/${mes}/${anio}`;
 
-  const scale = 1.1;
+  const logoMat = mat ? await logoBlancoNegro(empresa.logo, 34) : null;
+  const scale = mat ? 0.9 : 1.1;
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const cafeimg = await getLogoScaled(cafe.src, 80 * scale, 80 * scale);
 
@@ -79,7 +87,8 @@ export const exportCompraDirecta = async (formState) => {
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
-    doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
+    if (logoMat) doc.addImage(logoMat.src, "PNG", leftMargin, 10 + offsetY, logoMat.width, logoMat.height);
+    if (fondoGray) doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
     // // Logo izquierda
     // doc.addImage(
@@ -103,34 +112,34 @@ export const exportCompraDirecta = async (formState) => {
     // );
 
     //  Cosecha
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(11 * scale);
     doc.setTextColor(0, 0, 0);
 
-    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, topMargin + 80 + offsetY - 18);
+    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, (mat ? 66 : topMargin + 80) + offsetY - 18);
 
     //Encabezado central
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(16 * scale);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(12 * scale);
-    doc.text("COMPROBANTE DE COMPRA DIRECTA", pageWidth / 2, 70 + offsetY, {
+    doc.text("COMPROBANTE DE COMPRA DIRECTA", pageWidth / 2, (mat ? 44 : 70) + offsetY, {
       align: "center",
     });
 
     // Productor y Comprobante en la misma línea
-    let startY = topMargin + 80 + offsetY;
-    doc.setFont("times", "normal");
+    let startY = (mat ? 66 : topMargin + 80) + offsetY;
+    doc.setFont(fuente, peso);
 
     const textoProd = "Productor:";
     doc.text(textoProd, leftMargin, startY);
 
     const anchoProd = doc.getTextWidth(textoProd);
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(` ${cliente}`, leftMargin + anchoProd, startY);
 
     doc.setFontSize(14 * scale);
@@ -143,21 +152,21 @@ export const exportCompraDirecta = async (formState) => {
 
     //Tabla de productos
     const bodyProductos = productos.map((p) => [
-      { content: cleanText(p.nombre), styles: { textColor: [255, 0, 0] } },
-      { content: p.cantidad === "" ? "" : formatNumber(p.cantidad), styles: { textColor: [255, 0, 0] } },
+      { content: cleanText(p.nombre), styles: { textColor: rojo } },
+      { content: p.cantidad === "" ? "" : formatNumber(p.cantidad), styles: { textColor: rojo } },
       {
         content: p.precio === "" ? "" : `L. ${formatNumber(p.precio)}`,
-        styles: { textColor: [255, 0, 0] },
+        styles: { textColor: rojo },
       },
       {
         content: p.total < 0 ? `- L. ${formatNumber(Math.abs(p.total))}` : `L. ${formatNumber(p.total)}`,
-        styles: { textColor: [255, 0, 0] },
+        styles: { textColor: rojo },
       },
     ]);
 
     // Fila final con lo que realmente se paga al cliente (después de rebajas, flete y abono)
     if (formState?.filaTotal) {
-      const bold = { textColor: [255, 0, 0], fontStyle: "bold" };
+      const bold = { textColor: rojo, fontStyle: "bold" };
       bodyProductos.push([
         { content: "TOTAL A PAGAR", colSpan: 3, styles: { ...bold, halign: "right" } },
         { content: `L. ${formatNumber(formState.total || 0)}`, styles: bold },
@@ -174,29 +183,33 @@ export const exportCompraDirecta = async (formState) => {
       head: [["Producto", "Cantidad (QQ)", "Precio (LPS)", "Total (LPS)"]],
       body: bodyProductos,
       styles: {
-        font: "times",
+        font: fuente,
+        fontStyle: peso,
         fontSize: (compacto ? 9 : 10) * scale,
         cellPadding: compacto ? 3 : 5,
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
+        fontStyle: "bold",
       },
     });
 
     startY = doc.lastAutoTable.finalY + 15;
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     const texto = "Cantidad en Letras:";
     const valor = `${cantidadLetras}`;
     doc.text(texto, leftMargin, startY);
     const anchoTexto = doc.getTextWidth(texto);
-    doc.setTextColor(255, 0, 0);
-    doc.text(valor, leftMargin + anchoTexto + 5, startY);
+    doc.setTextColor(...rojo);
+    const lineasLetras = doc.splitTextToSize(String(valor), pageWidth - rightMargin - leftMargin - anchoTexto - 5);
+    doc.text(lineasLetras, leftMargin + anchoTexto + 5, startY);
+    startY += (lineasLetras.length - 1) * doc.getLineHeight();
     doc.setTextColor(0, 0, 0);
 
     startY += 20;
@@ -204,25 +217,26 @@ export const exportCompraDirecta = async (formState) => {
     // Forma de pago
     doc.text("Forma de Pago:", leftMargin, startY);
     const formas = ["Efectivo", "Transferencia", "Cheque"];
-    let x = leftMargin + 100;
+    // Posiciones según el ancho real del texto: con Courier (más ancho) las opciones no se encimaban
+    let x = leftMargin + doc.getTextWidth("Forma de Pago:") + 14;
     formas.forEach((f) => {
       doc.rect(x, startY - 7, 10, 10);
       if (formaPago === f) doc.text("X", x + 2, startY + 1);
       doc.text(f, x + 15, startY + 1);
-      x += 100;
+      x += 15 + doc.getTextWidth(f) + 22;
     });
 
     startY += 25;
 
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.text("Observaciones:", leftMargin, startY);
     startY += 12;
-    doc.setFont("times", "normal");
-    doc.text(String(observaciones || ""), leftMargin, startY, {
-      maxWidth: pageWidth - leftMargin - rightMargin,
-    });
+    doc.setFont(fuente, peso);
+    const lineasObs = doc.splitTextToSize(String(observaciones || ""), pageWidth - leftMargin - rightMargin);
+    doc.text(lineasObs, leftMargin, startY);
+    startY += (lineasObs.length - 1) * doc.getLineHeight();
 
-    startY += filas <= 2 ? 70 : Math.max(80 - 20 * (filas - 2), 30);
+    startY += mat ? 28 : filas <= 2 ? 70 : Math.max(80 - 20 * (filas - 2), 30);
 
     // Firmas y lugar/fecha
     const firmaWidth = 150;
@@ -239,8 +253,8 @@ export const exportCompraDirecta = async (formState) => {
     // Texto “LUGAR Y FECHA”
     doc.text("LUGAR Y FECHA", lugarX + firmaWidth / 2 - 40, firmaY + 12);
 
-    doc.setFont("times", "normal");
-    doc.setTextColor(255, 0, 0);
+    doc.setFont(fuente, peso);
+    doc.setTextColor(...rojo);
     doc.text(`${empresa.ciudad}  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
     doc.setTextColor(0, 0, 0);
 
@@ -248,18 +262,19 @@ export const exportCompraDirecta = async (formState) => {
     doc.text(
       `${empresa.nombre} - ${empresa.ciudad}, ${empresa.pais}`,
       pageWidth / 2,
-      offsetY + pageHeight * 0.45,
+      mat ? pageHeight - 14 : offsetY + pageHeight * 0.45,
       { align: "center" },
     );
   };
 
   // === GENERACIÓN DE DOCUMENTO ===
   drawComprobante(0);
-  drawComprobante(pageHeight / 2);
-
-  doc.setLineDash([5, 3]);
-  doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
-  doc.setLineDash();
+  if (!mat) {
+    drawComprobante(pageHeight / 2);
+    doc.setLineDash([5, 3]);
+    doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
+    doc.setLineDash();
+  }
 
   const nombreArchivo = `CompraDirecta_${cliente.replace(
     /\s+/g,

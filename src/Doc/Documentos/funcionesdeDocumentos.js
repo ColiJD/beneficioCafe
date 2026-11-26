@@ -1,3 +1,4 @@
+import { opcionActiva, OPCION_IMPRESORA_MATRICIAL } from "@/lib/empresa-cliente";
 // utils/numeroALetras.js
 export function numeroALetras(num, unidad = "Lempiras") {
   if (isNaN(num)) return "";
@@ -160,6 +161,38 @@ export async function getLogoScaled(imgUrl, targetWidth, targetHeight) {
   }
 
   return { src: imgUrl, width, height };
+}
+
+// ¿La empresa imprime en matricial (forma continua 9.5 x 5.5 pulg)? Opción de Administración → Empresa.
+export const matricial = (empresa) => opcionActiva(empresa.funciones, OPCION_IMPRESORA_MATRICIAL);
+
+// Logo en blanco y negro puro (sin grises ni transparencias) para la matricial: { src, width, height } con la altura dada en pt, o null si falla.
+export async function logoBlancoNegro(url, alto) {
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await img.decode();
+    const h = 120; // se rasteriza grande y se reduce al imprimir
+    const w = Math.round((img.width / img.height) * h);
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    const d = ctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < d.data.length; i += 4) {
+      const v = 0.3 * d.data[i] + 0.59 * d.data[i + 1] + 0.11 * d.data[i + 2] < 150 ? 0 : 255;
+      d.data[i] = d.data[i + 1] = d.data[i + 2] = v;
+      d.data[i + 3] = 255;
+    }
+    ctx.putImageData(d, 0, 0);
+    return { src: c.toDataURL("image/png"), width: (w / h) * alto, height: alto };
+  } catch {
+    return null;
+  }
 }
 
 // Datos de la empresa (tabla empresa) para los encabezados y pies de los PDFs.

@@ -5,6 +5,8 @@ import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
+  matricial,
+  logoBlancoNegro,
   numeroALetras,
   cleanText,
   processImageToGray,
@@ -13,14 +15,21 @@ import {
 
 export const exportLiquidacionDeposito = async (formState) => {
   const empresa = await getEmpresaPDF();
-  const doc = new JsPDF({ unit: "pt", format: "letter" });
+  // Impresora matricial (forma continua 9.5 x 5.5 pulg): una sola copia por hoja, Courier en negro, sin fondo ni rejilla
+  const mat = matricial(empresa);
+  const fuente = mat ? "courier" : "times";
+  const peso = mat ? "bold" : "normal";
+  const rojo = mat ? [0, 0, 0] : [255, 0, 0];
+  const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
   const topMargin = 50;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // En matricial la hoja es media carta: las medidas se calculan sobre una carta completa y solo se dibuja la primera copia
+  const pageHeight = doc.internal.pageSize.getHeight() * (mat ? 2 : 1);
 
-  const fondoGray = await processImageToGray(empresa.logo, 0.15);
+  const fondoGray = mat ? null : await processImageToGray(empresa.logo, 0.15);
+  const logoMat = mat ? await logoBlancoNegro(empresa.logo, 34) : null;
 
   // Fecha actual (Adoptado de compra.js)
   let fechaObj;
@@ -38,7 +47,7 @@ export const exportLiquidacionDeposito = async (formState) => {
   const anio = fechaObj.getFullYear();
   const fecha = `${dia}/${mes}/${anio}`;
 
-  const scale = 1.1; // Aumentado a 1.1 para consistencia
+  const scale = mat ? 0.9 : 1.1; // Aumentado a 1.1 para consistencia
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const frijolimg = await getLogoScaled(frijol.src, 80 * scale, 80 * scale);
 
@@ -62,22 +71,23 @@ export const exportLiquidacionDeposito = async (formState) => {
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
-    doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
+    if (logoMat) doc.addImage(logoMat.src, "PNG", leftMargin, 10 + offsetY, logoMat.width, logoMat.height);
+    if (fondoGray) doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
     // Cosecha
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(11 * scale);
     doc.setTextColor(0, 0, 0);
     doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, topMargin + 80 + offsetY - 18);
 
     // Encabezado central
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(16 * scale);
     doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
       align: "center",
     });
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(12 * scale);
     doc.text("LIQUIDACIÓN DE DEPÓSITO", pageWidth / 2, 70 + offsetY, {
       align: "center",
@@ -85,13 +95,13 @@ export const exportLiquidacionDeposito = async (formState) => {
 
     // Productor y Comprobante en la misma línea
     let startY = topMargin + 80 + offsetY;
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
 
     const textoProd = "Productor:";
     doc.text(textoProd, leftMargin, startY);
 
     const anchoProd = doc.getTextWidth(textoProd);
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(` ${productor}`, leftMargin + anchoProd, startY);
 
     doc.setFontSize(14 * scale);
@@ -109,44 +119,47 @@ export const exportLiquidacionDeposito = async (formState) => {
       head: [["Tipo de Café", "Cantidad (QQ)", "Precio (Lps)", "Total (Lps)"]],
       body: [
         [
-          { content: cleanText(tipoCafe), styles: { textColor: [255, 0, 0] } },
+          { content: cleanText(tipoCafe), styles: { textColor: rojo } },
           {
             content: formatNumber(cantidadLiquidar),
-            styles: { textColor: [255, 0, 0] },
+            styles: { textColor: rojo },
           },
           {
             content: `L. ${formatNumber(precio)}`,
-            styles: { textColor: [255, 0, 0] },
+            styles: { textColor: rojo },
           },
           {
             content: `L. ${formatNumber(totalPagar)}`,
-            styles: { textColor: [255, 0, 0] },
+            styles: { textColor: rojo },
           },
         ],
       ],
       styles: {
-        font: "times",
+        font: fuente,
+        fontStyle: peso,
         fontSize: 10 * scale,
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
     });
 
     startY = doc.lastAutoTable.finalY + 15;
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     const textoEnLetras = "Total en Letras:";
     const valorEnLetras = `${cantidadLetras}`;
     doc.text(textoEnLetras, leftMargin, startY);
     const anchoTextoLetras = doc.getTextWidth(textoEnLetras);
-    doc.setTextColor(255, 0, 0);
-    doc.text(valorEnLetras, leftMargin + anchoTextoLetras + 5, startY);
+    doc.setTextColor(...rojo);
+    const lineasLetras = doc.splitTextToSize(String(valorEnLetras), pageWidth - rightMargin - leftMargin - anchoTextoLetras - 5);
+    doc.text(lineasLetras, leftMargin + anchoTextoLetras + 5, startY);
+    startY += (lineasLetras.length - 1) * doc.getLineHeight();
     doc.setTextColor(0, 0, 0);
 
     startY += 20;
@@ -154,21 +167,21 @@ export const exportLiquidacionDeposito = async (formState) => {
     // Forma de pago
     doc.text("Forma de Pago:", leftMargin, startY);
     const formas = ["Efectivo", "Transferencia", "Cheque"];
-    let x = leftMargin + 100;
+    let x = leftMargin + doc.getTextWidth("Forma de Pago:") + 14; // según el ancho real: con Courier no se encimaban
     formas.forEach((f) => {
       doc.rect(x, startY - 7, 10, 10);
       if (formaPago === f) doc.text("X", x + 2, startY + 1);
       doc.text(f, x + 15, startY + 1);
-      x += 100;
+      x += 17 + doc.getTextWidth(f) + 22;
     });
 
     startY += 25;
 
     // Descripción (equivale a observaciones)
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.text("Descripción:", leftMargin, startY);
     startY += 12;
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.text(String(descripcion || ""), leftMargin, startY, {
       maxWidth: pageWidth - leftMargin - rightMargin,
     });
@@ -190,8 +203,8 @@ export const exportLiquidacionDeposito = async (formState) => {
     // Texto “LUGAR Y FECHA”
     doc.text("LUGAR Y FECHA", lugarX + firmaWidth / 2 - 40, firmaY + 12);
 
-    doc.setFont("times", "normal");
-    doc.setTextColor(255, 0, 0);
+    doc.setFont(fuente, peso);
+    doc.setTextColor(...rojo);
     doc.text(`${empresa.ciudad}  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
     doc.setTextColor(0, 0, 0);
 
@@ -206,11 +219,13 @@ export const exportLiquidacionDeposito = async (formState) => {
 
   // DOBLE COMPROBANTE
   drawComprobante(0);
-  drawComprobante(pageHeight / 2);
+  if (!mat) {
+    drawComprobante(pageHeight / 2);
 
-  doc.setLineDash([5, 3]);
-  doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
-  doc.setLineDash();
+    doc.setLineDash([5, 3]);
+    doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
+    doc.setLineDash();
+  }
 
   const nombreArchivo = `Liquidacion_${productor.replace(
     /\s+/g,

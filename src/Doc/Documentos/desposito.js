@@ -5,6 +5,8 @@ import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import autoTable from "jspdf-autotable";
 import {
+  matricial,
+  logoBlancoNegro,
   numeroALetras,
   cleanText,
   processImageToGray,
@@ -13,15 +15,22 @@ import {
 
 export const exportDeposito = async (formState) => {
   const empresa = await getEmpresaPDF();
-  const doc = new JsPDF({ unit: "pt", format: "letter" });
+  // Impresora matricial (forma continua 9.5 x 5.5 pulg): una sola copia por hoja, Courier en negro, sin fondo ni rejilla
+  const mat = matricial(empresa);
+  const fuente = mat ? "courier" : "times";
+  const peso = mat ? "bold" : "normal";
+  const rojo = mat ? [0, 0, 0] : [255, 0, 0];
+  const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 72;
   const rightMargin = 72;
   const topMargin = 72;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // En matricial la hoja es media carta: las medidas se calculan sobre una carta completa y solo se dibuja la primera copia
+  const pageHeight = doc.internal.pageSize.getHeight() * (mat ? 2 : 1);
 
   // Fondo gris
-  const fondoGray = await processImageToGray(empresa.logo, 0.15);
+  const fondoGray = mat ? null : await processImageToGray(empresa.logo, 0.15);
+  const logoMat = mat ? await logoBlancoNegro(empresa.logo, 34) : null;
 
   // Fecha (solo para pie de página)
   let fechaObj;
@@ -80,7 +89,8 @@ export const exportDeposito = async (formState) => {
     const imgHeight = (imgWidth / pageWidth) * pageHeight;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight / 4 - imgHeight / 2;
-    doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
+    if (logoMat) doc.addImage(logoMat.src, "PNG", leftMargin, 10 + offsetY, logoMat.width, logoMat.height);
+    if (fondoGray) doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
     // // Logo izquierda
     // doc.addImage(
@@ -104,34 +114,34 @@ export const exportDeposito = async (formState) => {
     // );
 
     // Encabezado
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(20);
     doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 60 + offsetY, {
       align: "center",
     });
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(14);
     doc.text("COMPROBANTE DE DEPÓSITO", pageWidth / 2, 85 + offsetY, {
       align: "center",
     });
 
     // Cosecha
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, 110 + offsetY);
 
     // Productor y comprobante alineados
     let startY = topMargin + 70 + offsetY;
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.text(`Productor: ${cliente}`, leftMargin, startY);
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     const textoBase = "Comprobante No:";
     const anchoTextoBase = doc.getTextWidth(textoBase);
     doc.text(textoBase, pageWidth - rightMargin - 80, startY);
 
     // Número del comprobante en rojo
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(
       `${comprobanteID}`,
       pageWidth - rightMargin - 80 + anchoTextoBase + 5,
@@ -142,8 +152,8 @@ export const exportDeposito = async (formState) => {
     // Tabla
     startY += 15;
     const bodyProductos = productos.map((p) => [
-      { content: cleanText(p.nombre), styles: { textColor: [255, 0, 0] } },
-      { content: formatNumber(p.cantidad), styles: { textColor: [255, 0, 0] } },
+      { content: cleanText(p.nombre), styles: { textColor: rojo } },
+      { content: formatNumber(p.cantidad), styles: { textColor: rojo } },
     ]);
 
     autoTable(doc, {
@@ -152,40 +162,43 @@ export const exportDeposito = async (formState) => {
       head: [["Producto", "Cantidad (QQ)"]],
       body: bodyProductos,
       styles: {
-        font: "times",
+        font: fuente,
+        fontStyle: peso,
         fontSize: 11,
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
     });
 
     startY = doc.lastAutoTable.finalY + 20;
 
     // Cantidad en letras
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setTextColor(0, 0, 0);
     const texto = "Cantidad en Letras:";
     const anchoTexto = doc.getTextWidth(texto);
     doc.text(texto, leftMargin, startY);
-    doc.setTextColor(255, 0, 0);
-    doc.text(cantidadLetras, leftMargin + anchoTexto + 5, startY);
+    doc.setTextColor(...rojo);
+    const lineasLetras = doc.splitTextToSize(String(cantidadLetras), pageWidth - rightMargin - leftMargin - anchoTexto - 5);
+    doc.text(lineasLetras, leftMargin + anchoTexto + 5, startY);
+    startY += (lineasLetras.length - 1) * doc.getLineHeight();
     doc.setTextColor(0, 0, 0);
 
     // Observaciones
     startY += 30;
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.text("Observaciones:", leftMargin, startY);
     startY += 15;
-    doc.setFont("times", "normal");
-    doc.text(String(observaciones || ""), leftMargin, startY, {
-      maxWidth: pageWidth - leftMargin - rightMargin,
-    });
+    doc.setFont(fuente, peso);
+    const lineasObs = doc.splitTextToSize(String(observaciones || ""), pageWidth - leftMargin - rightMargin);
+    doc.text(lineasObs, leftMargin, startY);
+    startY += (lineasObs.length - 1) * doc.getLineHeight();
 
     // Firmas
     startY += 80;
@@ -200,7 +213,7 @@ export const exportDeposito = async (formState) => {
       pageWidth - rightMargin,
       startY,
     );
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(`${empresa.ciudad}  ${fecha}`, pageWidth - rightMargin - 140, startY - 4);
     doc.setTextColor(0, 0, 0);
     doc.text("LUGAR Y FECHA", pageWidth - rightMargin - 130, startY + 15);
@@ -216,12 +229,14 @@ export const exportDeposito = async (formState) => {
   };
 
   drawComprobante(0);
-  drawComprobante(pageHeight / 2);
+  if (!mat) {
+    drawComprobante(pageHeight / 2);
 
-  // Línea de corte
-  doc.setLineDash([5, 3]);
-  doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
-  doc.setLineDash();
+    // Línea de corte
+    doc.setLineDash([5, 3]);
+    doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
+    doc.setLineDash();
+  }
 
   const nombreArchivo = `Deposito_${cliente.replace(
     /\s+/g,
