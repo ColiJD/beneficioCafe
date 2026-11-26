@@ -118,11 +118,11 @@ export default function EmpresaPage() {
 
         <Card title="Opciones (apagadas por defecto)" style={{ marginBottom: 16 }}>
           {OPCIONES.map(([k, nombre]) => (
-            <Checkbox key={k} checked={lista.includes(k)}
+            <div key={k}><Checkbox checked={lista.includes(k)}
               onChange={(ev) => {
                 const nueva = ev.target.checked ? [...(e.funciones == null ? [TODAS] : lista), k] : lista.filter((a) => a !== k);
                 cambiaFunciones(nueva.length === 1 && nueva[0] === TODAS ? null : nueva);
-              }}>{nombre}</Checkbox>
+              }}>{nombre}</Checkbox></div>
           ))}
         </Card>
 

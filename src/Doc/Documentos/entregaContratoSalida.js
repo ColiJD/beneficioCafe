@@ -5,6 +5,8 @@ import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
+  matricial,
+  logoBlancoNegro,
   numeroALetras,
   processImageToGray,
   getLogoScaled,
@@ -12,12 +14,18 @@ import {
 
 export const exportEntregaContratoSalida = async (formState) => {
   const empresa = await getEmpresaPDF();
-  const doc = new JsPDF({ unit: "pt", format: "letter" });
+  // Impresora matricial (forma continua 9.5 x 5.5 pulg): una sola copia por hoja, Courier en negro, sin fondo ni rejilla
+  const mat = matricial(empresa);
+  const fuente = mat ? "courier" : "times";
+  const peso = mat ? "bold" : "normal";
+  const rojo = mat ? [0, 0, 0] : [255, 0, 0];
+  const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
   const topMargin = 50;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // En matricial la hoja es media carta: las medidas se calculan sobre una carta completa y solo se dibuja la primera copia
+  const pageHeight = doc.internal.pageSize.getHeight() * (mat ? 2 : 1);
 
   const fechaInput = formState?.fecha ? new Date(formState.fecha) : new Date();
   const fechaCorta = `${String(fechaInput.getDate()).padStart(2, "0")}/${String(
@@ -25,12 +33,13 @@ export const exportEntregaContratoSalida = async (formState) => {
   ).padStart(2, "0")}/${fechaInput.getFullYear()}`;
 
   // ---------- Un solo tamaño----------
-  const scale = 1.1;
+  const scale = mat ? 0.9 : 1.1;
   const FS_H1 = 16 * scale;
   const FS_BODY = 11 * scale;
   const FS_SMALL = 9 * scale;
 
-  const fondoGray = await processImageToGray(empresa.logo, 0.15);
+  const fondoGray = mat ? null : await processImageToGray(empresa.logo, 0.15);
+  const logoMat = mat ? await logoBlancoNegro(empresa.logo, 34) : null;
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const frijolimg = await getLogoScaled(frijol.src, 80 * scale, 80 * scale);
 
@@ -72,7 +81,8 @@ export const exportEntregaContratoSalida = async (formState) => {
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
-    doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
+    if (logoMat) doc.addImage(logoMat.src, "PNG", leftMargin, 10 + offsetY, logoMat.width, logoMat.height);
+    if (fondoGray) doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
     // // Logos
     // doc.addImage(
@@ -94,46 +104,48 @@ export const exportEntregaContratoSalida = async (formState) => {
     // );
 
     // Encabezado
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(FS_H1);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(FS_BODY);
-    doc.text("ENTREGA DE VENTA DE CAFÉ", pageWidth / 2, 70 + offsetY, {
+    doc.text("ENTREGA DE VENTA DE CAFÉ", pageWidth / 2, (mat ? 44 : 70) + offsetY, {
       align: "center",
     });
 
     // Cosecha
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
-    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, topMargin + 60 + offsetY);
+    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, (mat ? 48 : topMargin + 60) + offsetY);
 
     // Comprador
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(FS_BODY);
-    const yProd = topMargin + 80 + offsetY;
+    const yProd = (mat ? 66 : topMargin + 80) + offsetY;
     const labelProd = "Comprador:";
     doc.text(labelProd, leftMargin, yProd);
     const wLabelProd = doc.getTextWidth(labelProd);
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(` ${cliente}`, leftMargin + wLabelProd, yProd);
     doc.setTextColor(0, 0, 0);
 
     // Comprobante No
-    const compX = pageWidth - rightMargin - 140;
+    let compX = pageWidth - rightMargin - 140;
     // const compY = frijolY + frijolimg.height + 18;
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
+    const wComp = doc.getTextWidth("Comprobante No:") + 5;
+    if (mat) compX = pageWidth - rightMargin - wComp - doc.getTextWidth(String(comprobanteID));
     doc.text("Comprobante No:", compX, yProd);
-    doc.setTextColor(255, 0, 0);
-    doc.text(`${comprobanteID}`, compX + 125, yProd);
+    doc.setTextColor(...rojo);
+    doc.text(`${comprobanteID}`, compX + (mat ? wComp : 125), yProd);
     doc.setTextColor(0, 0, 0);
 
     // Tabla
-    let startY = topMargin + 110 + offsetY;
+    let startY = (mat ? 80 : topMargin + 110) + offsetY;
     autoTable(doc, {
       startY,
       margin: { left: leftMargin, right: rightMargin },
@@ -148,27 +160,28 @@ export const exportEntregaContratoSalida = async (formState) => {
       ],
       body: [
         [
-          { content: contratoID, styles: { textColor: [255, 0, 0] } },
-          { content: tipoCafe, styles: { textColor: [255, 0, 0] } },
+          { content: contratoID, styles: { textColor: rojo } },
+          { content: tipoCafe, styles: { textColor: rojo } },
           {
             content: formatNumber(quintalesIngresados),
-            styles: { textColor: [255, 0, 0] },
+            styles: { textColor: rojo },
           },
           {
             content: `L. ${formatNumber(precio)}`,
-            styles: { textColor: [255, 0, 0] },
+            styles: { textColor: rojo },
           },
           {
             content: `L. ${formatNumber(totalPagar)}`,
-            styles: { textColor: [255, 0, 0] },
+            styles: { textColor: rojo },
           },
         ],
       ],
       styles: {
-        font: "times",
+        font: fuente,
+        fontStyle: peso,
         fontSize: 9 * scale,
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
       headStyles: {
         fillColor: [255, 255, 255],
@@ -180,12 +193,12 @@ export const exportEntregaContratoSalida = async (formState) => {
     startY = doc.lastAutoTable.finalY + 30;
 
     // Total en letras
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
     doc.text("Total en Letras:", leftMargin, startY);
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(FS_BODY);
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     const maxWidth = pageWidth - leftMargin - rightMargin - 150;
     const textoEnLetras = doc.splitTextToSize(cantidadLetras, maxWidth);
     doc.text(textoEnLetras, leftMargin + 115, startY);
@@ -194,15 +207,15 @@ export const exportEntregaContratoSalida = async (formState) => {
     doc.setTextColor(0, 0, 0);
 
     // Observaciones
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
     doc.text("Observaciones:", leftMargin, startY);
     startY += 15;
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(FS_BODY);
-    doc.text(String(observaciones || ""), leftMargin, startY, {
-      maxWidth: pageWidth - leftMargin - rightMargin,
-    });
+    const lineasObs = doc.splitTextToSize(String(observaciones || ""), pageWidth - leftMargin - rightMargin);
+    doc.text(lineasObs, leftMargin, startY);
+    startY += (lineasObs.length - 1) * doc.getLineHeight();
 
     // ======== BLOQUE DE FIRMAS ========
     const mitadAltura = pageHeight / 2;
@@ -210,7 +223,7 @@ export const exportEntregaContratoSalida = async (formState) => {
     const firmaWidth = 150;
     const firmaY = firmaBase - 8;
 
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
     doc.line(leftMargin, firmaY, leftMargin + firmaWidth, firmaY);
     doc.text("ENTREGADO POR", leftMargin + 35, firmaY + 14); // Henola delivers
@@ -223,7 +236,7 @@ export const exportEntregaContratoSalida = async (formState) => {
     );
     doc.text("RECIBIDO POR", pageWidth - rightMargin - 120, firmaY + 14); // Buyer receives
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(FS_SMALL);
     doc.text(
       `${empresa.nombre} - ${empresa.ciudad}, ${empresa.pais}`,
@@ -233,21 +246,23 @@ export const exportEntregaContratoSalida = async (formState) => {
     );
 
     // Fecha roja
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(14);
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(`${empresa.ciudad} ${fechaCorta}`, pageWidth / 2 + 120, firmaY - 6);
     doc.setTextColor(0, 0, 0);
   };
 
   // Doble comprobante (arriba y abajo)
   drawComprobante(0);
-  drawComprobante(pageHeight / 2);
+  if (!mat) {
+    drawComprobante(pageHeight / 2);
 
-  // Línea de corte
-  doc.setLineDash([5, 3]);
-  doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
-  doc.setLineDash();
+    // Línea de corte
+    doc.setLineDash([5, 3]);
+    doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
+    doc.setLineDash();
+  }
 
   const nombreArchivo = `EntregaVenta_${cliente.replace(
     /\s+/g,

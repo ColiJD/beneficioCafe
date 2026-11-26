@@ -7,6 +7,8 @@ import { getEmpresaPDF } from "@/Doc/Documentos/funcionesdeDocumentos";
 import cafe from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
+  matricial,
+  logoBlancoNegro,
   numeroALetras,
   processImageToGray,
   getLogoScaled,
@@ -35,14 +37,21 @@ export const PDFComprobante = async ({
   ],
 }) => {
   const empresa = await getEmpresaPDF();
-  const doc = new JsPDF({ unit: "pt", format: "letter" });
+  // Impresora matricial (forma continua 9.5 x 5.5 pulg): una sola copia por hoja, Courier en negro, sin fondo ni rejilla
+  const mat = matricial(empresa);
+  const fuente = mat ? "courier" : "times";
+  const peso = mat ? "bold" : "normal";
+  const rojo = mat ? [0, 0, 0] : [255, 0, 0];
+  const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
   const leftMargin = 50;
   const rightMargin = 50;
   const topMargin = 50;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // En matricial la hoja es media carta: las medidas se calculan sobre una carta completa y solo se dibuja la primera copia
+  const pageHeight = doc.internal.pageSize.getHeight() * (mat ? 2 : 1);
 
-  const fondoGray = await processImageToGray(empresa.logo, 0.15);
+  const fondoGray = mat ? null : await processImageToGray(empresa.logo, 0.15);
+  const logoMat = mat ? await logoBlancoNegro(empresa.logo, 34) : null;
 
   const fechaObj = new Date();
   const dia = String(fechaObj.getDate()).padStart(2, "0");
@@ -50,7 +59,7 @@ export const PDFComprobante = async ({
   const anio = fechaObj.getFullYear();
   const fecha = `${dia}/${mes}/${anio}`;
 
-  const scale = 1.1;
+  const scale = mat ? 0.9 : 1.1;
   const logo = await getLogoScaled(tasa.src, 80 * scale, 80 * scale);
   const cafeimg = await getLogoScaled(cafe.src, 80 * scale, 80 * scale);
 
@@ -61,7 +70,8 @@ export const PDFComprobante = async ({
     const imgHeight = pageHeight * 0.45 * scale;
     const imgX = (pageWidth - imgWidth) / 2;
     const imgY = offsetY + pageHeight * 0.05;
-    doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
+    if (logoMat) doc.addImage(logoMat.src, "PNG", leftMargin, 10 + offsetY, logoMat.width, logoMat.height);
+    if (fondoGray) doc.addImage(fondoGray, "PNG", imgX, imgY, imgWidth, imgHeight);
 
     // doc.addImage(
     //   logo.src,
@@ -81,25 +91,25 @@ export const PDFComprobante = async ({
     // );
 
     // === Encabezado central y datos de contacto ===
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.setFontSize(16 * scale);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
     // Subtítulo: tipo de comprobante
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     doc.setFontSize(12 * scale);
-    doc.text(tipoComprobante, pageWidth / 2, 70 + offsetY, { align: "center" });
+    doc.text(tipoComprobante, pageWidth / 2, (mat ? 44 : 70) + offsetY, { align: "center" });
 
 
     // Productor y comprobante en la misma línea
-    let startY = topMargin + 80 + offsetY;
-    doc.setFont("times", "normal");
+    let startY = (mat ? 66 : topMargin + 80) + offsetY;
+    doc.setFont(fuente, peso);
     const textoProd = "Productor:";
     doc.text(textoProd, leftMargin, startY);
     const anchoProd = doc.getTextWidth(textoProd);
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(` ${cliente}`, leftMargin + anchoProd, startY);
 
     // Comprobante No: a la derecha
@@ -133,7 +143,7 @@ export const PDFComprobante = async ({
 
         return {
           content: safeText,
-          styles: { textColor: [255, 0, 0] },
+          styles: { textColor: rojo },
         };
       }),
     );
@@ -145,35 +155,38 @@ export const PDFComprobante = async ({
       body: bodyProductos,
       columnStyles,
       styles: {
-        font: "times",
+        font: fuente,
+        fontStyle: peso,
         fontSize: 10 * scale,
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
-        lineWidth: 0.5,
+        lineWidth: mat ? 0 : 0.5,
       },
     });
 
     startY = doc.lastAutoTable.finalY + 15;
 
-    doc.setFont("times", "normal");
+    doc.setFont(fuente, peso);
     const texto = "Cantidad en Letras:";
     const valor = `${cantidadLetras}`;
     doc.text(texto, leftMargin, startY);
     const anchoTexto = doc.getTextWidth(texto);
-    doc.setTextColor(255, 0, 0);
-    doc.text(valor, leftMargin + anchoTexto + 5, startY);
+    doc.setTextColor(...rojo);
+    const lineasLetras = doc.splitTextToSize(String(valor), pageWidth - rightMargin - leftMargin - anchoTexto - 5);
+    doc.text(lineasLetras, leftMargin + anchoTexto + 5, startY);
+    startY += (lineasLetras.length - 1) * doc.getLineHeight();
     doc.setTextColor(0, 0, 0);
 
     startY += 20;
 
     doc.text("Forma de Pago:", leftMargin, startY);
     const formas = ["Efectivo", "Transferencia", "Cheque"];
-    let x = leftMargin + 100;
+    let x = leftMargin + doc.getTextWidth("Forma de Pago:") + 14; // según el ancho real: con Courier no se encimaban
     const gap = 20; // espacio entre casilla y siguiente texto
     formas.forEach((f) => {
       const rectWidth = 10;
@@ -187,15 +200,15 @@ export const PDFComprobante = async ({
 
     startY += 25;
 
-    doc.setFont("times", "bold");
+    doc.setFont(fuente, "bold");
     doc.text("Observaciones:", leftMargin, startY);
     startY += 12;
-    doc.setFont("times", "normal");
-    doc.text(String(observaciones || ""), leftMargin, startY, {
-      maxWidth: pageWidth - leftMargin - rightMargin,
-    });
+    doc.setFont(fuente, peso);
+    const lineasObs = doc.splitTextToSize(String(observaciones || ""), pageWidth - leftMargin - rightMargin);
+    doc.text(lineasObs, leftMargin, startY);
+    startY += (lineasObs.length - 1) * doc.getLineHeight();
 
-    startY += espacioFirma;
+    startY += mat ? 28 : espacioFirma;
 
     const firmaWidth = 150;
     const firmaY = startY;
@@ -207,17 +220,19 @@ export const PDFComprobante = async ({
     doc.line(lugarX + 25, firmaY, lugarX + firmaWidth + 25, firmaY);
     doc.text("LUGAR Y FECHA", lugarX + firmaWidth / 2 - 40, firmaY + 12);
 
-    doc.setTextColor(255, 0, 0);
+    doc.setTextColor(...rojo);
     doc.text(`${empresa.ciudad}  ${fecha}`, lugarX + firmaWidth / 2 - 45, firmaY - 4);
     doc.setTextColor(0, 0, 0);
   };
 
   drawComprobante(0);
-  drawComprobante(pageHeight / 2);
+  if (!mat) {
+    drawComprobante(pageHeight / 2);
 
-  doc.setLineDash([5, 3]);
-  doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
-  doc.setLineDash();
+    doc.setLineDash([5, 3]);
+    doc.line(40, pageHeight / 2, pageWidth - 40, pageHeight / 2);
+    doc.setLineDash();
+  }
 
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);

@@ -81,7 +81,7 @@ export default function CompradorForm() {
       key: "compradorEmail",
       label: "Email",
       type: "text",
-      required: true,
+      required: false,
       maxLength: 255,
       placeholder: "ejemplo@correo.com",
       validator: (v) =>
@@ -145,7 +145,7 @@ export default function CompradorForm() {
       compradorRTN: formState.compradorRTN || null,
       compradorDireccion: formState.compradorDireccion || null,
       compradorTelefono: formState.compradorTelefono,
-      compradorEmail: formState.compradorEmail?.toLowerCase(),
+      compradorEmail: formState.compradorEmail?.trim().toLowerCase() || "",
     };
 
     const method = selectedComprador?.data?.compradorId ? "PUT" : "POST";

@@ -5,7 +5,11 @@ export const funcionHabilitada = (funciones, nombre) => !Array.isArray(funciones
 
 // Opciones que el cliente enciende a propósito (apagadas por defecto, aun con "todas las funciones"). Se guardan en el mismo arreglo de funciones.
 export const OPCION_DESCUENTO_PRIMERO = "opt:descuento-primero";
-export const OPCIONES = [[OPCION_DESCUENTO_PRIMERO, "Compra directa: permitir aplicar el descuento antes de restar los sacos"]];
+export const OPCION_IMPRESORA_MATRICIAL = "opt:impresora-matricial";
+export const OPCIONES = [
+  [OPCION_DESCUENTO_PRIMERO, "Compra directa: permitir aplicar el descuento antes de restar los sacos"],
+  [OPCION_IMPRESORA_MATRICIAL, "Recibo de compra para impresora matricial (forma continua 9.5 x 5.5 pulg, un recibo por hoja, Courier en negro)"],
+];
 export const opcionActiva = (funciones, nombre) => Array.isArray(funciones) && funciones.includes(nombre);
 
 // Valores neutros si la tabla empresa no existe o falla la lectura (también los usa src/lib/empresa.js).
