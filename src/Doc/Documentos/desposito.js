@@ -115,36 +115,38 @@ export const exportDeposito = async (formState) => {
 
     // Encabezado
     doc.setFont(fuente, "bold");
-    doc.setFontSize(20);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 60 + offsetY, {
+    doc.setFontSize(mat ? 14 : 20);
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 60) + offsetY, {
       align: "center",
     });
 
     doc.setFont(fuente, peso);
-    doc.setFontSize(14);
-    doc.text("COMPROBANTE DE DEPÓSITO", pageWidth / 2, 85 + offsetY, {
+    doc.setFontSize(mat ? 11 : 14);
+    doc.text("COMPROBANTE DE DEPÓSITO", pageWidth / 2, (mat ? 44 : 85) + offsetY, {
       align: "center",
     });
 
     // Cosecha
     doc.setFont(fuente, peso);
-    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, 110 + offsetY);
+    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, (mat ? 48 : 110) + offsetY);
 
     // Productor y comprobante alineados
-    let startY = topMargin + 70 + offsetY;
+    let startY = (mat ? 66 : topMargin + 70) + offsetY;
     doc.setFont(fuente, peso);
     doc.text(`Productor: ${cliente}`, leftMargin, startY);
 
     doc.setFont(fuente, peso);
     const textoBase = "Comprobante No:";
     const anchoTextoBase = doc.getTextWidth(textoBase);
-    doc.text(textoBase, pageWidth - rightMargin - 80, startY);
+    // En matricial (Courier, más ancho) el número se alinea al margen derecho según su ancho real
+    const xComp = mat ? pageWidth - rightMargin - anchoTextoBase - doc.getTextWidth(String(comprobanteID)) - 5 : pageWidth - rightMargin - 80;
+    doc.text(textoBase, xComp, startY);
 
     // Número del comprobante en rojo
     doc.setTextColor(...rojo);
     doc.text(
       `${comprobanteID}`,
-      pageWidth - rightMargin - 80 + anchoTextoBase + 5,
+      xComp + anchoTextoBase + 5,
       startY,
     );
     doc.setTextColor(0, 0, 0);
@@ -164,7 +166,7 @@ export const exportDeposito = async (formState) => {
       styles: {
         font: fuente,
         fontStyle: peso,
-        fontSize: 11,
+        fontSize: mat ? 9 : 11,
         lineColor: [0, 0, 0],
         lineWidth: mat ? 0 : 0.5,
       },
@@ -201,7 +203,7 @@ export const exportDeposito = async (formState) => {
     startY += (lineasObs.length - 1) * doc.getLineHeight();
 
     // Firmas
-    startY += 80;
+    startY += mat ? 28 : 80;
     const firmaWidth = 180;
     doc.line(leftMargin, startY, leftMargin + firmaWidth, startY);
     doc.text("FIRMA", leftMargin + 70, startY + 15);

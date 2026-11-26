@@ -106,25 +106,25 @@ export const exportEntregaContratoSalida = async (formState) => {
     // Encabezado
     doc.setFont(fuente, "bold");
     doc.setFontSize(FS_H1);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
     doc.setFont(fuente, peso);
     doc.setFontSize(FS_BODY);
-    doc.text("ENTREGA DE VENTA DE CAFÉ", pageWidth / 2, 70 + offsetY, {
+    doc.text("ENTREGA DE VENTA DE CAFÉ", pageWidth / 2, (mat ? 44 : 70) + offsetY, {
       align: "center",
     });
 
     // Cosecha
     doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
-    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, topMargin + 60 + offsetY);
+    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, (mat ? 48 : topMargin + 60) + offsetY);
 
     // Comprador
     doc.setFont(fuente, peso);
     doc.setFontSize(FS_BODY);
-    const yProd = topMargin + 80 + offsetY;
+    const yProd = (mat ? 66 : topMargin + 80) + offsetY;
     const labelProd = "Comprador:";
     doc.text(labelProd, leftMargin, yProd);
     const wLabelProd = doc.getTextWidth(labelProd);
@@ -133,17 +133,19 @@ export const exportEntregaContratoSalida = async (formState) => {
     doc.setTextColor(0, 0, 0);
 
     // Comprobante No
-    const compX = pageWidth - rightMargin - 140;
+    let compX = pageWidth - rightMargin - 140;
     // const compY = frijolY + frijolimg.height + 18;
     doc.setFont(fuente, "bold");
     doc.setFontSize(FS_BODY);
+    const wComp = doc.getTextWidth("Comprobante No:") + 5;
+    if (mat) compX = pageWidth - rightMargin - wComp - doc.getTextWidth(String(comprobanteID));
     doc.text("Comprobante No:", compX, yProd);
     doc.setTextColor(...rojo);
-    doc.text(`${comprobanteID}`, compX + 125, yProd);
+    doc.text(`${comprobanteID}`, compX + (mat ? wComp : 125), yProd);
     doc.setTextColor(0, 0, 0);
 
     // Tabla
-    let startY = topMargin + 110 + offsetY;
+    let startY = (mat ? 80 : topMargin + 110) + offsetY;
     autoTable(doc, {
       startY,
       margin: { left: leftMargin, right: rightMargin },

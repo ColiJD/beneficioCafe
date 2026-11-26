@@ -93,18 +93,18 @@ export const PDFComprobante = async ({
     // === Encabezado central y datos de contacto ===
     doc.setFont(fuente, "bold");
     doc.setFontSize(16 * scale);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
     // Subtítulo: tipo de comprobante
     doc.setFont(fuente, peso);
     doc.setFontSize(12 * scale);
-    doc.text(tipoComprobante, pageWidth / 2, 70 + offsetY, { align: "center" });
+    doc.text(tipoComprobante, pageWidth / 2, (mat ? 44 : 70) + offsetY, { align: "center" });
 
 
     // Productor y comprobante en la misma línea
-    let startY = topMargin + 80 + offsetY;
+    let startY = (mat ? 66 : topMargin + 80) + offsetY;
     doc.setFont(fuente, peso);
     const textoProd = "Productor:";
     doc.text(textoProd, leftMargin, startY);
@@ -208,7 +208,7 @@ export const PDFComprobante = async ({
     doc.text(lineasObs, leftMargin, startY);
     startY += (lineasObs.length - 1) * doc.getLineHeight();
 
-    startY += espacioFirma;
+    startY += mat ? 28 : espacioFirma;
 
     const firmaWidth = 150;
     const firmaY = startY;

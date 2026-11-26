@@ -96,23 +96,23 @@ export const exportEntregaContrato = async (formState) => {
     doc.setFont(fuente, peso);
     doc.setFontSize(11 * scale);
     doc.setTextColor(0, 0, 0);
-    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, topMargin + 80 + offsetY - 18);
+    doc.text(empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "", leftMargin, (mat ? 66 : topMargin + 80) + offsetY - 18);
 
     // Encabezado central
     doc.setFont(fuente, "bold");
     doc.setFontSize(16 * scale);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
     doc.setFont(fuente, peso);
     doc.setFontSize(12 * scale);
-    doc.text("ENTREGA DE CONTRATO", pageWidth / 2, 70 + offsetY, {
+    doc.text("ENTREGA DE CONTRATO", pageWidth / 2, (mat ? 44 : 70) + offsetY, {
       align: "center",
     });
 
     // Productor y Comprobante en la misma línea
-    let startY = topMargin + 80 + offsetY;
+    let startY = (mat ? 66 : topMargin + 80) + offsetY;
     doc.setFont(fuente, peso);
 
     const textoProd = "Productor:";
@@ -215,7 +215,7 @@ export const exportEntregaContrato = async (formState) => {
     doc.text(lineasObs, leftMargin, startY);
     startY += (lineasObs.length - 1) * doc.getLineHeight();
 
-    startY += 80;
+    startY += mat ? 28 : 80;
 
     // Firmas y lugar/fecha (Alineada con compra.js)
     const firmaWidth = 150;

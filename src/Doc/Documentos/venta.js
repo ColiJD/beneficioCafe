@@ -115,22 +115,22 @@ export const exportVentaDirecta = async (formState) => {
     doc.text(
       empresa.cosecha ? `Cosecha ${empresa.cosecha.nombre}` : "",
       leftMargin + logo.width / 30,
-      20 + logo.height + offsetY + 22,
+      (mat ? 48 : 20 + logo.height + 22) + offsetY,
     );
 
     doc.setFont(fuente, "bold");
     doc.setFontSize(16 * scale);
-    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, 50 + offsetY, {
+    doc.text(empresa.nombre.toUpperCase(), pageWidth / 2, (mat ? 28 : 50) + offsetY, {
       align: "center",
     });
 
     doc.setFont(fuente, peso);
     doc.setFontSize(12 * scale);
-    doc.text("COMPROBANTE DE VENTA DIRECTA", pageWidth / 2, 70 + offsetY, {
+    doc.text("COMPROBANTE DE VENTA DIRECTA", pageWidth / 2, (mat ? 44 : 70) + offsetY, {
       align: "center",
     });
 
-    let startY = topMargin + 80 + offsetY;
+    let startY = (mat ? 66 : topMargin + 80) + offsetY;
     doc.setFont(fuente, "bold");
     doc.setFontSize(12 * scale);
     doc.setTextColor(0, 0, 0);
@@ -207,7 +207,7 @@ export const exportVentaDirecta = async (formState) => {
 
     doc.setTextColor(...rojo);
     const lineHeight = 14;
-    const lines = doc.splitTextToSize(valor, maxWidth - 80);
+    const lines = doc.splitTextToSize(valor, maxWidth - doc.getTextWidth(texto) - 10);
     doc.text(lines, leftMargin + doc.getTextWidth(texto) + 5, startY);
     doc.setTextColor(0, 0, 0);
 
@@ -235,7 +235,7 @@ export const exportVentaDirecta = async (formState) => {
     doc.text(lineasObs, leftMargin, startY);
     startY += (lineasObs.length - 1) * doc.getLineHeight();
 
-    startY += 80;
+    startY += mat ? 28 : 80;
 
     const firmaWidth = 150;
     const firmaY = startY;
