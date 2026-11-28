@@ -212,7 +212,8 @@ export const PDFComprobante = async ({
     startY += mat ? 28 : espacioFirma;
 
     const firmaWidth = 150;
-    const firmaY = startY;
+    // En la matricial las firmas van al pie de la hoja (arriba del pie de página); si el contenido es largo, quedan debajo de él.
+    const firmaY = mat ? Math.max(startY, doc.internal.pageSize.getHeight() - 44) : startY;
 
     doc.line(leftMargin, firmaY, leftMargin + firmaWidth, firmaY);
     doc.text("FIRMA", leftMargin + firmaWidth / 2 - 20, firmaY + 12);

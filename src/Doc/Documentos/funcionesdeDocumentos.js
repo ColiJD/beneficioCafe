@@ -168,9 +168,10 @@ export const matricial = (empresa) => opcionActiva(empresa.funciones, OPCION_IMP
 
 // Zona imprimible en la matricial (pt, sobre la hoja de 684 de ancho). El papel de forma continua tiene tiras con agujeros y la impresora empieza a imprimir
 // un poco adentro: así el contenido no se corta a la derecha. Si el texto sale pegado o cortado, se ajusta aquí.
-// Medido en pruebas impresas: la LX-350 empieza a imprimir ~0.95 pulg dentro del papel y llega como máximo a 8 pulg (576 pt) desde ahí.
-// Zona 12..536 pt = centrada en el papel (centro en ~274 pt) y con margen antes del límite de 576 pt.
-export const MATRICIAL = { izquierda: 12, ancho: 586 };
+// Medido en pruebas impresas (prueba con la cola USB001 de esta PC): el texto salía a ~26 pt del borde izquierdo y a ~130 pt del derecho; la impresora llega como máximo
+// a 576 pt desde donde empieza (~14 pt dentro del papel). Zona 81..573 pt = a ~95 pt de cada borde del papel y antes del límite de 576 pt.
+// El contenido más ancho termina en ancho - 45 (la línea de LUGAR Y FECHA), por eso ancho = 573 + 45.
+export const MATRICIAL = { izquierda: 81, ancho: 618 };
 
 // Logo en blanco y negro puro (sin grises ni transparencias) para la matricial: { src, width, height } con la altura dada en pt, o null si falla.
 export async function logoBlancoNegro(url, alto) {
