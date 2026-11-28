@@ -6,6 +6,7 @@ import tasa from "@/img/tasa.png";
 import autoTable from "jspdf-autotable";
 import {
   matricial,
+  MATRICIAL,
   logoBlancoNegro,
   numeroALetras,
   cleanText,
@@ -21,10 +22,10 @@ export const exportDeposito = async (formState) => {
   const peso = mat ? "bold" : "normal";
   const rojo = mat ? [0, 0, 0] : [255, 0, 0];
   const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
-  const leftMargin = 72;
+  const leftMargin = mat ? MATRICIAL.izquierda : 72;
   const rightMargin = 72;
   const topMargin = 72;
-  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageWidth = mat ? MATRICIAL.ancho : doc.internal.pageSize.getWidth();
   // En matricial la hoja es media carta: las medidas se calculan sobre una carta completa y solo se dibuja la primera copia
   const pageHeight = doc.internal.pageSize.getHeight() * (mat ? 2 : 1);
 
