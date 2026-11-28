@@ -10,6 +10,7 @@ import {
   processImageToGray,
   getLogoScaled,
   matricial,
+  MATRICIAL,
   logoBlancoNegro,
 } from "@/Doc/Documentos/funcionesdeDocumentos";
 
@@ -44,10 +45,10 @@ export const exportCompraDirecta = async (formState) => {
   const peso = mat ? "bold" : "normal";
   const rojo = mat ? [0, 0, 0] : [255, 0, 0];
   const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
-  const leftMargin = 50;
+  const leftMargin = mat ? MATRICIAL.izquierda : 50;
   const rightMargin = 50;
   const topMargin = 50;
-  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageWidth = mat ? MATRICIAL.ancho : doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
   const fondoGray = mat ? null : await processImageToGray(empresa.logo, 0.15);

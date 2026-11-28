@@ -6,6 +6,7 @@ import frijol from "@/img/imagenfrijoles.png";
 import tasa from "@/img/tasa.png";
 import {
   matricial,
+  MATRICIAL,
   logoBlancoNegro,
   numeroALetras,
   processImageToGray,
@@ -20,10 +21,10 @@ export const exportEntregaContratoSalida = async (formState) => {
   const peso = mat ? "bold" : "normal";
   const rojo = mat ? [0, 0, 0] : [255, 0, 0];
   const doc = mat ? new JsPDF({ unit: "pt", format: [684, 396], orientation: "landscape" }) : new JsPDF({ unit: "pt", format: "letter" });
-  const leftMargin = 50;
+  const leftMargin = mat ? MATRICIAL.izquierda : 50;
   const rightMargin = 50;
   const topMargin = 50;
-  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageWidth = mat ? MATRICIAL.ancho : doc.internal.pageSize.getWidth();
   // En matricial la hoja es media carta: las medidas se calculan sobre una carta completa y solo se dibuja la primera copia
   const pageHeight = doc.internal.pageSize.getHeight() * (mat ? 2 : 1);
 

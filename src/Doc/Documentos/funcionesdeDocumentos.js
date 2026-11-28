@@ -166,6 +166,10 @@ export async function getLogoScaled(imgUrl, targetWidth, targetHeight) {
 // ¿La empresa imprime en matricial (forma continua 9.5 x 5.5 pulg)? Opción de Administración → Empresa.
 export const matricial = (empresa) => opcionActiva(empresa.funciones, OPCION_IMPRESORA_MATRICIAL);
 
+// Zona imprimible en la matricial (pt, sobre la hoja de 684 de ancho). El papel de forma continua tiene tiras con agujeros y la impresora empieza a imprimir
+// un poco adentro: así el contenido no se corta a la derecha. Si el texto sale pegado o cortado, se ajusta aquí.
+export const MATRICIAL = { izquierda: 20, ancho: 620 };
+
 // Logo en blanco y negro puro (sin grises ni transparencias) para la matricial: { src, width, height } con la altura dada en pt, o null si falla.
 export async function logoBlancoNegro(url, alto) {
   try {
