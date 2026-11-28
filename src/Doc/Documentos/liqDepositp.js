@@ -191,7 +191,8 @@ export const exportLiquidacionDeposito = async (formState) => {
 
     // Firmas y lugar/fecha
     const firmaWidth = 150;
-    const firmaY = startY;
+    // En la matricial las firmas van al pie de la hoja (arriba del pie de página); si el contenido es largo, quedan debajo de él.
+    const firmaY = mat ? Math.max(startY, doc.internal.pageSize.getHeight() - 44) : startY;
 
     // Línea de firma (izquierda)
     doc.line(leftMargin, firmaY, leftMargin + firmaWidth, firmaY);
@@ -213,7 +214,7 @@ export const exportLiquidacionDeposito = async (formState) => {
     doc.text(
       `${empresa.nombre} - ${empresa.ciudad}, ${empresa.pais}`,
       pageWidth / 2,
-      offsetY + pageHeight * 0.45,
+      mat ? doc.internal.pageSize.getHeight() - 14 : offsetY + pageHeight * 0.45,
       { align: "center" },
     );
   };

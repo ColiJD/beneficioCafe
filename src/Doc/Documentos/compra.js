@@ -241,7 +241,8 @@ export const exportCompraDirecta = async (formState) => {
 
     // Firmas y lugar/fecha
     const firmaWidth = 150;
-    const firmaY = startY;
+    // En la matricial las firmas van al pie de la hoja (arriba del pie de página); si el contenido es largo, quedan debajo de él.
+    const firmaY = mat ? Math.max(startY, pageHeight - 44) : startY;
 
     // Línea de firma (izquierda)
     doc.line(leftMargin, firmaY, leftMargin + firmaWidth, firmaY);

@@ -205,6 +205,8 @@ export const exportDeposito = async (formState) => {
 
     // Firmas
     startY += mat ? 28 : 80;
+    // En la matricial las firmas van al pie de la hoja (arriba del pie de página); si el contenido es largo, quedan debajo de él.
+    if (mat) startY = Math.max(startY, doc.internal.pageSize.getHeight() - 44);
     const firmaWidth = 180;
     doc.line(leftMargin, startY, leftMargin + firmaWidth, startY);
     doc.text("FIRMA", leftMargin + 70, startY + 15);
